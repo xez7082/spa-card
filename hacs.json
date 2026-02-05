@@ -1,6 +1,8 @@
 {
-  "name": "Lumina Spa Card",
-  "content_type": "plugin",
-  "filename": "lumina-spa-card.js",
-  "render_readme": true
+  "name": "lumina-spa-card",
+  "version": "2.2.0",
+  "description": "Premium Spa monitoring card for Home Assistant",
+  "main": "lumina-spa-card.js",
+  "author": "xez7082",
+  "license": "MIT"
 }
