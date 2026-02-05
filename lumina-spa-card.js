@@ -5,145 +5,191 @@ import {
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 class LuminaSpaCard extends LitElement {
+  
   static get properties() {
     return {
-      hass: {},
-      config: {}
+      hass: { type: Object },
+      config: { type: Object }
+    };
+  }
+
+  // Configuration par défaut lors de l'ajout de la carte
+  static getStubConfig() {
+    return {
+      card_title: "MON SPA",
+      background_image: "/local/community/lumina-spa-card/preview.png",
+      entity_water_temp: "sensor.spa_water_temp",
+      entity_air_temp: "sensor.spa_air_temp",
+      entity_ph: "sensor.spa_ph",
+      entity_orp: "sensor.spa_orp",
+      entity_power: "sensor.spa_power",
+      entity_amps: "sensor.spa_current"
+    };
+  }
+
+  setConfig(config) {
+    if (!config) throw new Error("Configuration invalide");
+    this.config = {
+      card_title: 'MON SPA',
+      background_image: '/local/community/lumina-spa-card/preview.png',
+      ...config
+    };
+  }
+
+  // Utilitaire pour récupérer l'état des entités sans crash
+  _getDisplayState(entityId) {
+    if (!this.hass || !this.hass.states[entityId]) {
+      return { state: 'N/A', unit: '' };
+    }
+    const stateObj = this.hass.states[entityId];
+    return {
+      state: stateObj.state,
+      unit: stateObj.attributes.unit_of_measurement || ''
     };
   }
 
   render() {
-    const hass = this.hass;
-    const config = this.config;
+    if (!this.hass || !this.config) return html``;
 
-    const getStat = (entity) => hass.states[entity] ? hass.states[entity].state : 'N/A';
-    const getUnit = (entity) => hass.states[entity] ? hass.states[entity].attributes.unit_of_measurement || '' : '';
+    const water = this._getDisplayState(this.config.entity_water_temp);
+    const air = this._getDisplayState(this.config.entity_air_temp);
+    const ph = this._getDisplayState(this.config.entity_ph);
+    const orp = this._getDisplayState(this.config.entity_orp);
+    const power = this._getDisplayState(this.config.entity_power);
+    const amps = this._getDisplayState(this.config.entity_amps);
 
     return html`
-      <ha-card>
-        <div class="main-container">
-          <div class="data-column">
+      <ha-card style="background-image: url('${this.config.background_image}')">
+        <div class="overlay">
+          <div class="header">${this.config.card_title}</div>
+          
+          <div class="main-container">
+            <div class="data-column">
+              
+              <div class="glass-block">
+                <div class="block-title">TEMPÉRATURE</div>
+                <div class="row">
+                  <div class="item">
+                    <ha-icon icon="mdi:thermometer"></ha-icon>
+                    <div class="info"><span class="label">Eau</span><span class="val">${water.state}${water.unit}</span></div>
+                  </div>
+                  <div class="item">
+                    <ha-icon icon="mdi:cloud-outline"></ha-icon>
+                    <div class="info"><span class="label">Air</span><span class="val">${air.state}${air.unit}</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="glass-block">
+                <div class="block-title">QUALITÉ DE L'EAU</div>
+                <div class="row">
+                  <div class="item">
+                    <ha-icon icon="mdi:ph"></ha-icon>
+                    <div class="info"><span class="label">pH</span><span class="val">${ph.state}</span></div>
+                  </div>
+                  <div class="item">
+                    <ha-icon icon="mdi:test-tube"></ha-icon>
+                    <div class="info"><span class="label">ORP</span><span class="val">${orp.state} mV</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="glass-block">
+                <div class="block-title">ÉLECTRICITÉ</div>
+                <div class="row">
+                  <div class="item">
+                    <ha-icon icon="mdi:lightning-bolt"></ha-icon>
+                    <div class="info"><span class="label">Conso</span><span class="val">${power.state}${power.unit}</span></div>
+                  </div>
+                  <div class="item">
+                    <ha-icon icon="mdi:current-ac"></ha-icon>
+                    <div class="info"><span class="label">Amps</span><span class="val">${amps.state}${amps.unit}</span></div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
             
-            <div class="glass-block">
-              <div class="block-title">TEMPÉRATURE</div>
-              <div class="row">
-                <div class="item">
-                   <ha-icon icon="mdi:thermometer"></ha-icon>
-                   <div><span class="label">Eau:</span> <span class="val">${getStat(config.entity_water_temp)}${getUnit(config.entity_water_temp)}</span></div>
-                </div>
-                <div class="item">
-                   <ha-icon icon="mdi:cloud-outline"></ha-icon>
-                   <div><span class="label">Air:</span> <span class="val">${getStat(config.entity_air_temp)}${getUnit(config.entity_air_temp)}</span></div>
-                </div>
+            <div class="spa-column">
               </div>
-            </div>
-
-            <div class="glass-block">
-              <div class="block-title">CHIMIE SPA</div>
-              <div class="row">
-                <div class="item">
-                   <ha-icon icon="mdi:ph"></ha-icon>
-                   <div><span class="label">pH:</span> <span class="val">${getStat(config.entity_ph)}</span></div>
-                </div>
-                <div class="item">
-                   <ha-icon icon="mdi:flash"></ha-icon>
-                   <div><span class="label">ORP:</span> <span class="val">${getStat(config.entity_orp)} mV</span></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="glass-block energy">
-              <div class="block-title">ÉNERGIE SPA</div>
-              <div class="row">
-                <div class="item">
-                   <ha-icon icon="mdi:lightning-bolt"></ha-icon>
-                   <div><span class="label">Puissance:</span> <span class="val">${getStat(config.entity_power)} W</span></div>
-                </div>
-                <div class="item">
-                   <ha-icon icon="mdi:current-ac"></ha-icon>
-                   <div><span class="label">Intensité:</span> <span class="val">${getStat(config.entity_amps)} A</span></div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          <div class="spa-column">
-            <div class="spa-image-container">
-               <img src="${config.spa_image || '/local/community/lumina-spa-card/preview.png'}" class="spa-img">
-            </div>
           </div>
         </div>
       </ha-card>
     `;
   }
 
-  setConfig(config) {
-    this.config = config;
-  }
-
   static get styles() {
     return css`
       ha-card {
-        background: linear-gradient(135deg, #2d71a1 0%, #1a3a5a 100%);
-        border-radius: 28px;
-        padding: 20px;
+        background-size: cover;
+        background-position: center;
+        border-radius: 24px;
         color: white;
         overflow: hidden;
+        position: relative;
+        min-height: 320px;
+        border: none;
+        transition: all 0.3s ease;
+      }
+      .overlay {
+        background: rgba(0, 0, 0, 0.35);
+        padding: 20px;
+        height: 100%;
+        box-sizing: border-box;
+      }
+      .header {
+        font-weight: 800;
+        font-size: 1.1em;
+        margin-bottom: 15px;
+        text-align: left;
+        letter-spacing: 2px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
       }
       .main-container {
         display: flex;
         gap: 15px;
       }
       .data-column {
-        flex: 1.5;
+        flex: 1.3;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
       }
-      .spa-column {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
+      .spa-column { flex: 0.7; }
       .glass-block {
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 18px;
-        padding: 12px;
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 15px;
+        padding: 10px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
       }
       .block-title {
-        font-size: 0.75em;
-        font-weight: bold;
-        text-align: center;
+        font-size: 9px;
+        font-weight: 900;
+        color: #00d4ff;
         margin-bottom: 8px;
         letter-spacing: 1px;
-        opacity: 0.9;
       }
-      .row {
-        display: flex;
-        justify-content: space-around;
-        gap: 10px;
-      }
-      .item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .label { font-size: 0.8em; opacity: 0.7; }
-      .val { font-weight: bold; font-size: 0.95em; }
-      .spa-img {
-        width: 100%;
-        filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.5));
-      }
-      ha-icon {
-        --mdc-icon-size: 20px;
-        color: #00d4ff;
-      }
+      .row { display: flex; justify-content: space-between; gap: 10px; }
+      .item { display: flex; align-items: center; gap: 10px; }
+      .info { display: flex; flex-direction: column; }
+      .label { font-size: 9px; opacity: 0.8; text-transform: uppercase; }
+      .val { font-size: 13px; font-weight: bold; font-family: 'Roboto', sans-serif; }
+      ha-icon { --mdc-icon-size: 20px; color: #00d4ff; filter: drop-shadow(0 0 5px rgba(0,212,255,0.4)); }
     `;
   }
 }
 
+// Enregistrement de la carte
 customElements.define("lumina-spa-card", LuminaSpaCard);
+
+// Déclaration pour HACS / Interface
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type: "lumina-spa-card",
+  name: "Lumina Spa Card",
+  description: "Carte premium pour le suivi du Spa avec support d'image de fond.",
+  preview: true
+});
