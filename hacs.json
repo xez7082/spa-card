@@ -1,27 +1,7 @@
 {
-  "name": "lumina-spa-card",
-  "version": "2.2.0",
-  "description": "Premium Spa monitoring card for Home Assistant",
-  "main": "lumina-spa-card.js",
-  "keywords": [
-    "home-assistant",
-    "lovelace",
-    "custom-card",
-    "spa",
-    "dashboard"
-  ],
-  "author": "xez7082",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/xez7082/lumina-spa-card"
-  },
-  "bugs": {
-    "url": "https://github.com/xez7082/lumina-spa-card/issues"
-  },
-  "homepage": "https://github.com/xez7082/lumina-spa-card",
-  "files": [
-    "lumina-spa-card.js",
-    "README.md"
-  ]
+  "name": "Lumina Spa Card",
+  "content_in_root": true,
+  "render_readme": true,
+  "filename": "lumina-spa-card.js",
+  "homeassistant": "2023.8.0"
 }
