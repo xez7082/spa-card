@@ -4,8 +4,12 @@ import {
   css
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
+/**
+ * ÉDITEUR DE LA CARTE (INTERFACE DE CONFIGURATION)
+ */
 class LuminaSpaEditor extends LitElement {
   static get properties() { return { hass: {}, _config: {} }; }
+  
   setConfig(config) { this._config = config; }
 
   _valueChanged(ev) {
@@ -24,61 +28,62 @@ class LuminaSpaEditor extends LitElement {
       { name: "card_title", label: "Nom du SPA", selector: { text: {} } },
       { name: "background_image", label: "Image (/local/sparond2.jpg)", selector: { text: {} } },
       {
-        name: "options", label: "Options d'affichage", type: "grid", schema: [
+        name: "", type: "grid", schema: [
           { name: "show_buttons", label: "Afficher Boutons", selector: { boolean: {} } },
           { name: "show_table", label: "Afficher Tableau", selector: { boolean: {} } },
         ]
       },
+      // MENU DÉROULANT : TEMPÉRATURES
       {
-        name: "entities_list", label: "Configuration des Entités", type: "expandable", schema: [
-          { name: "entity_water_temp", label: "Temp Eau", selector: { entity: {} } },
-          { name: "entity_ambient_temp", label: "Temp Env", selector: { entity: {} } },
-          { name: "entity_ph", label: "pH", selector: { entity: {} } },
-          { name: "entity_orp", label: "ORP", selector: { entity: {} } },
-          { name: "entity_bromine", label: "Brome", selector: { entity: {} } },
-          { name: "entity_alkalinity", label: "Alcalinité", selector: { entity: {} } },
-          { name: "entity_power", label: "Watts", selector: { entity: {} } },
-          { name: "entity_amp", label: "Amp SPA", selector: { entity: {} } },
-          { name: "entity_vac_current", label: "Amp Aspirateur", selector: { entity: {} } },
-          { name: "switch_bubbles", label: "Switch Bulles", selector: { entity: {} } },
-          { name: "switch_filter", label: "Switch Filtre", selector: { entity: {} } },
-          { name: "switch_light", label: "Switch Lumière", selector: { entity: {} } },
+        name: "temp_section", label: "🌡️ Températures", type: "expandable", schema: [
+          { name: "entity_water_temp", label: "Entité Temp Eau", selector: { entity: {} } },
+          { name: "entity_ambient_temp", label: "Entité Temp Env", selector: { entity: {} } },
+        ]
+      },
+      // MENU DÉROULANT : CHIMIE
+      {
+        name: "chem_section", label: "🧪 Chimie de l'eau", type: "expandable", schema: [
+          { name: "entity_ph", label: "Entité pH", selector: { entity: {} } },
+          { name: "entity_orp", label: "Entité ORP", selector: { entity: {} } },
+          { name: "entity_bromine", label: "Entité Brome", selector: { entity: {} } },
+          { name: "entity_alkalinity", label: "Entité Alcalinité", selector: { entity: {} } },
+        ]
+      },
+      // MENU DÉROULANT : SYSTÈME
+      {
+        name: "sys_section", label: "⚡ Système & Énergie", type: "expandable", schema: [
+          { name: "entity_power", label: "Entité Watts", selector: { entity: {} } },
+          { name: "entity_amp", label: "Entité Amp SPA", selector: { entity: {} } },
+          { name: "entity_vac_current", label: "Entité Amp Aspirateur", selector: { entity: {} } },
           { name: "entity_tv", label: "Entité TV", selector: { entity: {} } },
           { name: "entity_alexa", label: "Entité Alexa", selector: { entity: {} } },
         ]
       },
+      // MENU DÉROULANT : COMMANDES
       {
-        name: "positions", label: "Réglages des Positions (X/Y)", type: "expandable", schema: [
-          { 
-            name: "pos_temp", label: "Bloc Températures", type: "grid", schema: [
-              { name: "pos_temp_x", label: "X (%)", selector: { number: { min: 0, max: 100 } } },
-              { name: "pos_temp_y", label: "Y (%)", selector: { number: { min: 0, max: 100 } } },
-            ] 
-          },
-          { 
-            name: "pos_chem", label: "Bloc Chimie", type: "grid", schema: [
-              { name: "pos_chem_x", label: "X (%)", selector: { number: { min: 0, max: 100 } } },
-              { name: "pos_chem_y", label: "Y (%)", selector: { number: { min: 0, max: 100 } } },
-            ] 
-          },
-          { 
-            name: "pos_elec", label: "Bloc Système", type: "grid", schema: [
-              { name: "pos_elec_x", label: "X (%)", selector: { number: { min: 0, max: 100 } } },
-              { name: "pos_elec_y", label: "Y (%)", selector: { number: { min: 0, max: 100 } } },
-            ] 
-          },
-          { 
-            name: "pos_tab", label: "Bloc Tableau", type: "grid", schema: [
-              { name: "pos_tab_x", label: "X (%)", selector: { number: { min: 0, max: 100 } } },
-              { name: "pos_tab_y", label: "Y (%)", selector: { number: { min: 0, max: 100 } } },
-            ] 
-          },
-          { 
-            name: "pos_btn", label: "Bloc Boutons", type: "grid", schema: [
-              { name: "pos_btn_x", label: "X (%)", selector: { number: { min: 0, max: 100 } } },
-              { name: "pos_btn_y", label: "Y (%)", selector: { number: { min: 0, max: 100 } } },
-            ] 
-          },
+        name: "switch_section", label: "🔘 Commandes (Interrupteurs)", type: "expandable", schema: [
+          { name: "switch_bubbles", label: "Switch Bulles", selector: { entity: {} } },
+          { name: "switch_filter", label: "Switch Filtre", selector: { entity: {} } },
+          { name: "switch_light", label: "Switch Lumière", selector: { entity: {} } },
+        ]
+      },
+      // MENU DÉROULANT : POSITIONS
+      {
+        name: "pos_section", label: "📍 Réglages Positions (X/Y %)", type: "expandable", schema: [
+          {
+            name: "", type: "grid", schema: [
+              { name: "pos_temp_x", label: "Temp X", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_temp_y", label: "Temp Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_chem_x", label: "Chimie X", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_chem_y", label: "Chimie Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_elec_x", label: "Système X", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_elec_y", label: "Système Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_tab_x", label: "Tableau X", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_tab_y", label: "Tableau Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_btn_x", label: "Boutons X", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_btn_y", label: "Boutons Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
+            ]
+          }
         ]
       }
     ];
@@ -94,9 +99,13 @@ class LuminaSpaEditor extends LitElement {
   }
 }
 
+/**
+ * LA CARTE (LOGIQUE ET AFFICHAGE)
+ */
 class LuminaSpaCard extends LitElement {
   static getConfigElement() { return document.createElement("lumina-spa-card-editor"); }
   static get properties() { return { hass: {}, config: {} }; }
+
   setConfig(config) { this.config = config; }
 
   _getState(entityId) {
@@ -117,6 +126,7 @@ class LuminaSpaCard extends LitElement {
     if (!this.hass || !this.config) return html``;
     const c = this.config;
 
+    // Récupération des états
     const water = this._getState(c.entity_water_temp);
     const ambient = this._getState(c.entity_ambient_temp);
     const ph = this._getState(c.entity_ph);
@@ -181,7 +191,7 @@ class LuminaSpaCard extends LitElement {
   static styles = css`
     ha-card { background-size: cover; background-position: center; height: 550px; position: relative; color: white; border-radius: 20px; overflow: hidden; border:none; }
     .header { position: absolute; top: 15px; left: 20px; font-weight: 900; font-size: 1.1em; text-shadow: 2px 2px 4px black; color: #00d4ff; text-transform: uppercase; }
-    .glass { position: absolute; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 12px; padding: 10px; border: 1px solid rgba(255,255,255,0.1); min-width: 170px; }
+    .glass { position: absolute; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 12px; padding: 10px; border: 1px solid rgba(255,255,255,0.1); min-width: 175px; }
     .titre { font-size: 0.55em; color: #00d4ff; font-weight: 900; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 5px; border-bottom: 1px solid rgba(0,212,255,0.2); }
     .row { display: flex; align-items: center; gap: 6px; font-size: 0.8em; font-weight: bold; margin-top: 4px; }
     .btns { position: absolute; display: flex; flex-direction: column; gap: 12px; }
@@ -195,7 +205,15 @@ class LuminaSpaCard extends LitElement {
   `;
 }
 
+// Enregistrement des éléments
 customElements.define("lumina-spa-card-editor", LuminaSpaEditor);
 customElements.define("lumina-spa-card", LuminaSpaCard);
+
+// Ajout à la liste des cartes personnalisées de HA
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "lumina-spa-card", name: "Lumina SPA Final", preview: true });
+window.customCards.push({
+  type: "lumina-spa-card",
+  name: "Lumina SPA Final",
+  description: "Carte premium avec éditeur accordéon et monitoring complet.",
+  preview: true
+});
