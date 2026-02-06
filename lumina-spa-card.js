@@ -4,7 +4,88 @@ import {
   css
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
+// --- ÉDITEUR VISUEL (L'interface de réglage) ---
+class LuminaSpaEditor extends LitElement {
+  static get properties() {
+    return {
+      hass: { type: Object },
+      _config: { type: Object }
+    };
+  }
+
+  setConfig(config) {
+    this._config = config;
+  }
+
+  render() {
+    if (!this.hass || !this._config) return html``;
+
+    // Schéma identique à Lumina Energy Card
+    const schema = [
+      { name: "card_title", label: "Nom du SPA", selector: { text: {} } },
+      { name: "background_image", label: "Image de fond (ex: /local/sparond.png)", selector: { text: {} } },
+      {
+        name: "entities",
+        type: "grid",
+        name: "",
+        schema: [
+          { name: "entity_water_temp", label: "Capteur Température", selector: { entity: { domain: "sensor" } } },
+          { name: "entity_ph", label: "Capteur pH", selector: { entity: { domain: "sensor" } } },
+          { name: "entity_orp", label: "Capteur ORP", selector: { entity: { domain: "sensor" } } },
+          { name: "entity_power", label: "Capteur Puissance", selector: { entity: { domain: "sensor" } } },
+        ]
+      },
+      {
+        name: "positions",
+        type: "expandable",
+        title: "Ajustement des positions (en %)",
+        schema: [
+          { name: "pos_temp_x", label: "Température X", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+          { name: "pos_temp_y", label: "Température Y", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+          { name: "pos_chem_x", label: "Chimie X", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+          { name: "pos_chem_y", label: "Chimie Y", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+          { name: "pos_energy_x", label: "Énergie X", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+          { name: "pos_energy_y", label: "Énergie Y", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+        ]
+      }
+    ];
+
+    return html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${this._config}
+        .schema=${schema}
+        .computeLabel=${(s) => s.label}
+        @value-changed=${this._valueChanged}
+      ></ha-form>
+    `;
+  }
+
+  _valueChanged(ev) {
+    // On envoie la nouvelle config à la carte mère
+    const event = new CustomEvent("config-changed", {
+      detail: { config: ev.detail.value },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+  }
+}
+
+// --- LA CARTE PRINCIPALE ---
 class LuminaSpaCard extends LitElement {
+  static getConfigElement() { return document.createElement("lumina-spa-card-editor"); }
+  
+  static getStubConfig() {
+    return {
+      card_title: "MON SPA",
+      background_image: "/local/sparond.png",
+      pos_temp_x: 10, pos_temp_y: 20,
+      pos_chem_x: 10, pos_chem_y: 45,
+      pos_energy_x: 10, pos_energy_y: 70
+    };
+  }
+
   static get properties() {
     return {
       hass: { type: Object },
@@ -12,29 +93,8 @@ class LuminaSpaCard extends LitElement {
     };
   }
 
-  static getStubConfig() {
-    return {
-      card_title: "MON SPA",
-      background_image: "/local/sparond.png",
-      pos_temp_x: 15, pos_temp_y: 20,
-      pos_chem_x: 15, pos_chem_y: 45,
-      pos_energy_x: 15, pos_energy_y: 70,
-      entity_water_temp: "",
-      entity_ph: "",
-      entity_orp: "",
-      entity_power: ""
-    };
-  }
-
   setConfig(config) {
-    this.config = {
-      ...config,
-      background_image: config.background_image || "/local/sparond.png"
-    };
-  }
-
-  static getConfigElement() {
-    return document.createElement("lumina-spa-card-editor");
+    this.config = config;
   }
 
   _getDisplayState(entityId) {
@@ -55,8 +115,8 @@ class LuminaSpaCard extends LitElement {
     const power = this._getDisplayState(this.config.entity_power);
 
     return html`
-      <ha-card style="background-image: url('${this.config.background_image}');">
-        <div class="header">${this.config.card_title}</div>
+      <ha-card style="background-image: url('${this.config.background_image || '/local/sparond.png'}');">
+        <div class="header">${this.config.card_title || 'MON SPA'}</div>
 
         <div class="glass-block" style="left: ${this.config.pos_temp_x}%; top: ${this.config.pos_temp_y}%;">
           <div class="block-title">TEMPÉRATURE</div>
@@ -95,7 +155,6 @@ class LuminaSpaCard extends LitElement {
         color: white;
         border-radius: 20px;
         overflow: hidden;
-        border: none;
       }
       .header {
         position: absolute;
@@ -105,94 +164,33 @@ class LuminaSpaCard extends LitElement {
         font-size: 1.3em;
         letter-spacing: 2px;
         text-transform: uppercase;
-        text-shadow: 2px 2px 10px rgba(0,0,0,0.9);
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
       }
       .glass-block {
         position: absolute;
-        background: rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border-radius: 15px;
-        padding: 12px 18px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
-        transition: all 0.3s ease;
+        border-radius: 12px;
+        padding: 10px 15px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        pointer-events: none; /* Évite de bloquer le clic sur la carte */
       }
       .block-title {
-        font-size: 10px;
+        font-size: 9px;
         font-weight: 900;
         color: #00d4ff;
-        margin-bottom: 5px;
-        letter-spacing: 1px;
+        margin-bottom: 4px;
       }
-      .row { display: flex; align-items: center; gap: 8px; }
-      .val { font-size: 16px; font-weight: bold; }
-      ha-icon { --mdc-icon-size: 20px; color: white; }
+      .row { display: flex; align-items: center; gap: 5px; }
+      .val { font-size: 15px; font-weight: bold; }
+      ha-icon { --mdc-icon-size: 18px; color: white; }
     `;
   }
 }
 
-// --- ÉDITEUR VISUEL ---
-class LuminaSpaEditor extends LitElement {
-  static get properties() {
-    return { hass: { type: Object }, _config: { type: Object } };
-  }
-
-  setConfig(config) { this._config = config; }
-
-  render() {
-    if (!this.hass || !this._config) return html``;
-
-    const schema = [
-      { name: "card_title", label: "Nom du SPA", selector: { text: {} } },
-      { name: "background_image", label: "Chemin de l'image (/local/sparond.png)", selector: { text: {} } },
-      {
-        name: "entities",
-        type: "grid",
-        name: "",
-        schema: [
-          { name: "entity_water_temp", label: "Capteur Température", selector: { entity: { domain: "sensor" } } },
-          { name: "entity_ph", label: "Capteur pH", selector: { entity: { domain: "sensor" } } },
-          { name: "entity_orp", label: "Capteur ORP", selector: { entity: { domain: "sensor" } } },
-          { name: "entity_power: sensor.votre_puissance", label: "Capteur Puissance (W)", selector: { entity: { domain: "sensor" } } },
-        ]
-      },
-      {
-        name: "Positions",
-        type: "expandable",
-        title: "Ajustement des blocs sur l'image",
-        schema: [
-          { name: "pos_temp_x", label: "Température Horizontale (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-          { name: "pos_temp_y", label: "Température Verticale (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-          { name: "pos_chem_x", label: "Chimie Horizontale (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-          { name: "pos_chem_y", label: "Chimie Verticale (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-          { name: "pos_energy_x", label: "Énergie Horizontale (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-          { name: "pos_energy_y", label: "Énergie Verticale (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-        ]
-      }
-    ];
-
-    return html`
-      <ha-form
-        .hass=${this.hass}
-        .data=${this._config}
-        .schema=${schema}
-        .computeLabel=${(s) => s.label}
-        @value-changed=${this._valueChanged}
-      ></ha-form>
-    `;
-  }
-
-  _valueChanged(ev) {
-    const event = new CustomEvent("config-changed", {
-      detail: { config: ev.detail.value },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
-  }
-}
-
+// --- ENREGISTREMENT ---
 customElements.define("lumina-spa-card-editor", LuminaSpaEditor);
 customElements.define("lumina-spa-card", LuminaSpaCard);
 
@@ -201,5 +199,5 @@ window.customCards.push({
   type: "lumina-spa-card",
   name: "Lumina SPA Card Pro",
   preview: true,
-  description: "Édition spéciale pour spa gonflable avec positionnement libre."
+  description: "Éditeur visuel type Energy Card avec positionnement libre."
 });
