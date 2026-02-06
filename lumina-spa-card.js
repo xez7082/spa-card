@@ -75,33 +75,31 @@ class LuminaSpaEditor extends LitElement {
           { name: "switch_light", label: "Switch Lumière", selector: { entity: {} } },
         ]
       },
-      // SECTION POSITIONS
+// SECTION POSITIONS AVEC TITRES DE LIGNES
       {
         title: "📍 Réglages Positions (X/Y %)",
         type: "expandable",
         schema: [
           {
             name: "", type: "grid", schema: [
-              { name: "pos_temp_x", label: "Temp X", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_temp_y", label: "Temp Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_chem_x", label: "Chimie X", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_chem_y", label: "Chimie Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_elec_x", label: "Système X", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_elec_y", label: "Système Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_tab_x", label: "Tableau X", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_tab_y", label: "Tableau Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_btn_x", label: "Boutons X", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_btn_y", label: "Boutons Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_temp_x", label: "🌡️ Temp X", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_temp_y", label: "🌡️ Temp Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              
+              { name: "pos_chem_x", label: "🧪 Chimie X", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_chem_y", label: "🧪 Chimie Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              
+              { name: "pos_elec_x", label: "⚡ Système X", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_elec_y", label: "⚡ Système Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              
+              { name: "pos_tab_x", label: "📊 Tableau X", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_tab_y", label: "📊 Tableau Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              
+              { name: "pos_btn_x", label: "🔘 Boutons X", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_btn_y", label: "🔘 Boutons Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
             ]
           }
         ]
       }
-    ];
-
-    return html`<ha-form .hass=${this.hass} .data=${this._config} .schema=${schema} @value-changed=${this._valueChanged}></ha-form>`;
-  }
-}
-
 /**
  * LA CARTE PRINCIPALE
  */
