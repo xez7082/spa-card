@@ -1,10 +1,10 @@
-# 🛁 Spa Card
+# 🛁 SPA Card
 
 [![HACS](https://img.shields.io/badge/HACS-Default-blue.svg)](https://github.com/hacs/integration)
-![Version](https://img.shields.io/github/v/release/xez7082/lumina-spa-card?include_prereleases)
-![License](https://img.shields.io/github/license/xez7082/lumina-spa-card)
+![Version](https://img.shields.io/github/v/release/xez7082/spa-card?include_prereleases)
+[![License](https://img.shields.io/github/license/xez7082/spa-card)](LICENSE)
 
-**Spa Card** est une carte Lovelace premium pour Home Assistant, conçue pour transformer le monitoring de votre spa en une interface futuriste et intuitive. Surveillez la température, la chimie de l'eau et pilotez vos équipements avec style.
+**SPA Card** est une carte Lovelace premium pour Home Assistant... pour Home Assistant, conçue pour transformer le monitoring de votre spa en une interface futuriste et intuitive. Surveillez la température, la chimie de l'eau et pilotez vos équipements avec style.
 
 ---
 
