@@ -1,66 +1,54 @@
-# 🛁 Lumina Spa Card
+🛁 Lumina Spa Card
+Lumina Spa Card est une carte Lovelace premium pour Home Assistant, conçue pour transformer le monitoring de votre spa en une interface futuriste et intuitive. Surveillez la température, la chimie de l'eau et pilotez vos équipements avec style.
 
-[![HACS](https://img.shields.io/badge/HACS-Default-blue.svg)](https://github.com/hacs/integration)
-![Version](https://img.shields.io/github/v/release/xez7082/lumina-spa-card?include_prereleases)
-![License](https://img.shields.io/github/license/xez7082/lumina-spa-card)
+🖼️ Aperçu
+✨ Fonctionnalités
+💎 Design Glassmorphism : Interface translucide avec flou d'arrière-plan dynamique.
 
-**Lumina Spa Card** est une carte Lovelace premium pour Home Assistant, conçue pour transformer le monitoring de votre spa en une interface futuriste. Surveillez la température, la chimie de l'eau et pilotez vos équipements avec style.
+🌡️ Suivi Thermique : Affichage simultané de la température de l'eau et de l'air.
 
----
+🧪 Analyse de l'eau : Monitoring complet du pH, ORP, Brome (Br) et Alcalinité (TAC).
 
-## 🖼️ Aperçu
+⚡ Énergie & Système : Puissance (Watts), ampérage du SPA et de l'aspirateur.
 
-![Lumina Spa Preview](sparond2.png)
+🔘 Commandes Interactives : Boutons tactiles pour les bulles, la filtration et l'éclairage LED.
 
----
+📺 Indicateurs Multimédia : Icônes d'état pour TV et Alexa intégrées.
 
-## ✨ Fonctionnalités
+📊 Tableau de Référence : Rappel des seuils idéaux AquaChek pour un équilibre parfait.
 
-* 💎 **Design Glassmorphism** : Interface translucide avec flou d'arrière-plan (backdrop-filter).
-* 🌡️ **Double Température** : Suivi de l'eau et de l'environnement.
-* 🧪 **Laboratoire de Chimie** : pH, ORP, Brome (Br) et Alcalinité (TAC).
-* ⚡ **Système Énergie** : Monitoring de la puissance (Watts) et ampérage du SPA + **Aspirateur**.
-* 🔘 **Commandes Intégrées** : Boutons interactifs pour les bulles, le filtre et les **LED**.
-* 📊 **Tableau AquaChek** : Références idéales directement affichées sur la carte.
-* 📍 **Positionnement Libre** : Déplacez chaque bloc (X/Y) via l'éditeur visuel.
+⚙️ Éditeur Visuel Avancé : Configuration simplifiée par onglets avec réglage précis des positions (X/Y %) pour chaque bloc.
 
----
+📦 Installation
+Via HACS (Recommandé)
+Ouvrez HACS → Frontend → Menu (⋮) → Dépôts personnalisés.
 
-## 📦 Installation via HACS
+Ajoutez l'URL de ce dépôt : https://github.com/xez7082/lumina-spa-card.
 
-1. Ouvrir **HACS** → **Frontend** → **⋮** → **Dépôts personnalisés**.
-2. Ajouter l'URL de ce dépôt : `https://github.com/xez7082/lumina-spa-card`.
-3. Choisir le type **Lovelace**.
-4. Installer **Lumina Spa Card**.
-5. Rafraîchir votre navigateur (**Ctrl + F5**).
+Sélectionnez le type Lovelace.
 
----
+Cliquez sur Installer.
 
-## 🧩 Exemple de configuration (YAML)
+Rafraîchissez votre navigateur (Ctrl + F5).
 
-La carte dispose d'un **éditeur visuel complet**, mais voici à quoi ressemble la configuration YAML :
+🧩 Configuration
+La carte dispose d'un éditeur visuel complet (UI), vous n'avez normalement pas besoin de modifier le YAML manuellement.
 
-```yaml
+Exemple de configuration YAML
+YAML
 type: custom:lumina-spa-card
-card_title: "SPA HYPERION"
+card_title: "Mon Spa"
 background_image: "/local/sparond2.jpg"
-show_buttons: true
-show_table: true
-entity_water_temp: sensor.spa_water_temp
-entity_ambient_temp: sensor.spa_air_temp
+entity_water_temp: sensor.spa_temperature_eau
 entity_ph: sensor.spa_ph
 entity_orp: sensor.spa_orp
-entity_bromine: sensor.spa_bromine
-entity_alkalinity: sensor.spa_tac
-entity_power: sensor.spa_watts
-entity_amp: sensor.spa_amps
-entity_vac_current: sensor.aspirateur_current
 switch_bubbles: switch.spa_bulles
 switch_filter: switch.spa_filtration
 switch_light: switch.spa_led
+pos_temp_x: 5
+pos_temp_y: 10
+📜 Licence
+Ce projet est sous licence MIT - voir le fichier LICENSE
+ pour plus de détails.
 
-## Licence
-
-Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de détails.
-
-Copyright (c) 2026 **xez7082**
+Copyright (c) 2026 xez7082
