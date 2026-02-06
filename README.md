@@ -2,7 +2,7 @@
 
 [![HACS](https://img.shields.io/badge/HACS-Default-blue.svg)](https://github.com/hacs/integration)
 ![Version](https://img.shields.io/github/v/release/xez7082/lumina-spa-card?include_prereleases)
-[![License]([https://img.shields.io/github/license/xez7082/lumina-spa-card/blob/main/LICENSE)](LICENSE)
+[![License]([https://img.shields.io/github/license/xez7082/lumina-spa-card)](LICENSE)
 
 **Lumina Spa Card** est une carte Lovelace premium pour Home Assistant, conçue pour transformer le monitoring de votre spa en une interface futuriste et intuitive. Surveillez la température, la chimie de l'eau et pilotez vos équipements avec style.
 
