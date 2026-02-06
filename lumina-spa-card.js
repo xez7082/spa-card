@@ -5,7 +5,7 @@ import {
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 /**
- * ÉDITEUR DE LA CARTE (INTERFACE DE CONFIGURATION AVEC ACCORDÉONS)
+ * ÉDITEUR DE LA CARTE (INTERFACE DE CONFIGURATION)
  */
 class LuminaSpaEditor extends LitElement {
   static get properties() { return { hass: {}, _config: {} }; }
@@ -33,7 +33,7 @@ class LuminaSpaEditor extends LitElement {
           { name: "show_table", label: "Afficher Tableau", selector: { boolean: {} } },
         ]
       },
-      // SECTION TEMPÉRATURES
+      // ACCORDÉON : TEMPÉRATURES
       {
         title: "🌡️ Températures",
         type: "expandable",
@@ -42,7 +42,7 @@ class LuminaSpaEditor extends LitElement {
           { name: "entity_ambient_temp", label: "Entité Temp Env", selector: { entity: {} } },
         ]
       },
-      // SECTION CHIMIE
+      // ACCORDÉON : CHIMIE
       {
         title: "🧪 Chimie de l'eau",
         type: "expandable",
@@ -53,7 +53,7 @@ class LuminaSpaEditor extends LitElement {
           { name: "entity_alkalinity", label: "Entité Alcalinité", selector: { entity: {} } },
         ]
       },
-      // SECTION SYSTÈME
+      // ACCORDÉON : SYSTÈME
       {
         title: "⚡ Système & Énergie",
         type: "expandable",
@@ -65,7 +65,7 @@ class LuminaSpaEditor extends LitElement {
           { name: "entity_alexa", label: "Entité Alexa", selector: { entity: {} } },
         ]
       },
-      // SECTION COMMANDES
+      // ACCORDÉON : COMMANDES
       {
         title: "🔘 Commandes (Interrupteurs)",
         type: "expandable",
@@ -75,7 +75,7 @@ class LuminaSpaEditor extends LitElement {
           { name: "switch_light", label: "Switch Lumière", selector: { entity: {} } },
         ]
       },
-// SECTION POSITIONS AVEC TITRES DE LIGNES
+      // ACCORDÉON : POSITIONS (CORRIGÉ)
       {
         title: "📍 Réglages Positions (X/Y %)",
         type: "expandable",
@@ -84,22 +84,24 @@ class LuminaSpaEditor extends LitElement {
             name: "", type: "grid", schema: [
               { name: "pos_temp_x", label: "🌡️ Temp X", selector: { number: { min: 0, max: 100, mode: "box" } } },
               { name: "pos_temp_y", label: "🌡️ Temp Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              
               { name: "pos_chem_x", label: "🧪 Chimie X", selector: { number: { min: 0, max: 100, mode: "box" } } },
               { name: "pos_chem_y", label: "🧪 Chimie Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              
-              { name: "pos_elec_x", label: "⚡ Système X", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_elec_y", label: "⚡ Système Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              
-              { name: "pos_tab_x", label: "📊 Tableau X", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_tab_y", label: "📊 Tableau Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              
-              { name: "pos_btn_x", label: "🔘 Boutons X", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_btn_y", label: "🔘 Boutons Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_elec_x", label: "⚡ Syst. X", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_elec_y", label: "⚡ Syst. Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_tab_x", label: "📊 Tab. X", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_tab_y", label: "📊 Tab. Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_btn_x", label: "🔘 Btn. X", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_btn_y", label: "🔘 Btn. Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
             ]
           }
         ]
       }
+    ];
+
+    return html`<ha-form .hass=${this.hass} .data=${this._config} .schema=${schema} @value-changed=${this._valueChanged}></ha-form>`;
+  }
+}
+
 /**
  * LA CARTE PRINCIPALE
  */
