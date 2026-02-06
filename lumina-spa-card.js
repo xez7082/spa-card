@@ -4,24 +4,25 @@ import {
   css
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-// --- ÉDITEUR ---
+// --- ÉDITEUR (Interface de configuration) ---
 class LuminaSpaEditor extends LitElement {
   static get properties() {
-    return { hass: { type: Object }, _config: { type: Object } };
+    return { hass: {}, _config: {} };
   }
   
   setConfig(config) {
     this._config = config;
   }
 
-  // Cette fonction assure que la carte reçoit bien les nombres du slider
+  // Méthode ultra-standard pour la mise à jour
   _valueChanged(ev) {
     if (!this._config || !this.hass) return;
-    const config = ev.detail.value;
-    
-    // On force la mise à jour de la carte parente
+    const target = ev.target;
+    if (this._config[target.configValue] === target.value) return;
+
+    // On crée l'événement de changement de configuration
     const event = new CustomEvent("config-changed", {
-      detail: { config: config },
+      detail: { config: ev.detail.value },
       bubbles: true,
       composed: true,
     });
@@ -33,7 +34,7 @@ class LuminaSpaEditor extends LitElement {
 
     const schema = [
       { name: "card_title", label: "Nom du SPA", selector: { text: {} } },
-      { name: "background_image", label: "Image (/local/sparond.png)", selector: { text: {} } },
+      { name: "background_image", label: "Image de fond", selector: { text: {} } },
       {
         name: "entities",
         type: "grid",
@@ -49,12 +50,12 @@ class LuminaSpaEditor extends LitElement {
         type: "expandable",
         title: "Ajustement des positions (en %)",
         schema: [
-          { name: "pos_temp_x", label: "Temp X", selector: { number: { min: 0, max: 100, mode: "slider", step: 1 } } },
-          { name: "pos_temp_y", label: "Temp Y", selector: { number: { min: 0, max: 100, mode: "slider", step: 1 } } },
-          { name: "pos_chem_x", label: "Chimie X", selector: { number: { min: 0, max: 100, mode: "slider", step: 1 } } },
-          { name: "pos_chem_y", label: "Chimie Y", selector: { number: { min: 0, max: 100, mode: "slider", step: 1 } } },
-          { name: "pos_energy_x", label: "Énergie X", selector: { number: { min: 0, max: 100, mode: "slider", step: 1 } } },
-          { name: "pos_energy_y", label: "Énergie Y", selector: { number: { min: 0, max: 100, mode: "slider", step: 1 } } },
+          { name: "pos_temp_x", label: "Temp X", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+          { name: "pos_temp_y", label: "Temp Y", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+          { name: "pos_chem_x", label: "Chimie X", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+          { name: "pos_chem_y", label: "Chimie Y", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+          { name: "pos_energy_x", label: "Énergie X", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+          { name: "pos_energy_y", label: "Énergie Y", selector: { number: { min: 0, max: 100, mode: "slider" } } },
         ]
       }
     ];
@@ -64,26 +65,21 @@ class LuminaSpaEditor extends LitElement {
         .hass=${this.hass}
         .data=${this._config}
         .schema=${schema}
-        .computeLabel=${(s) => s.label}
         @value-changed=${this._valueChanged}
       ></ha-form>`;
   }
 }
 
-// --- CARTE ---
+// --- CARTE (Affichage) ---
 class LuminaSpaCard extends LitElement {
   static getConfigElement() { return document.createElement("lumina-spa-card-editor"); }
   
   static get properties() {
-    return {
-      hass: { type: Object },
-      config: { type: Object }
-    };
+    return { hass: {}, config: {} };
   }
 
   setConfig(config) {
-    // On s'assure que config existe et on crée un nouvel objet pour forcer le refresh
-    this.config = { ...config };
+    this.config = config;
   }
 
   _getDisplayState(entityId) {
@@ -95,30 +91,29 @@ class LuminaSpaCard extends LitElement {
   render() {
     if (!this.hass || !this.config) return html``;
 
-    // Récupération des données
     const water = this._getDisplayState(this.config.entity_water_temp);
     const ph = this._getDisplayState(this.config.entity_ph);
     const orp = this._getDisplayState(this.config.entity_orp);
     const power = this._getDisplayState(this.config.entity_power);
 
-    // Sécurité : on définit des valeurs par défaut si les sliders n'ont jamais été touchés
-    const pTX = this.config.pos_temp_x ?? 10;
-    const pTY = this.config.pos_temp_y ?? 20;
-    const pCX = this.config.pos_chem_x ?? 10;
-    const pCY = this.config.pos_chem_y ?? 45;
-    const pEX = this.config.pos_energy_x ?? 10;
-    const pEY = this.config.pos_energy_y ?? 70;
+    // Forçage en nombre pour le CSS
+    const tx = parseFloat(this.config.pos_temp_x) || 10;
+    const ty = parseFloat(this.config.pos_temp_y) || 20;
+    const cx = parseFloat(this.config.pos_chem_x) || 10;
+    const cy = parseFloat(this.config.pos_chem_y) || 45;
+    const ex = parseFloat(this.config.pos_energy_x) || 10;
+    const ey = parseFloat(this.config.pos_energy_y) || 70;
 
     return html`
       <ha-card style="background-image: url('${this.config.background_image || '/local/sparond.png'}');">
         <div class="header">${this.config.card_title || 'MON SPA'}</div>
 
-        <div class="glass-block" style="left: ${pTX}%; top: ${pTY}%;">
+        <div class="glass-block" style="left: ${tx}%; top: ${ty}%;">
           <div class="block-title">TEMPÉRATURE</div>
           <div class="row"><ha-icon icon="mdi:thermometer"></ha-icon><span class="val">${water.state}${water.unit}</span></div>
         </div>
 
-        <div class="glass-block" style="left: ${pCX}%; top: ${pCY}%;">
+        <div class="glass-block" style="left: ${cx}%; top: ${cy}%;">
           <div class="block-title">CHIMIE SPA</div>
           <div class="row">
             <ha-icon icon="mdi:ph"></ha-icon><span class="val">${ph.state}</span>
@@ -126,7 +121,7 @@ class LuminaSpaCard extends LitElement {
           </div>
         </div>
 
-        <div class="glass-block" style="left: ${pEX}%; top: ${pEY}%;">
+        <div class="glass-block" style="left: ${ex}%; top: ${ey}%;">
           <div class="block-title">ÉNERGIE</div>
           <div class="row"><ha-icon icon="mdi:lightning-bolt"></ha-icon><span class="val">${power.state}${power.unit}</span></div>
         </div>
@@ -147,7 +142,7 @@ class LuminaSpaCard extends LitElement {
         padding: 10px; 
         border: 1px solid rgba(255, 255, 255, 0.2); 
         box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        transform: translate(0, 0); /* Aide au rendu GPU */
+        pointer-events: none;
       }
       .block-title { font-size: 9px; font-weight: 900; color: #00d4ff; margin-bottom: 4px; }
       .row { display: flex; align-items: center; gap: 5px; }
