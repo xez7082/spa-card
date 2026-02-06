@@ -4,8 +4,12 @@ import {
   css
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-class LuminaSpaEditor extends LitElement {
+/**
+ * ÉDITEUR DE LA CARTE (spa-card-editor)
+ */
+class SpaCardEditor extends LitElement {
   static get properties() { return { hass: {}, _config: {} }; }
+  
   setConfig(config) { this._config = config; }
 
   _valueChanged(ev) {
@@ -29,7 +33,6 @@ class LuminaSpaEditor extends LitElement {
           { name: "show_table", label: "Afficher Tableau", selector: { boolean: {} } },
         ]
       },
-      // ONGLET : TEMPÉRATURES + POSITION
       {
         title: "🌡️ Températures",
         type: "expandable",
@@ -43,7 +46,6 @@ class LuminaSpaEditor extends LitElement {
           ]}
         ]
       },
-      // ONGLET : CHIMIE + POSITION
       {
         title: "🧪 Chimie de l'eau",
         type: "expandable",
@@ -59,7 +61,6 @@ class LuminaSpaEditor extends LitElement {
           ]}
         ]
       },
-      // ONGLET : SYSTÈME + POSITION
       {
         title: "⚡ Système & Énergie",
         type: "expandable",
@@ -76,7 +77,6 @@ class LuminaSpaEditor extends LitElement {
           ]}
         ]
       },
-      // ONGLET : TABLEAU IDÉAL + POSITION
       {
         title: "📊 Tableau AquaChek",
         type: "expandable",
@@ -88,7 +88,6 @@ class LuminaSpaEditor extends LitElement {
           ]}
         ]
       },
-      // ONGLET : COMMANDES + POSITION
       {
         title: "🔘 Boutons Commandes",
         type: "expandable",
@@ -110,11 +109,12 @@ class LuminaSpaEditor extends LitElement {
 }
 
 /**
- * LA CARTE PRINCIPALE
+ * LA CARTE PRINCIPALE (spa-card)
  */
-class LuminaSpaCard extends LitElement {
+class SpaCard extends LitElement {
   static getConfigElement() { return document.createElement("spa-card-editor"); }
   static get properties() { return { hass: {}, config: {} }; }
+  
   setConfig(config) { this.config = config; }
 
   _getState(entityId) {
@@ -152,7 +152,7 @@ class LuminaSpaCard extends LitElement {
 
     return html`
       <ha-card style="background-image: url('${c.background_image || '/local/sparond2.jpg'}');">
-        <div class="header">${c.card_title || 'LUMINA SPA'}</div>
+        <div class="header">${c.card_title || 'SPA CARD'}</div>
 
         <div class="glass" style="left:${c.pos_temp_x || 5}%; top:${c.pos_temp_y || 10}%;">
           <div class="titre">TEMPÉRATURES</div>
@@ -213,7 +213,14 @@ class LuminaSpaCard extends LitElement {
   `;
 }
 
-customElements.define("spa-card-editor", SpaEditor);
+// Enregistrement des éléments
+customElements.define("spa-card-editor", SpaCardEditor);
 customElements.define("spa-card", SpaCard);
+
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "SPA Final", preview: true });
+window.customCards.push({ 
+  type: "spa-card", 
+  name: "SPA Card", 
+  description: "Une carte premium pour monitorer votre SPA",
+  preview: true 
+});
