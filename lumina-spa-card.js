@@ -14,6 +14,9 @@ class LuminaSpaCard extends LitElement {
   }
 
   setConfig(config) {
+    if (!config.entity_water_temp) {
+      throw new Error("Vous devez définir l'entité 'entity_water_temp' !");
+    }
     this.config = {
       card_title: 'MON SPA',
       background_image: '/local/preview.png',
@@ -35,7 +38,6 @@ class LuminaSpaCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     const water = this._getDisplayState(this.config.entity_water_temp);
-    const air = this._getDisplayState(this.config.entity_air_temp);
     const ph = this._getDisplayState(this.config.entity_ph);
     const orp = this._getDisplayState(this.config.entity_orp);
     const power = this._getDisplayState(this.config.entity_power);
@@ -97,29 +99,33 @@ class LuminaSpaCard extends LitElement {
       ha-card {
         background-size: cover;
         background-position: center;
+        background-repeat: no-repeat;
         border-radius: 24px;
         color: white;
         overflow: hidden;
         position: relative;
-        min-height: 280px;
+        min-height: 300px;
         border: none;
+        display: block;
       }
       .overlay {
-        background: rgba(0, 0, 0, 0.2);
+        background: rgba(0, 0, 0, 0.3); /* Opacité ajustée pour mieux voir le fond */
         padding: 20px;
-        height: 100%;
+        min-height: 300px;
+        box-sizing: border-box;
         display: flex;
         flex-direction: column;
       }
       .header {
         font-weight: 800;
-        font-size: 1.1em;
-        margin-bottom: 15px;
+        font-size: 1.2em;
+        margin-bottom: 20px;
         letter-spacing: 2px;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
       }
       .main-container {
         display: flex;
-        height: 100%;
+        flex: 1;
       }
       .data-column {
         flex: 1;
@@ -127,28 +133,47 @@ class LuminaSpaCard extends LitElement {
         flex-direction: column;
         gap: 12px;
       }
-      .spa-column { flex: 1; }
+      .spa-column { 
+        flex: 1; 
+      }
       .glass-block {
         background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        border-radius: 12px;
-        padding: 10px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 12px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         width: fit-content;
-        min-width: 120px;
+        min-width: 140px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
       }
       .block-title {
-        font-size: 9px;
+        font-size: 10px;
         font-weight: 900;
-        color: rgba(255, 255, 255, 0.6);
-        margin-bottom: 4px;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 6px;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
-      .row { display: flex; align-items: center; gap: 15px; }
-      .item { display: flex; align-items: center; gap: 8px; }
-      .val { font-size: 14px; font-weight: bold; }
-      ha-icon { --mdc-icon-size: 18px; color: #00d4ff; }
+      .row { 
+        display: flex; 
+        align-items: center; 
+        gap: 20px; 
+      }
+      .item { 
+        display: flex; 
+        align-items: center; 
+        gap: 8px; 
+      }
+      .val { 
+        font-size: 16px; 
+        font-weight: bold; 
+        font-family: 'Roboto', sans-serif;
+      }
+      ha-icon { 
+        --mdc-icon-size: 22px; 
+        color: #00d4ff; 
+      }
     `;
   }
 }
