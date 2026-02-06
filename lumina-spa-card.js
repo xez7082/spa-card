@@ -33,67 +33,60 @@ class LuminaSpaEditor extends LitElement {
           { name: "show_table", label: "Afficher Tableau", selector: { boolean: {} } },
         ]
       },
-      // ACCORDÉON : TEMPÉRATURES
-      {
-        title: "🌡️ Températures",
-        type: "expandable",
-        schema: [
+      // ACCORDÉONS ENTITÉS
+      { title: "🌡️ Températures", type: "expandable", schema: [
           { name: "entity_water_temp", label: "Entité Temp Eau", selector: { entity: {} } },
           { name: "entity_ambient_temp", label: "Entité Temp Env", selector: { entity: {} } },
-        ]
-      },
-      // ACCORDÉON : CHIMIE
-      {
-        title: "🧪 Chimie de l'eau",
-        type: "expandable",
-        schema: [
+      ]},
+      { title: "🧪 Chimie de l'eau", type: "expandable", schema: [
           { name: "entity_ph", label: "Entité pH", selector: { entity: {} } },
           { name: "entity_orp", label: "Entité ORP", selector: { entity: {} } },
           { name: "entity_bromine", label: "Entité Brome", selector: { entity: {} } },
           { name: "entity_alkalinity", label: "Entité Alcalinité", selector: { entity: {} } },
-        ]
-      },
-      // ACCORDÉON : SYSTÈME
-      {
-        title: "⚡ Système & Énergie",
-        type: "expandable",
-        schema: [
+      ]},
+      { title: "⚡ Système & Énergie", type: "expandable", schema: [
           { name: "entity_power", label: "Entité Watts", selector: { entity: {} } },
           { name: "entity_amp", label: "Entité Amp SPA", selector: { entity: {} } },
           { name: "entity_vac_current", label: "Entité Amp Aspirateur", selector: { entity: {} } },
           { name: "entity_tv", label: "Entité TV", selector: { entity: {} } },
           { name: "entity_alexa", label: "Entité Alexa", selector: { entity: {} } },
-        ]
-      },
-      // ACCORDÉON : COMMANDES
-      {
-        title: "🔘 Commandes (Interrupteurs)",
-        type: "expandable",
-        schema: [
+      ]},
+      { title: "🔘 Commandes (Interrupteurs)", type: "expandable", schema: [
           { name: "switch_bubbles", label: "Switch Bulles", selector: { entity: {} } },
           { name: "switch_filter", label: "Switch Filtre", selector: { entity: {} } },
           { name: "switch_light", label: "Switch Lumière", selector: { entity: {} } },
-        ]
-      },
-      // ACCORDÉON : POSITIONS (CORRIGÉ)
+      ]},
+
+      // ACCORDÉON POSITIONS (FORCAGE DES TITRES)
       {
         title: "📍 Réglages Positions (X/Y %)",
         type: "expandable",
         schema: [
-          {
-            name: "", type: "grid", schema: [
-              { name: "pos_temp_x", label: "🌡️ Temp X", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_temp_y", label: "🌡️ Temp Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_chem_x", label: "🧪 Chimie X", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_chem_y", label: "🧪 Chimie Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_elec_x", label: "⚡ Syst. X", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_elec_y", label: "⚡ Syst. Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_tab_x", label: "📊 Tab. X", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_tab_y", label: "📊 Tab. Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_btn_x", label: "🔘 Btn. X", selector: { number: { min: 0, max: 100, mode: "box" } } },
-              { name: "pos_btn_y", label: "🔘 Btn. Y", selector: { number: { min: 0, max: 100, mode: "box" } } },
-            ]
-          }
+          { label: "Position : Températures", type: "constant" },
+          { name: "", type: "grid", schema: [
+              { name: "pos_temp_x", label: "X %", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_temp_y", label: "Y %", selector: { number: { min: 0, max: 100, mode: "box" } } },
+          ]},
+          { label: "Position : Chimie", type: "constant" },
+          { name: "", type: "grid", schema: [
+              { name: "pos_chem_x", label: "X %", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_chem_y", label: "Y %", selector: { number: { min: 0, max: 100, mode: "box" } } },
+          ]},
+          { label: "Position : Système", type: "constant" },
+          { name: "", type: "grid", schema: [
+              { name: "pos_elec_x", label: "X %", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_elec_y", label: "Y %", selector: { number: { min: 0, max: 100, mode: "box" } } },
+          ]},
+          { label: "Position : Tableau Idéal", type: "constant" },
+          { name: "", type: "grid", schema: [
+              { name: "pos_tab_x", label: "X %", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_tab_y", label: "Y %", selector: { number: { min: 0, max: 100, mode: "box" } } },
+          ]},
+          { label: "Position : Boutons", type: "constant" },
+          { name: "", type: "grid", schema: [
+              { name: "pos_btn_x", label: "X %", selector: { number: { min: 0, max: 100, mode: "box" } } },
+              { name: "pos_btn_y", label: "Y %", selector: { number: { min: 0, max: 100, mode: "box" } } },
+          ]},
         ]
       }
     ];
