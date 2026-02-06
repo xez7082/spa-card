@@ -190,10 +190,10 @@ class SpaCard extends LitElement {
         <div class="glass" style="left:${c.pos_elec_x || 5}%; top:${c.pos_elec_y || 60}%;">
           <div class="titre">${c.title_elec || 'SYSTEME & ENERGIE'}</div>
           <div class="row"><ha-icon icon="mdi:lightning-bolt"></ha-icon> ${pwr.val}W | ${amp.val}A</div>
-          <div class="row"><ha-icon icon="mdi:vacuum"></ha-icon> Aspirateur: ${vac.val}A</div>
+          <div class="row"><ha-icon icon="mdi:vacuum"></ha-icon> Aspi: ${vac.val}A</div>
           <div class="row">
-            <ha-icon icon="mdi:television" style="color:${tv.active ? '#00d4ff' : 'white'}"></ha-icon> TV | 
-            <ha-icon icon="mdi:google-assistant" style="color:${alexa.active ? '#00d4ff' : 'white'}"></ha-icon> Alexa
+            <ha-icon icon="mdi:television" style="color:${tv.active ? '#00f9f9' : 'white'}"></ha-icon> | 
+            <ha-icon icon="mdi:google-assistant" style="color:${alexa.active ? '#00f9f9' : 'white'}"></ha-icon>
           </div>
         </div>
 
@@ -218,21 +218,63 @@ class SpaCard extends LitElement {
   }
 
   static styles = css`
-    ha-card { background-size: cover; background-position: center; height: 550px; position: relative; color: white; border-radius: 20px; overflow: hidden; border:none; }
-    .header { position: absolute; top: 10px; left: 15px; font-weight: 900; font-size: 0.9em; color: #00d4ff; text-transform: uppercase; text-shadow: 2px 2px 4px black; letter-spacing: 1px; }
+    ha-card { 
+      background-size: cover; 
+      background-position: center; 
+      height: 550px; 
+      position: relative; 
+      color: white; 
+      border-radius: 20px; 
+      overflow: hidden; 
+      border: 2px solid #00f9f9; /* Bordure principale */
+    }
+    
+    .header { position: absolute; top: 10px; left: 15px; font-weight: 900; font-size: 0.9em; color: #00f9f9; text-transform: uppercase; text-shadow: 2px 2px 4px black; letter-spacing: 1px; }
     
     .top-bar { position: absolute; top: 35px; left: 5px; right: 5px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; }
-    .top-switch { background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); border-radius: 6px; padding: 3px 1px; text-align: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s; min-width: 0; }
-    .top-switch.on { background: rgba(0, 212, 255, 0.4); border-color: #00d4ff; }
-    .sw-label { font-size: 0.45em; font-weight: 900; text-transform: uppercase; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+    
+    .top-switch { 
+      background: rgba(0,0,0,0.7); 
+      backdrop-filter: blur(8px); 
+      border-radius: 6px; 
+      padding: 3px 1px; 
+      text-align: center; 
+      cursor: pointer; 
+      border: 1px solid #00f9f9; /* Bordure switchs */
+      transition: 0.2s; 
+      min-width: 0; 
+    }
+    .top-switch.on { background: rgba(0, 249, 249, 0.4); border-color: #00f9f9; box-shadow: 0 0 5px #00f9f9; }
+    .sw-label { font-size: 0.42em; font-weight: 900; text-transform: uppercase; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
 
-    .glass { position: absolute; background: rgba(0,0,0,0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 12px; padding: 10px; border: 1px solid rgba(255,255,255,0.1); min-width: 170px; }
-    .titre { font-size: 0.55em; color: #00d4ff; font-weight: 900; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 5px; border-bottom: 1px solid rgba(0,212,255,0.2); }
+    .glass { 
+      position: absolute; 
+      background: rgba(0,0,0,0.65); 
+      backdrop-filter: blur(12px); 
+      -webkit-backdrop-filter: blur(12px); 
+      border-radius: 12px; 
+      padding: 10px; 
+      border: 1px solid #00f9f9; /* Bordures des blocs de données */
+      min-width: 170px; 
+    }
+    
+    .titre { font-size: 0.55em; color: #00f9f9; font-weight: 900; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 5px; border-bottom: 1px solid rgba(0, 249, 249, 0.3); }
     .row { display: flex; align-items: center; gap: 6px; font-size: 0.8em; font-weight: bold; margin-top: 4px; }
     
     .btns { position: absolute; display: flex; flex-direction: column; gap: 10px; }
-    .btn { background: rgba(0,0,0,0.7); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: 0.3s; }
-    .btn.on { background: #00d4ff; box-shadow: 0 0 15px #00d4ff; border: none; transform: scale(1.05); }
+    .btn { 
+      background: rgba(0,0,0,0.7); 
+      width: 44px; 
+      height: 44px; 
+      border-radius: 50%; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      cursor: pointer; 
+      border: 2px solid #00f9f9; /* Bordures boutons latéraux */
+      transition: 0.3s; 
+    }
+    .btn.on { background: #00f9f9; color: black; box-shadow: 0 0 15px #00f9f9; border: none; transform: scale(1.05); }
     
     .table-glass { min-width: 140px; }
     table { width: 100%; font-size: 0.75em; border-collapse: collapse; }
@@ -245,4 +287,4 @@ class SpaCard extends LitElement {
 customElements.define("spa-card-editor", SpaCardEditor);
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "SPA Card Premium", preview: true });
+window.customCards.push({ type: "spa-card", name: "SPA Card Neon", preview: true });
