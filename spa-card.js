@@ -5,7 +5,7 @@ import {
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 /**
- * ÉDITEUR DE LA CARTE
+ * ÉDITEUR DE LA CARTE (AVEC LABELS DE COLONNES)
  */
 class SpaCardEditor extends LitElement {
   static get properties() { return { hass: {}, _config: {} }; }
@@ -24,11 +24,14 @@ class SpaCardEditor extends LitElement {
     if (!this.hass || !this._config) return html``;
     
     const switchSchema = [];
+    // Ajout d'un titre informatif pour les colonnes
     for (let i = 1; i <= 8; i++) {
       switchSchema.push({
-        name: "", type: "grid", schema: [
-          { name: `switch_${i}_entity`, label: `Entité Switch ${i}`, selector: { entity: { domain: ["switch", "light", "input_boolean"] } } },
-          { name: `switch_${i}_label`, label: `Nom ${i}`, selector: { text: {} } }
+        name: "", 
+        type: "grid", 
+        schema: [
+          { name: `switch_${i}_entity`, label: `Bouton ${i} : Entité`, selector: { entity: { domain: ["switch", "light", "input_boolean"] } } },
+          { name: `switch_${i}_label`, label: `Bouton ${i} : Nom affiché`, selector: { text: {} } }
         ]
       });
     }
@@ -37,10 +40,10 @@ class SpaCardEditor extends LitElement {
       { name: "card_title", label: "Titre de la carte", selector: { text: {} } },
       { name: "background_image", label: "Image de fond (URL)", selector: { text: {} } },
       {
-        title: "🕹️ Contrôles Supérieurs (8 Boutons)",
+        title: "🕹️ Barre de 8 Boutons (Haut)",
         type: "expandable",
         schema: [
-          { name: "show_top_bar", label: "Afficher la barre de boutons", selector: { boolean: {} } },
+          { name: "show_top_bar", label: "Activer la barre de contrôle", selector: { boolean: {} } },
           ...switchSchema
         ]
       },
@@ -49,8 +52,8 @@ class SpaCardEditor extends LitElement {
         type: "expandable",
         schema: [
           { name: "title_temp", label: "Titre du bloc", selector: { text: {} } },
-          { name: "entity_water_temp", label: "Température Eau", selector: { entity: {} } },
-          { name: "entity_ambient_temp", label: "Température Air", selector: { entity: {} } },
+          { name: "entity_water_temp", label: "Capteur Eau", selector: { entity: {} } },
+          { name: "entity_ambient_temp", label: "Capteur Air", selector: { entity: {} } },
           { name: "", type: "grid", schema: [
             { name: "pos_temp_x", label: "Position X (%)", selector: { number: { min: 0, max: 100, mode: "box" } } },
             { name: "pos_temp_y", label: "Position Y (%)", selector: { number: { min: 0, max: 100, mode: "box" } } },
@@ -63,9 +66,9 @@ class SpaCardEditor extends LitElement {
         schema: [
           { name: "title_chem", label: "Titre du bloc", selector: { text: {} } },
           { name: "entity_ph", label: "pH", selector: { entity: {} } },
-          { name: "entity_orp", label: "ORP / Redox", selector: { entity: {} } },
+          { name: "entity_orp", label: "ORP", selector: { entity: {} } },
           { name: "entity_bromine", label: "Brome", selector: { entity: {} } },
-          { name: "entity_alkalinity", label: "Alcalinité (TAC)", selector: { entity: {} } },
+          { name: "entity_alkalinity", label: "TAC", selector: { entity: {} } },
           { name: "", type: "grid", schema: [
             { name: "pos_chem_x", label: "Position X (%)", selector: { number: { min: 0, max: 100, mode: "box" } } },
             { name: "pos_chem_y", label: "Position Y (%)", selector: { number: { min: 0, max: 100, mode: "box" } } },
@@ -73,15 +76,15 @@ class SpaCardEditor extends LitElement {
         ]
       },
       {
-        title: "⚡ Bloc Énergie & Système",
+        title: "⚡ Bloc Système & Énergie",
         type: "expandable",
         schema: [
           { name: "title_elec", label: "Titre du bloc", selector: { text: {} } },
-          { name: "entity_power", label: "Consommation (Watts)", selector: { entity: {} } },
-          { name: "entity_amp", label: "Intensité (Ampères)", selector: { entity: {} } },
-          { name: "entity_vac_current", label: "Aspirateur (Ampères)", selector: { entity: {} } },
-          { name: "entity_tv", label: "État TV", selector: { entity: {} } },
-          { name: "entity_alexa", label: "État Alexa", selector: { entity: {} } },
+          { name: "entity_power", label: "Watts", selector: { entity: {} } },
+          { name: "entity_amp", label: "Ampères SPA", selector: { entity: {} } },
+          { name: "entity_vac_current", label: "Ampères Aspirateur", selector: { entity: {} } },
+          { name: "entity_tv", label: "Entité TV", selector: { entity: {} } },
+          { name: "entity_alexa", label: "Entité Alexa", selector: { entity: {} } },
           { name: "", type: "grid", schema: [
             { name: "pos_elec_x", label: "Position X (%)", selector: { number: { min: 0, max: 100, mode: "box" } } },
             { name: "pos_elec_y", label: "Position Y (%)", selector: { number: { min: 0, max: 100, mode: "box" } } },
@@ -89,14 +92,14 @@ class SpaCardEditor extends LitElement {
         ]
       },
       {
-        title: "📊 Tableau Idéal & Boutons Latéraux",
+        title: "📊 Tableau & Boutons Latéraux",
         type: "expandable",
         schema: [
           { name: "show_table", label: "Afficher Tableau AquaChek", selector: { boolean: {} } },
-          { name: "show_buttons", label: "Afficher Boutons Bulles/Filtre/LED", selector: { boolean: {} } },
-          { name: "switch_bubbles", label: "Entité Bulles", selector: { entity: {} } },
-          { name: "switch_filter", label: "Entité Filtre", selector: { entity: {} } },
-          { name: "switch_light", label: "Entité Lumière", selector: { entity: {} } },
+          { name: "show_buttons", label: "Afficher Bulles/Filtre/LED", selector: { boolean: {} } },
+          { name: "switch_bubbles", label: "Switch Bulles", selector: { entity: {} } },
+          { name: "switch_filter", label: "Switch Filtre", selector: { entity: {} } },
+          { name: "switch_light", label: "Switch Lumière", selector: { entity: {} } },
           { name: "", type: "grid", schema: [
             { name: "pos_tab_x", label: "Tableau X (%)", selector: { number: { min: 0, max: 100, mode: "box" } } },
             { name: "pos_tab_y", label: "Tableau Y (%)", selector: { number: { min: 0, max: 100, mode: "box" } } },
@@ -226,44 +229,44 @@ class SpaCard extends LitElement {
       color: white; 
       border-radius: 20px; 
       overflow: hidden; 
-      border: 2px solid #00f9f9; /* Bordure principale */
+      border: 2.5px solid #00f9f9; 
     }
     
-    .header { position: absolute; top: 10px; left: 15px; font-weight: 900; font-size: 0.9em; color: #00f9f9; text-transform: uppercase; text-shadow: 2px 2px 4px black; letter-spacing: 1px; }
+    .header { position: absolute; top: 10px; left: 15px; font-weight: 900; font-size: 0.95em; color: #00f9f9; text-transform: uppercase; text-shadow: 2px 2px 4px black; letter-spacing: 1.5px; }
     
-    .top-bar { position: absolute; top: 35px; left: 5px; right: 5px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; }
+    .top-bar { position: absolute; top: 35px; left: 8px; right: 8px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
     
     .top-switch { 
-      background: rgba(0,0,0,0.7); 
+      background: rgba(0,0,0,0.75); 
       backdrop-filter: blur(8px); 
       border-radius: 6px; 
-      padding: 3px 1px; 
+      padding: 4px 1px; 
       text-align: center; 
       cursor: pointer; 
-      border: 1px solid #00f9f9; /* Bordure switchs */
-      transition: 0.2s; 
+      border: 1px solid #00f9f9; 
+      transition: all 0.2s ease-in-out; 
       min-width: 0; 
     }
-    .top-switch.on { background: rgba(0, 249, 249, 0.4); border-color: #00f9f9; box-shadow: 0 0 5px #00f9f9; }
-    .sw-label { font-size: 0.42em; font-weight: 900; text-transform: uppercase; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+    .top-switch.on { background: rgba(0, 249, 249, 0.4); box-shadow: 0 0 8px #00f9f9; }
+    .sw-label { font-size: 0.45em; font-weight: 900; text-transform: uppercase; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-shadow: 1px 1px 1px black; }
 
     .glass { 
       position: absolute; 
       background: rgba(0,0,0,0.65); 
       backdrop-filter: blur(12px); 
-      -webkit-backdrop-filter: blur(12px); 
       border-radius: 12px; 
       padding: 10px; 
-      border: 1px solid #00f9f9; /* Bordures des blocs de données */
+      border: 1px solid #00f9f9; 
       min-width: 170px; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     }
     
-    .titre { font-size: 0.55em; color: #00f9f9; font-weight: 900; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 5px; border-bottom: 1px solid rgba(0, 249, 249, 0.3); }
-    .row { display: flex; align-items: center; gap: 6px; font-size: 0.8em; font-weight: bold; margin-top: 4px; }
+    .titre { font-size: 0.58em; color: #00f9f9; font-weight: 900; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1.5px solid rgba(0, 249, 249, 0.3); padding-bottom: 2px; }
+    .row { display: flex; align-items: center; gap: 8px; font-size: 0.85em; font-weight: bold; margin-top: 5px; }
     
-    .btns { position: absolute; display: flex; flex-direction: column; gap: 10px; }
+    .btns { position: absolute; display: flex; flex-direction: column; gap: 12px; }
     .btn { 
-      background: rgba(0,0,0,0.7); 
+      background: rgba(0,0,0,0.8); 
       width: 44px; 
       height: 44px; 
       border-radius: 50%; 
@@ -271,20 +274,20 @@ class SpaCard extends LitElement {
       align-items: center; 
       justify-content: center; 
       cursor: pointer; 
-      border: 2px solid #00f9f9; /* Bordures boutons latéraux */
-      transition: 0.3s; 
+      border: 2px solid #00f9f9; 
+      transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
     }
-    .btn.on { background: #00f9f9; color: black; box-shadow: 0 0 15px #00f9f9; border: none; transform: scale(1.05); }
+    .btn.on { background: #00f9f9; color: black; box-shadow: 0 0 20px #00f9f9; border: none; transform: scale(1.1); }
     
     .table-glass { min-width: 140px; }
-    table { width: 100%; font-size: 0.75em; border-collapse: collapse; }
-    td { padding: 2px 0; font-weight: bold; }
-    .ideal { text-align: right; color: #00ff88; }
-    ha-icon { --mdc-icon-size: 15px; }
+    table { width: 100%; font-size: 0.78em; border-collapse: collapse; }
+    td { padding: 3px 0; font-weight: bold; }
+    .ideal { text-align: right; color: #00ff88; text-shadow: 0 0 5px rgba(0,255,136,0.3); }
+    ha-icon { --mdc-icon-size: 16px; }
   `;
 }
 
 customElements.define("spa-card-editor", SpaCardEditor);
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "SPA Card Neon", preview: true });
+window.customCards.push({ type: "spa-card", name: "SPA Card Neon Pro", preview: true });
