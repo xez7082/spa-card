@@ -22,23 +22,26 @@ class LuminaSpaEditor extends LitElement {
     const schema = [
       { name: "card_title", label: "Nom du SPA", selector: { text: {} } },
       { name: "background_image", label: "Image (/local/sparond.png)", selector: { text: {} } },
-      { name: "entity_water_temp", label: "Capteur Température", selector: { entity: { domain: "sensor" } } },
-      { name: "entity_ph", label: "Capteur pH", selector: { entity: { domain: "sensor" } } },
-      { name: "entity_orp", label: "Capteur ORP", selector: { entity: { domain: "sensor" } } },
-      { name: "entity_power", label: "Capteur Watts", selector: { entity: { domain: "sensor" } } },
-      { name: "entity_tds", label: "Capteur TDS", selector: { entity: { domain: "sensor" } } },
-      { name: "entity_lsi", label: "Capteur LSI", selector: { entity: { domain: "sensor" } } },
+      // SECTION CAPTEURS
+      { name: "entity_water_temp", label: "Température Eau", selector: { entity: { domain: "sensor" } } },
+      { name: "entity_power", label: "Puissance Totale (W)", selector: { entity: { domain: "sensor" } } },
+      { name: "entity_amp", label: "Ampérage SPA (A)", selector: { entity: { domain: "sensor" } } },
+      { name: "entity_current", label: "Intensité Courante (A)", selector: { entity: { domain: "sensor" } } },
+      { name: "entity_vac_current", label: "Aspirateur Current (A)", selector: { entity: { domain: "sensor" } } },
+      // SECTION MULTIMEDIA / DOMOTIQUE
+      { name: "entity_tv", label: "Télévision", selector: { entity: { domain: ["media_player", "switch"] } } },
+      { name: "entity_alexa", label: "Alexa", selector: { entity: { domain: ["media_player", "switch"] } } },
+      // SWITCHS SPA
       { name: "switch_bubbles", label: "Switch Bulles", selector: { entity: {} } },
       { name: "switch_filter", label: "Switch Filtration", selector: { entity: {} } },
       { name: "switch_light", label: "Switch Lumière", selector: { entity: {} } },
+      // POSITIONS (Slider X/Y pour chaque bloc)
       { name: "pos_temp_x", label: "Temp X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
       { name: "pos_temp_y", label: "Temp Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-      { name: "pos_chem_x", label: "pH/ORP X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-      { name: "pos_chem_y", label: "pH/ORP Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-      { name: "pos_anal_x", label: "Santé X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-      { name: "pos_anal_y", label: "Santé Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-      { name: "pos_energy_x", label: "NRJ X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-      { name: "pos_energy_y", label: "NRJ Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+      { name: "pos_elec_x", label: "Élec X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+      { name: "pos_elec_y", label: "Élec Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+      { name: "pos_multi_x", label: "Multimedia X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+      { name: "pos_multi_y", label: "Multimedia Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
       { name: "pos_btn_x", label: "Boutons X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
       { name: "pos_btn_y", label: "Boutons Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
     ];
@@ -55,9 +58,8 @@ class LuminaSpaCard extends LitElement {
     if (!this.hass || !ent || !this.hass.states[ent]) return { s: '?', u: '', a: false };
     const o = this.hass.states[ent];
     const val = o.state;
-    // On nettoie la valeur pour n'avoir que 1 chiffre après la virgule si c'est un nombre
     const display = (!isNaN(parseFloat(val))) ? parseFloat(val).toFixed(1) : val;
-    return { s: display, u: o.attributes.unit_of_measurement || '', a: val === 'on' };
+    return { s: display, u: o.attributes.unit_of_measurement || '', a: (val !== 'off' && val !== 'unavailable' && val !== 'standby') };
   }
 
   render() {
@@ -65,39 +67,37 @@ class LuminaSpaCard extends LitElement {
     const c = this.config;
 
     const water = this._get(c.entity_water_temp);
-    const ph = this._get(c.entity_ph);
-    const orp = this._get(c.entity_orp);
     const pwr = this._get(c.entity_power);
-    const tds = this._get(c.entity_tds);
-    const lsi = this._get(c.entity_lsi);
+    const amp = this._get(c.entity_amp);
+    const cur = this._get(c.entity_current);
+    const vac = this._get(c.entity_vac_current);
+    const tv = this._get(c.entity_tv);
+    const alexa = this._get(c.entity_alexa);
     const bub = this._get(c.switch_bubbles);
     const fil = this._get(c.switch_filter);
     const led = this._get(c.switch_light);
 
     return html`
       <ha-card style="background-image: url('${c.background_image || '/local/sparond.png'}');">
-        <div class="header">${c.card_title || 'MON SPA'}</div>
+        <div class="header">${c.card_title || 'ULTIMATE SPA CONTROL'}</div>
 
         <div class="glass" style="left:${c.pos_temp_x || 10}%; top:${c.pos_temp_y || 15}%;">
-          <div class="titre">TEMPÉRATURE</div>
+          <div class="titre">EAU</div>
           <div class="row"><ha-icon icon="mdi:thermometer"></ha-icon> ${water.s}${water.u}</div>
         </div>
 
-        <div class="glass" style="left:${c.pos_chem_x || 10}%; top:${c.pos_chem_y || 35}%;">
-          <div class="titre">CHIMIE</div>
-          <div class="row"><ha-icon icon="mdi:ph"></ha-icon> pH: ${ph.s}</div>
-          <div class="row"><ha-icon icon="mdi:flask-outline"></ha-icon> ORP: ${orp.s}${orp.u}</div>
+        <div class="glass" style="left:${c.pos_elec_x || 10}%; top:${c.pos_elec_y || 35}%;">
+          <div class="titre">ÉNERGIE & AMPÉRAGE</div>
+          <div class="row"><ha-icon icon="mdi:lightning-bolt"></ha-icon> ${pwr.s}W</div>
+          <div class="row"><ha-icon icon="mdi:current-ac"></ha-icon> Spa: ${amp.s}A</div>
+          <div class="row"><ha-icon icon="mdi:sine-wave"></ha-icon> Courant: ${cur.s}A</div>
+          <div class="row"><ha-icon icon="mdi:vacuum"></ha-icon> Aspi: ${vac.s}A</div>
         </div>
 
-        <div class="glass" style="left:${c.pos_anal_x || 10}%; top:${c.pos_anal_y || 58}%;">
-          <div class="titre">SANTÉ</div>
-          <div class="row"><ha-icon icon="mdi:water-check"></ha-icon> LSI: ${lsi.s}</div>
-          <div class="row"><ha-icon icon="mdi:shaker-outline"></ha-icon> TDS: ${tds.s}</div>
-        </div>
-
-        <div class="glass" style="left:${c.pos_energy_x || 10}%; top:${c.pos_energy_y || 80}%;">
-          <div class="titre">ÉNERGIE</div>
-          <div class="row"><ha-icon icon="mdi:lightning-bolt"></ha-icon> ${pwr.s}${pwr.u}</div>
+        <div class="glass" style="left:${c.pos_multi_x || 10}%; top:${c.pos_multi_y || 65}%;">
+          <div class="titre">MULTIMEDIA</div>
+          <div class="row"><ha-icon icon="mdi:television" style="color:${tv.a ? '#00d4ff' : 'white'}"></ha-icon> TV: ${tv.s}</div>
+          <div class="row"><ha-icon icon="mdi:google-assistant" style="color:${alexa.a ? '#00d4ff' : 'white'}"></ha-icon> Alexa: ${alexa.s}</div>
         </div>
 
         <div class="btns" style="left:${c.pos_btn_x || 60}%; top:${c.pos_btn_y || 80}%;">
@@ -110,19 +110,19 @@ class LuminaSpaCard extends LitElement {
   }
 
   static styles = css`
-    ha-card { background-size: cover; background-position: center; height: 500px; position: relative; color: white; border-radius: 20px; overflow: hidden; border: none; }
-    .header { position: absolute; top: 20px; left: 20px; font-weight: bold; font-size: 1.4em; text-shadow: 2px 2px 4px black; z-index: 10; }
-    .glass { position: absolute; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 10px; padding: 8px; border: 1px solid rgba(255,255,255,0.1); min-width: 100px; }
-    .titre { font-size: 0.55em; color: #00d4ff; font-weight: bold; letter-spacing: 1px; }
-    .row { display: flex; align-items: center; gap: 5px; font-size: 0.85em; font-weight: bold; margin-top: 3px; }
-    .btns { position: absolute; display: flex; gap: 8px; }
-    .btn { background: rgba(0,0,0,0.6); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.3); }
-    .btn.on { background: #00d4ff; box-shadow: 0 0 15px #00d4ff; border: none; }
-    ha-icon { --mdc-icon-size: 18px; }
+    ha-card { background-size: cover; background-position: center; height: 550px; position: relative; color: white; border-radius: 20px; overflow: hidden; border: none; }
+    .header { position: absolute; top: 20px; left: 20px; font-weight: bold; font-size: 1.2em; text-shadow: 2px 2px 4px black; z-index: 10; letter-spacing: 1px; }
+    .glass { position: absolute; background: rgba(0,0,0,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 12px; padding: 10px; border: 1px solid rgba(255,255,255,0.1); min-width: 120px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    .titre { font-size: 0.5em; color: #00d4ff; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }
+    .row { display: flex; align-items: center; gap: 7px; font-size: 0.85em; font-weight: bold; margin-top: 3px; }
+    .btns { position: absolute; display: flex; gap: 10px; }
+    .btn { background: rgba(0,0,0,0.6); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: 0.3s ease; }
+    .btn.on { background: #00d4ff; box-shadow: 0 0 20px #00d4ff; border: none; color: white; }
+    ha-icon { --mdc-icon-size: 19px; }
   `;
 }
 
 customElements.define("lumina-spa-card-editor", LuminaSpaEditor);
 customElements.define("lumina-spa-card", LuminaSpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "lumina-spa-card", name: "Lumina SPA Pro", preview: true });
+window.customCards.push({ type: "lumina-spa-card", name: "Lumina SPA Ultimate", preview: true });
