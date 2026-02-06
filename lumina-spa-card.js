@@ -10,11 +10,13 @@ class LuminaSpaEditor extends LitElement {
 
   _valueChanged(ev) {
     if (!this._config || !this.hass) return;
-    this.dispatchEvent(new CustomEvent("config-changed", {
+    // On propage le changement immédiatement
+    const event = new CustomEvent("config-changed", {
       detail: { config: ev.detail.value },
       bubbles: true,
       composed: true,
-    }));
+    });
+    this.dispatchEvent(event);
   }
 
   render() {
@@ -24,40 +26,32 @@ class LuminaSpaEditor extends LitElement {
       { name: "card_title", label: "Nom du SPA", selector: { text: {} } },
       { name: "background_image", label: "Image (/local/sparond.png)", selector: { text: {} } },
       {
-        name: "entities", label: "Capteurs principaux", type: "grid", schema: [
+        name: "entities", label: "Entités", type: "grid", schema: [
           { name: "entity_water_temp", label: "Température", selector: { entity: { domain: "sensor" } } },
           { name: "entity_ph", label: "pH", selector: { entity: { domain: "sensor" } } },
           { name: "entity_orp", label: "ORP", selector: { entity: { domain: "sensor" } } },
-          { name: "entity_power", label: "Puissance (W)", selector: { entity: { domain: "sensor" } } },
-        ]
-      },
-      {
-        name: "analysis", label: "Analyses avancées", type: "grid", schema: [
+          { name: "entity_power", label: "Puissance", selector: { entity: { domain: "sensor" } } },
           { name: "entity_tds", label: "TDS / Sel", selector: { entity: { domain: "sensor" } } },
-          { name: "entity_lsi", label: "Indice LSI", selector: { entity: { domain: "sensor" } } },
+          { name: "entity_lsi", label: "LSI", selector: { entity: { domain: "sensor" } } },
         ]
       },
       {
-        name: "switches", label: "Commandes", type: "grid", schema: [
+        name: "switches", label: "Boutons", type: "grid", schema: [
           { name: "switch_bubbles", label: "Bulles", selector: { entity: {} } },
-          { name: "switch_filter", label: "Filtration", selector: { entity: {} } },
-          { name: "switch_light", label: "Lumière", selector: { entity: {} } },
+          { name: "switch_filter", label: "Filtre", selector: { entity: {} } },
+          { name: "switch_light", label: "LED", selector: { entity: {} } },
         ]
       },
-      {
-        name: "positions", title: "Positions (%)", type: "expandable", schema: [
-          { name: "pos_temp_x", label: "Temp X", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-          { name: "pos_temp_y", label: "Temp Y", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-          { name: "pos_chem_x", label: "Chimie X", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-          { name: "pos_chem_y", label: "Chimie Y", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-          { name: "pos_anal_x", label: "Analyse X", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-          { name: "pos_anal_y", label: "Analyse Y", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-          { name: "pos_energy_x", label: "NRJ X", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-          { name: "pos_energy_y", label: "NRJ Y", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-          { name: "pos_btn_x", label: "Boutons X", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-          { name: "pos_btn_y", label: "Boutons Y", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-        ]
-      }
+      { name: "pos_temp_x", label: "Temp X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+      { name: "pos_temp_y", label: "Temp Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+      { name: "pos_chem_x", label: "Chimie X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+      { name: "pos_chem_y", label: "Chimie Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+      { name: "pos_anal_x", label: "Analyse X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+      { name: "pos_anal_y", label: "Analyse Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+      { name: "pos_energy_x", label: "NRJ X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+      { name: "pos_energy_y", label: "NRJ Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+      { name: "pos_btn_x", label: "Boutons X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+      { name: "pos_btn_y", label: "Boutons Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
     ];
 
     return html`<ha-form .hass=${this.hass} .data=${this._config} .schema=${schema} @value-changed=${this._valueChanged}></ha-form>`;
@@ -67,7 +61,11 @@ class LuminaSpaEditor extends LitElement {
 class LuminaSpaCard extends LitElement {
   static getConfigElement() { return document.createElement("lumina-spa-card-editor"); }
   static get properties() { return { hass: {}, config: {} }; }
-  setConfig(config) { this.config = config; }
+
+  setConfig(config) {
+    // Création d'une copie propre de la config pour forcer le refresh
+    this.config = JSON.parse(JSON.stringify(config));
+  }
 
   _getState(ent) {
     if (!this.hass || !ent || !this.hass.states[ent]) return { s: '--', u: '', a: false, v: 0 };
@@ -89,10 +87,6 @@ class LuminaSpaCard extends LitElement {
     const fil = this._getState(c.switch_filter);
     const led = this._getState(c.switch_light);
 
-    // Alertes couleurs (pH idéal entre 7.0 et 7.4)
-    const phColor = (ph.v < 7.0 || ph.v > 7.5) ? '#ff4d4d' : 'white';
-    const orpColor = (orp.v < 650) ? '#ffae42' : 'white';
-
     return html`
       <ha-card style="background-image: url('${c.background_image || '/local/sparond.png'}');">
         <div class="header">${c.card_title || 'MON SPA'}</div>
@@ -104,14 +98,14 @@ class LuminaSpaCard extends LitElement {
 
         <div class="glass" style="left:${c.pos_chem_x || 10}%; top:${c.pos_chem_y || 35}%;">
           <div class="titre">CHIMIE</div>
-          <div class="row"><ha-icon icon="mdi:ph"></ha-icon><span style="color:${phColor}">${ph.s}</span></div>
-          <div class="row"><ha-icon icon="mdi:test-tube"></ha-icon><span style="color:${orpColor}">${orp.s}${orp.u}</span></div>
+          <div class="row"><ha-icon icon="mdi:ph"></ha-icon> ${ph.s}</div>
+          <div class="row"><ha-icon icon="mdi:test-tube"></ha-icon> ${orp.s}</div>
         </div>
 
         <div class="glass" style="left:${c.pos_anal_x || 10}%; top:${c.pos_anal_y || 58}%;">
           <div class="titre">SANTÉ DE L'EAU</div>
-          <div class="row"><ha-icon icon="mdi:Waves"></ha-icon>LSI: ${lsi.s}</div>
-          <div class="row"><ha-icon icon="mdi:opacity"></ha-icon>TDS: ${tds.s}${tds.u}</div>
+          <div class="row"><ha-icon icon="mdi:waves"></ha-icon> LSI: ${lsi.s}</div>
+          <div class="row"><ha-icon icon="mdi:opacity"></ha-icon> TDS: ${tds.s}</div>
         </div>
 
         <div class="glass" style="left:${c.pos_energy_x || 10}%; top:${c.pos_energy_y || 80}%;">
