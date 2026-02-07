@@ -27,7 +27,7 @@ class SpaCardEditor extends LitElement {
        ] } } },
        { name: "title_size", label: "Taille Titre (px)", selector: { number: { min: 8, max: 50 } } },
        { name: "background_image", label: "Image fond (URL)", selector: { text: {} } }],
-      // BOUTONS (8)
+      // BOUTONS
       [{ name: "btn_y", label: "Position Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
        { name: "btn_w", label: "Largeur totale (%)", selector: { number: { min: 10, max: 100 } } }, 
        { name: "btn_h", label: "Hauteur Boutons (px)", selector: { number: { min: 20, max: 200 } } }, 
@@ -37,28 +37,27 @@ class SpaCardEditor extends LitElement {
           { name: `switch_${i+1}_label`, label: `Nom`, selector: { text: {} } },
           { name: `switch_${i+1}_icon`, label: `Icone`, selector: { icon: {} } }
         ]).flat()],
-      // SONDES (TEMP + CHIMIE COMPLÈTE)
+      // SONDES (TEMP + CHIMIE)
       [{ name: "entity_water_temp", label: "Eau", selector: { entity: {} } }, { name: "entity_ambient_temp", label: "Air", selector: { entity: {} } },
-       { name: "temp_fs", label: "Taille texte Temp (px)", selector: { number: { min: 8, max: 35 } } }, 
        { name: "pos_temp_x", label: "Temp X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, 
        { name: "pos_temp_y", label: "Temp Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-       { name: "temp_w", label: "Largeur px", selector: { number: { min: 50, max: 400 } } }, { name: "temp_h", label: "Hauteur px", selector: { number: { min: 30, max: 300 } } },
+       { name: "temp_w", label: "Temp Largeur px", selector: { number: { min: 50, max: 400 } } }, { name: "temp_h", label: "Temp Hauteur px", selector: { number: { min: 30, max: 300 } } },
        { name: "entity_ph", label: "pH", selector: { entity: {} } }, { name: "entity_orp", label: "ORP", selector: { entity: {} } }, 
        { name: "entity_bromine", label: "Brome", selector: { entity: {} } }, { name: "entity_alkalinity", label: "TAC", selector: { entity: {} } },
-       { name: "chem_fs", label: "Taille texte Chimie (px)", selector: { number: { min: 8, max: 35 } } },
        { name: "pos_chem_x", label: "Chimie X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, 
        { name: "pos_chem_y", label: "Chimie Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-       { name: "chem_w", label: "W px", selector: { number: { min: 100, max: 500 } } }, { name: "chem_h", label: "H px", selector: { number: { min: 50, max: 400 } } }],
-      // SYSTÈME (14)
+       { name: "chem_w", label: "Chimie Largeur px", selector: { number: { min: 50, max: 500 } } }, { name: "chem_h", label: "Chimie Hauteur px", selector: { number: { min: 50, max: 500 } } },
+       { name: "chem_fs", label: "Taille texte Chimie", selector: { number: { min: 8, max: 35 } } }],
+      // SYSTÈME
       [...Array.from({length: 14}, (_, i) => [
           { name: `sys_entity_${i+1}`, label: `Entité ${i+1}`, selector: { entity: {} } },
           { name: `sys_label_${i+1}`, label: `Nom`, selector: { text: {} } },
           { name: `sys_icon_${i+1}`, label: `Icone`, selector: { icon: {} } }
         ]).flat(),
-       { name: "sys_fs", label: "Taille texte (px)", selector: { number: { min: 8, max: 30 } } }, 
+       { name: "sys_fs", label: "Taille texte", selector: { number: { min: 8, max: 30 } } }, 
        { name: "pos_elec_x", label: "X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, 
        { name: "pos_elec_y", label: "Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-       { name: "sys_w", label: "W px", selector: { number: { min: 100, max: 600 } } }, { name: "sys_h", label: "H px", selector: { number: { min: 50, max: 500 } } }],
+       { name: "sys_w", label: "Largeur px", selector: { number: { min: 100, max: 600 } } }, { name: "sys_h", label: "Hauteur px", selector: { number: { min: 50, max: 600 } } }],
       // CAMÉRA
       [{ name: "camera_entity", label: "Caméra", selector: { entity: { domain: "camera" } } }, 
        { name: "pos_cam_x", label: "X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, 
@@ -66,9 +65,10 @@ class SpaCardEditor extends LitElement {
        { name: "camera_width", label: "W px", selector: { number: { min: 100, max: 600 } } }, { name: "camera_height", label: "H px", selector: { number: { min: 100, max: 600 } } }],
       // IDÉAL
       [{ name: "show_ideal_table", label: "Idéal?", selector: { boolean: {} } }, 
-       { name: "ideal_fs", label: "Taille texte (px)", selector: { number: { min: 8, max: 30 } } }, 
        { name: "pos_ideal_x", label: "X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, 
-       { name: "pos_ideal_y", label: "Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }]
+       { name: "pos_ideal_y", label: "Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
+       { name: "ideal_w", label: "Largeur px", selector: { number: { min: 50, max: 400 } } }, { name: "ideal_h", label: "Hauteur px", selector: { number: { min: 50, max: 400 } } },
+       { name: "ideal_fs", label: "Taille texte", selector: { number: { min: 8, max: 30 } } }]
     ];
     const tabs = ["Général", "Boutons", "Sondes", "Système", "Caméra", "Idéal"];
     return html`<div class="tabs">${tabs.map((n, i) => html`<div class="tab ${this._tab === i ? 'active' : ''}" @click=${() => this._selectTab(i)}>${n}</div>`)}</div><ha-form .hass=${this.hass} .data=${this._config} .schema=${schemas[this._tab]} @value-changed=${this._valueChanged}></ha-form>`;
@@ -93,6 +93,7 @@ class SpaCard extends LitElement {
   render() {
     if (!this.hass || !this.config) return html``;
     const c = this.config;
+    
     const sys = [];
     for (let i = 1; i <= 14; i++) {
       if (c[`sys_entity_${i}`]) {
@@ -139,7 +140,7 @@ class SpaCard extends LitElement {
 
         ${c.camera_entity ? html`<div class="gb" style="left:${c.pos_cam_x || 50}%; top:${c.pos_cam_y || 65}%; width:${c.camera_width || 250}px; height:${c.camera_height || 150}px; padding:2px;"><hui-image .hass=${this.hass} .cameraImage=${c.camera_entity} cameraView="live"></hui-image></div>` : ''}
 
-        ${c.show_ideal_table !== false ? html`<div class="gb" style="left:${c.pos_ideal_x || 5}%; top:${c.pos_ideal_y || 65}%; font-size:${c.ideal_fs || 11}px;">
+        ${c.show_ideal_table !== false ? html`<div class="gb" style="left:${c.pos_ideal_x || 5}%; top:${c.pos_ideal_y || 65}%; width:${c.ideal_w || 180}px; height:${c.ideal_h || 110}px; font-size:${c.ideal_fs || 11}px;">
           <div class="bh">CIBLES IDÉALES</div>
           <div class="id"><span>pH</span><span>7.2 - 7.6</span></div>
           <div class="id"><span>ORP</span><span>650 - 750 mV</span></div>
@@ -162,7 +163,7 @@ class SpaCard extends LitElement {
     .chem-grid { display: grid; grid-template-columns: 1fr; }
     .sys-g { display: grid; grid-template-columns: 1fr; gap: 3px; overflow-y: auto; height: calc(100% - 25px); }
     .sys-i { display: flex; align-items: center; white-space: nowrap; }
-    .id { display: flex; justify-content: space-between; gap: 20px; color: #00ff88; font-weight: bold; margin-bottom: 3px; }
+    .id { display: flex; justify-content: space-between; gap: 10px; color: #00ff88; font-weight: bold; margin-bottom: 3px; }
     .n { color: #00f9f9; text-shadow: 0 0 3px #00f9f9; }
     ha-icon { --mdc-icon-size: 16px; margin-right: 5px; }
     hui-image { width: 100%; height: 100%; object-fit: cover; border-radius: 5px; }
@@ -172,4 +173,4 @@ class SpaCard extends LitElement {
 customElements.define("spa-card-editor", SpaCardEditor);
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "SPA FINAL UNLIMITED", preview: true });
+window.customCards.push({ type: "spa-card", name: "SPA FINAL RESIZER", preview: true });
