@@ -20,16 +20,19 @@ class SpaCardEditor extends LitElement {
   render() {
     if (!this.hass || !this._config) return html``;
     const schemas = [
+      // GÉNÉRAL
       [{ name: "card_title", label: "Titre", selector: { text: {} } }, 
        { name: "title_align", label: "Alignement", selector: { select: { options: [{value: "left", label: "Gauche"}, {value: "center", label: "Milieu"}, {value: "right", label: "Droite"}] } } },
-       { name: "title_size", label: "Taille Titre", selector: { number: { min: 8, max: 60 } } },
+       { name: "title_size", label: "Taille Titre (px)", selector: { number: { min: 8, max: 60 } } },
        { name: "card_height_v", label: "Hauteur Carte (% écran)", selector: { number: { min: 20, max: 100, mode: "slider" } } },
        { name: "background_image", label: "Image fond (URL)", selector: { text: {} } }],
+      // BOUTONS
       [{ name: "btn_y", label: "Position Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
        { name: "btn_w", label: "Largeur (%)", selector: { number: { min: 10, max: 100 } } }, 
        { name: "btn_h", label: "Hauteur px", selector: { number: { min: 20, max: 300 } } }, 
        { name: "btn_fs", label: "Taille texte", selector: { number: { min: 6, max: 30 } } },
         ...Array.from({length: 8}, (_, i) => [{ name: `switch_${i+1}_entity`, label: `B${i+1} Entité`, selector: { entity: {} } }, { name: `switch_${i+1}_label`, label: `Nom`, selector: { text: {} } }, { name: `switch_${i+1}_icon`, label: `Icone`, selector: { icon: {} } }]).flat()],
+      // SONDES (TEMP + CHIMIE)
       [{ name: "entity_water_temp", label: "Eau", selector: { entity: {} } }, { name: "entity_ambient_temp", label: "Air", selector: { entity: {} } },
        { name: "temp_fs", label: "Taille texte Temp", selector: { number: { min: 8, max: 40 } } },
        { name: "pos_temp_x", label: "Temp X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, { name: "pos_temp_y", label: "Temp Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
@@ -38,11 +41,14 @@ class SpaCardEditor extends LitElement {
        { name: "entity_bromine", label: "Brome", selector: { entity: {} } }, { name: "entity_alkalinity", label: "TAC", selector: { entity: {} } },
        { name: "chem_fs", label: "Taille texte Chimie", selector: { number: { min: 8, max: 40 } } },
        { name: "pos_chem_x", label: "Chimie X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, { name: "pos_chem_y", label: "Chimie Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-       { name: "chem_w", label: "Chimie Largeur", selector: { number: { min: 50, max: 600 } } }, { name: "chem_h", label: "Chimie Hauteur", selector: { number: { min: 50, max: 600 } } }],
+       { name: "chem_w", label: "Chimie Largeur px", selector: { number: { min: 50, max: 600 } } }, { name: "chem_h", label: "Chimie Hauteur px", selector: { number: { min: 50, max: 600 } } }],
+      // SYSTÈME
       [...Array.from({length: 14}, (_, i) => [{ name: `sys_entity_${i+1}`, label: `Entité ${i+1}`, selector: { entity: {} } }, { name: `sys_label_${i+1}`, label: `Nom`, selector: { text: {} } }, { name: `sys_icon_${i+1}`, label: `Icone`, selector: { icon: {} } }]).flat(),
        { name: "sys_fs", label: "Taille texte", selector: { number: { min: 8, max: 35 } } }, { name: "pos_elec_x", label: "X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, { name: "pos_elec_y", label: "Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
        { name: "sys_w", label: "Largeur px", selector: { number: { min: 100, max: 800 } } }, { name: "sys_h", label: "Hauteur px", selector: { number: { min: 50, max: 800 } } }],
+      // CAMÉRA
       [{ name: "camera_entity", label: "Caméra", selector: { entity: { domain: "camera" } } }, { name: "pos_cam_x", label: "X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, { name: "pos_cam_y", label: "Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, { name: "camera_width", label: "W px", selector: { number: { min: 100, max: 800 } } }, { name: "camera_height", label: "H px", selector: { number: { min: 100, max: 800 } } }],
+      // IDÉAL
       [{ name: "show_ideal_table", label: "Afficher Cibles?", selector: { boolean: {} } }, { name: "pos_ideal_x", label: "X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, { name: "pos_ideal_y", label: "Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
        { name: "ideal_w", label: "W px", selector: { number: { min: 50, max: 500 } } }, { name: "ideal_h", label: "H px", selector: { number: { min: 50, max: 500 } } }, { name: "ideal_fs", label: "Taille texte", selector: { number: { min: 8, max: 35 } } }]
     ];
@@ -60,13 +66,27 @@ class SpaCard extends LitElement {
   _getState(id, icon) {
     if (!this.hass || !id || !this.hass.states[id]) return { val: '?', unit: '', active: false, icon: icon || 'mdi:help-circle' };
     const s = this.hass.states[id];
-    const val = !isNaN(s.state) ? parseFloat(s.state) : s.state;
-    return { val: typeof val === 'number' ? val.toFixed(1) : val, raw: val, unit: s.attributes.unit_of_measurement || '', icon: icon || s.attributes.icon, active: !['off', 'unavailable', 'unknown'].includes(s.state.toLowerCase()) };
+    const rawVal = parseFloat(s.state);
+    const val = !isNaN(rawVal) ? rawVal.toFixed(1) : s.state;
+    const unit = s.attributes.unit_of_measurement || '';
+    
+    // Détection auto consommation (W ou A)
+    const isPower = unit.toLowerCase().includes('w') || unit.toLowerCase().includes('a');
+    const consuming = isPower && rawVal > 0.5;
+
+    return { 
+      val, 
+      unit, 
+      icon: icon || s.attributes.icon, 
+      active: consuming || !['off', 'unavailable', 'unknown', 'standby'].includes(s.state.toLowerCase()),
+      isPower,
+      consuming
+    };
   }
 
-  _getColor(type, value) {
-    if (value === '?') return '#fff';
+  _getChemColor(type, value) {
     const v = parseFloat(value);
+    if (isNaN(v)) return '#00f9f9';
     if (type === 'ph') return (v < 7.2 || v > 7.6) ? '#ff4d4d' : '#00f9f9';
     if (type === 'orp') return (v < 650) ? '#ff4d4d' : '#00f9f9';
     if (type === 'br') return (v < 3.0 || v > 5.0) ? '#ff4d4d' : '#00f9f9';
@@ -77,11 +97,16 @@ class SpaCard extends LitElement {
     if (!this.hass || !this.config) return html``;
     const c = this.config;
     const titlePos = c.title_align === 'center' ? 'left:50%;transform:translateX(-50%);' : c.title_align === 'right' ? 'right:20px;' : 'left:20px;';
+    
     const sys = [];
     for (let i = 1; i <= 14; i++) {
       if (c[`sys_entity_${i}`]) {
         const s = this._getState(c[`sys_entity_${i}`], c[`sys_icon_${i}`]);
-        sys.push(html`<div class="sys-i" style="font-size:${c.sys_fs || 12}px;"><ha-icon icon="${s.icon}" class="${s.active ? 'n' : ''}" style="--mdc-icon-size:${(c.sys_fs || 12)*1.3}px"></ha-icon><span>${c[`sys_label_${i}`] || ''}: ${s.val}${s.unit}</span></div>`);
+        sys.push(html`
+          <div class="sys-i" style="font-size:${c.sys_fs || 12}px;">
+            <ha-icon icon="${s.icon}" class="${s.consuming ? 'power-on' : (s.active ? 'n' : '')}" style="--mdc-icon-size:${(c.sys_fs || 12)*1.3}px"></ha-icon>
+            <span style="${s.consuming ? 'color:#ffcc00; font-weight:bold;' : ''}">${c[`sys_label_${i}`] || ''}: ${s.val}${s.unit}</span>
+          </div>`);
       }
     }
 
@@ -104,9 +129,9 @@ class SpaCard extends LitElement {
 
         <div class="gb" style="left:${c.pos_chem_x}%; top:${c.pos_chem_y}%; width:${c.chem_w}px; height:${c.chem_h}px; font-size:${c.chem_fs}px;">
           <div class="bh">CHIMIE</div>
-          <div class="bb">pH: <span style="color:${this._getColor('ph', this._getState(c.entity_ph).val)}">${this._getState(c.entity_ph).val}</span></div>
-          <div class="bb">ORP: <span style="color:${this._getColor('orp', this._getState(c.entity_orp).val)}">${this._getState(c.entity_orp).val}mV</span></div>
-          <div class="bb">Br: <span style="color:${this._getColor('br', this._getState(c.entity_bromine).val)}">${this._getState(c.entity_bromine).val}</span></div>
+          <div class="bb">pH: <span style="color:${this._getChemColor('ph', this._getState(c.entity_ph).val)}">${this._getState(c.entity_ph).val}</span></div>
+          <div class="bb">ORP: <span style="color:${this._getChemColor('orp', this._getState(c.entity_orp).val)}">${this._getState(c.entity_orp).val}mV</span></div>
+          <div class="bb">Br: <span style="color:${this._getChemColor('br', this._getState(c.entity_bromine).val)}">${this._getState(c.entity_bromine).val}</span></div>
           <div class="bb">TAC: <span class="n">${this._getState(c.entity_alkalinity).val}</span></div>
         </div>
 
@@ -130,15 +155,16 @@ class SpaCard extends LitElement {
     ha-card { background-size: cover; background-position: center; border: 2px solid #00f9f9; border-radius: 15px; overflow: hidden; position: relative; color: #fff; font-family: 'Roboto', sans-serif; }
     .t { position: absolute; top: 15px; font-weight: 900; color: #00f9f9; text-transform: uppercase; white-space: nowrap; }
     .btns-g { position: absolute; left: 1%; display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
-    .sw { background: rgba(0,0,0,0.8); border: 1px solid #00f9f9; border-radius: 8px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+    .sw { background: rgba(0,0,0,0.8); border: 1px solid #00f9f9; border-radius: 8px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; backdrop-filter: blur(5px); }
     .sw.on { background: rgba(0,249,249,0.4); box-shadow: 0 0 10px #00f9f9; }
-    .gb { position: absolute; background: rgba(0,0,0,0.8); border: 1px solid #00f9f9; border-radius: 12px; padding: 12px; overflow: hidden; }
+    .gb { position: absolute; background: rgba(0,0,0,0.75); border: 1px solid #00f9f9; border-radius: 12px; padding: 12px; overflow: hidden; backdrop-filter: blur(8px); }
     .bh { color: #00f9f9; font-size: 11px; font-weight: 900; border-bottom: 1px solid rgba(0,249,249,0.3); margin-bottom: 8px; }
     .bb { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; }
     .sys-g { display: grid; grid-template-columns: 1fr; gap: 4px; overflow-y: auto; height: calc(100% - 25px); }
-    .sys-i { display: flex; align-items: center; white-space: nowrap; }
+    .sys-i { display: flex; align-items: center; white-space: nowrap; margin-bottom: 2px; }
     .id { display: flex; justify-content: space-between; color: #00ff88; font-weight: bold; margin-bottom: 3px; }
     .n { color: #00f9f9; text-shadow: 0 0 5px #00f9f9; }
+    .power-on { color: #ffcc00 !important; filter: drop-shadow(0 0 3px #ffcc00); }
     ha-icon { margin-right: 6px; }
     hui-image { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
   `;
@@ -147,4 +173,4 @@ class SpaCard extends LitElement {
 customElements.define("spa-card-editor", SpaCardEditor);
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "SPA SMART ALARM MASTER", preview: true });
+window.customCards.push({ type: "spa-card", name: "SPA MASTER ULTIMATE", preview: true });
