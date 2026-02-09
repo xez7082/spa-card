@@ -1,8 +1,7 @@
-import {
-  LitElement,
-  html,
-  css
-} from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+// Détection automatique de Lit pour éviter les erreurs "ReferenceError"
+const LitElement = window.LitElement || Object.getPrototypeOf(customElements.get("ha-panel-lovelace") || {}).prototype?.constructor || class {};
+const html = window.litHtml || ((...args) => args);
+const css = window.litCss || ((...args) => args);
 
 class SpaCardEditor extends LitElement {
   static get properties() { return { hass: {}, _config: {}, _tab: { type: Number } }; }
@@ -65,7 +64,6 @@ class SpaCard extends LitElement {
     const unit = s.attributes.unit_of_measurement || '';
     const isPower = unit.toLowerCase().includes('w') || unit.toLowerCase().includes('a');
     const consuming = isPower && rawVal > 0.5;
-
     return { val, unit, icon: icon || s.attributes.icon, active: consuming || !['off', 'unavailable', 'unknown', 'standby'].includes(s.state.toLowerCase()), consuming };
   }
 
@@ -99,20 +97,20 @@ class SpaCard extends LitElement {
       <ha-card style="background-image: url('${c.background_image}'); height: ${c.card_height_v || 80}vh;">
         <div class="t" style="font-size:${c.title_size || 20}px; ${titlePos}">${c.card_title || 'SPA CONTROL'}</div>
         
-        <div class="btns-g" style="width:${c.btn_w || 98}%; height:${c.btn_h || 60}px; top:${c.btn_y || 15}%;">
+        <div class="btns-g" style="width:${c.btn_w || 98}%; height:${c.btn_h || 80}px; top:${c.btn_y || 15}%;">
           ${Array.from({length: 8}).map((_, i) => c[`switch_${i+1}_entity`] ? html`
             <div class="sw ${this._getState(c[`switch_${i+1}_entity`]).active ? 'on' : ''}" style="font-size:${c.btn_fs || 10}px;" @click=${() => this.hass.callService("homeassistant", "toggle", {entity_id: c[`switch_${i+1}_entity`]})}>
-              <ha-icon icon="${c[`switch_${i+1}_icon`]}" style="--mdc-icon-size:${(c.btn_fs || 10)*1.8}px"></ha-icon><div>${c[`switch_${i+1}_label`] || 'B'+(i+1)}</div>
+              <ha-icon icon="${c[`switch_${i+1}_icon`] || 'mdi:power'}" style="--mdc-icon-size:${(c.btn_fs || 10)*1.8}px"></ha-icon><div>${c[`switch_${i+1}_label`] || 'B'+(i+1)}</div>
             </div>` : '')}
         </div>
 
-        <div class="gb" style="left:${c.pos_temp_x}%; top:${c.pos_temp_y}%; width:${c.temp_w}px; height:${c.temp_h}px; font-size:${c.temp_fs}px;">
+        <div class="gb" style="left:${c.pos_temp_x || 5}%; top:${c.pos_temp_y || 30}%; width:${c.temp_w || 200}px; height:${c.temp_h || 120}px; font-size:${c.temp_fs || 14}px;">
           <div class="bh">TEMPÉRATURES</div>
           <div class="bb">EAU: <span class="n">${this._getState(c.entity_water_temp).val}${this._getState(c.entity_water_temp).unit}</span></div>
           <div class="bb">AIR: <span>${this._getState(c.entity_ambient_temp).val}${this._getState(c.entity_ambient_temp).unit}</span></div>
         </div>
 
-        <div class="gb" style="left:${c.pos_chem_x}%; top:${c.pos_chem_y}%; width:${c.chem_w}px; height:${c.chem_h}px; font-size:${c.chem_fs}px;">
+        <div class="gb" style="left:${c.pos_chem_x || 5}%; top:${c.pos_chem_y || 55}%; width:${c.chem_w || 200}px; height:${c.chem_h || 180}px; font-size:${c.chem_fs || 14}px;">
           <div class="bh">CHIMIE</div>
           <div class="bb">pH: <span style="color:${this._getChemColor('ph', this._getState(c.entity_ph).val)}">${this._getState(c.entity_ph).val}</span></div>
           <div class="bb">ORP: <span style="color:${this._getChemColor('orp', this._getState(c.entity_orp).val)}">${this._getState(c.entity_orp).val}mV</span></div>
@@ -120,13 +118,13 @@ class SpaCard extends LitElement {
           <div class="bb">TAC: <span class="n">${this._getState(c.entity_alkalinity).val}</span></div>
         </div>
 
-        <div class="gb" style="left:${c.pos_elec_x}%; top:${c.pos_elec_y}%; width:${c.sys_w}px; height:${c.sys_h}px;">
+        <div class="gb" style="left:${c.pos_elec_x || 60}%; top:${c.pos_elec_y || 30}%; width:${c.sys_w || 250}px; height:${c.sys_h || 300}px;">
           <div class="bh">SYSTÈME</div><div class="sys-g">${sys}</div>
         </div>
 
-        ${c.camera_entity ? html`<div class="gb" style="left:${c.pos_cam_x}%; top:${c.pos_cam_y}%; width:${c.camera_width}px; height:${c.camera_height}px; padding:2px;"><hui-image .hass=${this.hass} .cameraImage=${c.camera_entity} cameraView="live"></hui-image></div>` : ''}
+        ${c.camera_entity ? html`<div class="gb" style="left:${c.pos_cam_x || 40}%; top:${c.pos_cam_y || 60}%; width:${c.camera_width || 300}px; height:${c.camera_height || 200}px; padding:2px;"><hui-image .hass=${this.hass} .cameraImage=${c.camera_entity} cameraView="live"></hui-image></div>` : ''}
 
-        ${c.show_ideal_table !== false ? html`<div class="gb" style="left:${c.pos_ideal_x}%; top:${c.pos_ideal_y}%; width:${c.ideal_w}px; height:${c.ideal_h}px; font-size:${c.ideal_fs}px;">
+        ${c.show_ideal_table !== false ? html`<div class="gb" style="left:${c.pos_ideal_x || 70}%; top:${c.pos_ideal_y || 70}%; width:${c.ideal_w || 180}px; height:${c.ideal_h || 120}px; font-size:${c.ideal_fs || 12}px;">
           <div class="bh">CIBLES IDÉALES</div>
           <div class="id"><span>pH</span><span>7.2 - 7.6</span></div>
           <div class="id"><span>ORP</span><span>> 650 mV</span></div>
@@ -138,19 +136,41 @@ class SpaCard extends LitElement {
   }
 
   static styles = css`
-    ha-card { background-size: cover; background-position: center; border: 2px solid #00f9f9; border-radius: 15px; overflow: hidden; position: relative; color: #fff; font-family: 'Roboto', sans-serif; }
-    .t { position: absolute; top: 15px; font-weight: 900; color: #00f9f9; text-transform: uppercase; white-space: nowrap; }
-    .btns-g { position: absolute; left: 1%; display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
-    .sw { background: rgba(0,0,0,0.8); border: 1px solid #00f9f9; border-radius: 8px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; backdrop-filter: blur(5px); }
-    .sw.on { background: rgba(0,249,249,0.4); box-shadow: 0 0 10px #00f9f9; }
-    .gb { position: absolute; background: rgba(0,0,0,0.75); border: 1px solid #00f9f9; border-radius: 12px; padding: 12px; overflow: hidden; backdrop-filter: blur(8px); }
-    .bh { color: #00f9f9; font-size: 11px; font-weight: 900; border-bottom: 1px solid rgba(0,249,249,0.3); margin-bottom: 8px; }
+    ha-card { 
+      background-size: cover; 
+      background-position: center; 
+      border: 1px solid rgba(0, 249, 249, 0.5); 
+      border-radius: 20px; 
+      overflow: hidden; 
+      position: relative; 
+      color: #fff; 
+      font-family: 'Roboto', sans-serif;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    .t { position: absolute; top: 15px; font-weight: 900; color: #00f9f9; text-transform: uppercase; letter-spacing: 3px; text-shadow: 0 0 10px rgba(0, 249, 249, 0.8); }
+    .gb { 
+      position: absolute; 
+      background: linear-gradient(135deg, rgba(0,20,30,0.85) 0%, rgba(0,0,0,0.9) 100%);
+      border: 1px solid rgba(0, 249, 249, 0.4);
+      border-radius: 15px 4px 15px 4px; 
+      padding: 12px; 
+      overflow: hidden; 
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.6), inset 0 0 10px rgba(0, 249, 249, 0.1);
+      transition: all 0.3s ease;
+      z-index: 1;
+    }
+    .gb:hover { border-color: rgba(0, 249, 249, 1); box-shadow: 0 4px 20px rgba(0, 249, 249, 0.3), inset 0 0 15px rgba(0, 249, 249, 0.2); }
+    .bh { color: #00f9f9; font-size: 10px; font-weight: 900; letter-spacing: 1px; border-left: 3px solid #00f9f9; padding-left: 8px; margin-bottom: 10px; text-transform: uppercase; }
+    .sw { background: rgba(10, 10, 10, 0.8); border: 1px solid rgba(0, 249, 249, 0.3); border-radius: 10px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.2s; backdrop-filter: blur(5px); }
+    .sw.on { background: rgba(0, 249, 249, 0.2); border-color: #00f9f9; box-shadow: 0 0 15px rgba(0, 249, 249, 0.5); color: #00f9f9; }
+    .n { color: #00f9f9; text-shadow: 0 0 8px rgba(0, 249, 249, 0.6); font-family: 'Courier New', monospace; }
+    .power-on { color: #ffcc00 !important; filter: drop-shadow(0 0 5px #ffcc00); }
+    .btns-g { position: absolute; left: 1%; display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; z-index: 2; }
     .bb { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; }
     .sys-g { display: grid; grid-template-columns: 1fr; gap: 4px; overflow-y: auto; height: calc(100% - 25px); }
     .sys-i { display: flex; align-items: center; white-space: nowrap; margin-bottom: 2px; }
-    .id { display: flex; justify-content: space-between; color: #00ff88; font-weight: bold; margin-bottom: 3px; }
-    .n { color: #00f9f9; text-shadow: 0 0 5px #00f9f9; }
-    .power-on { color: #ffcc00 !important; filter: drop-shadow(0 0 3px #ffcc00); }
+    .id { display: flex; justify-content: space-between; color: #00ff88; font-weight: bold; margin-bottom: 4px; font-size: 0.9em; }
     ha-icon { margin-right: 6px; }
     hui-image { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
   `;
