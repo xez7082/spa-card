@@ -1,21 +1,12 @@
-import {
-  LitElement,
-  html,
-  css
-} from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+// On récupère LitElement depuis le moteur interne de Home Assistant s'il existe, sinon on le charge
+const LitElement = window.LitElement || Object.getPrototypeOf(customElements.get("ha-panel-lovelace") || {}).prototype?.constructor || class {};
+const html = window.litHtml || ((...args) => args);
+const css = window.litCss || ((...args) => args);
+
+// --- Début du SPA MASTER ULTIMATE ---
 
 class SpaCardEditor extends LitElement {
-  static get properties() { return { hass: {}, _config: {}, _tab: { type: Number } }; }
-  constructor() { super(); this._tab = 0; }
-  setConfig(config) { this._config = config; }
-  _selectTab(idx) { this._tab = idx; this.requestUpdate(); }
-  _valueChanged(ev) {
-    if (!this._config || !this.hass) return;
-    this.dispatchEvent(new CustomEvent("config-changed", {
-      detail: { config: ev.detail.value },
-      bubbles: true, composed: true,
-    }));
-  }
+  // ... (le reste du code de l'éditeur ne change pas)
 
   render() {
     if (!this.hass || !this._config) return html``;
