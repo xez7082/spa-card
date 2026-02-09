@@ -1,20 +1,122 @@
-// Remplacez la section "render()" et "styles" de votre SpaCard par celle-ci :
+import {
+  LitElement,
+  html,
+  css
+} from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+
+// --- ÉDITEUR DE CONFIGURATION ---
+class SpaCardEditor extends LitElement {
+  static get properties() {
+    return { hass: {}, _config: {}, _tab: { type: Number } };
+  }
+  
+  constructor() {
+    super();
+    this._tab = 0;
+  }
+
+  setConfig(config) {
+    this._config = config;
+  }
+
+  _selectTab(idx) {
+    this._tab = idx;
+    this.requestUpdate();
+  }
+
+  _valueChanged(ev) {
+    if (!this._config || !this.hass) return;
+    const event = new CustomEvent("config-changed", {
+      detail: { config: ev.detail.value },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+  }
+
+  render() {
+    if (!this.hass || !this._config) return html``;
+    
+    // On définit les onglets pour l'éditeur
+    const tabs = ["Général", "Boutons", "Sondes", "Système", "Caméra", "Cibles"];
+    
+    // Schéma simplifié pour l'exemple (à compléter selon vos besoins)
+    const currentSchema = [
+      { name: "card_title", label: "Titre", selector: { text: {} } },
+      { name: "background_image", label: "URL Image de fond", selector: { text: {} } },
+      { name: "card_height_v", label: "Hauteur (vh)", selector: { number: { min: 20, max: 100 } } }
+    ];
+
+    return html`
+      <div class="editor-container">
+        <div class="tabs">
+          ${tabs.map((n, i) => html`
+            <div class="tab ${this._tab === i ? 'active' : ''}" @click=${() => this._selectTab(i)}>${n}</div>
+          `)}
+        </div>
+        <ha-form
+          .hass=${this.hass}
+          .data=${this._config}
+          .schema=${currentSchema}
+          @value-changed=${this._valueChanged}
+        ></ha-form>
+      </div>
+    `;
+  }
+
+  static styles = css`
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+    .tab { padding: 8px 12px; background: #333; color: white; border-radius: 8px; cursor: pointer; font-size: 12px; border: 1px solid #555; }
+    .tab.active { background: #00f9f9; color: black; font-weight: bold; border-color: #00f9f9; }
+  `;
+}
+
+// --- CARTE PRINCIPALE ---
+class SpaCard extends LitElement {
+  static getConfigElement() {
+    return document.createElement("spa-card-editor");
+  }
+
+  static get properties() {
+    return { hass: {}, config: {} };
+  }
+
+  setConfig(config) {
+    if (!config) throw new Error("Configuration invalide");
+    this.config = config;
+  }
+
+  _getState(id, icon) {
+    if (!this.hass || !id || !this.hass.states[id]) {
+        return { val: '?', unit: '', active: false, icon: icon || 'mdi:help-circle' };
+    }
+    const s = this.hass.states[id];
+    const rawVal = parseFloat(s.state);
+    const val = !isNaN(rawVal) ? rawVal.toFixed(1) : s.state;
+    const unit = s.attributes.unit_of_measurement || '';
+    const active = !['off', 'unavailable', 'unknown', 'standby'].includes(s.state.toLowerCase());
+    return { val, unit, icon: icon || s.attributes.icon, active };
+  }
+
+  _getChemColor(type, value) {
+    const v = parseFloat(value);
+    if (isNaN(v)) return '#00f9f9';
+    if (type === 'ph') return (v < 7.2 || v > 7.6) ? '#ff4d4d' : '#00f9f9';
+    if (type === 'orp') return (v < 650) ? '#ff4d4d' : '#00f9f9';
+    if (type === 'br') return (v < 3.0 || v > 5.0) ? '#ff4d4d' : '#00f9f9';
+    return '#00f9f9';
+  }
 
   render() {
     if (!this.hass || !this.config) return html``;
     const c = this.config;
-    
-    // Calcul de la progression de la température (ex: entre 15°C et 40°C)
-    const tempState = this._getState(c.entity_water_temp);
-    const tempVal = parseFloat(tempState.val) || 0;
-    const tempPercent = Math.min(Math.max(((tempVal - 15) / (40 - 15)) * 100, 0), 100);
 
     return html`
       <ha-card style="background-image: url('${c.background_image}'); height: ${c.card_height_v || 80}vh;">
         <div class="overlay"></div>
         
         <div class="header" style="justify-content: ${c.title_align || 'center'}">
-           <h1 style="font-size: ${c.title_size || 22}px">${c.card_title || 'SPA MANAGEMENT'}</h1>
+           <h1>${c.card_title || 'SPA CONTROL'}</h1>
         </div>
 
         <div class="button-grid" style="top: ${c.btn_y || 15}%;">
@@ -31,97 +133,50 @@
           })}
         </div>
 
-        <div class="glass-panel temp-panel" style="left:${c.pos_temp_x}%; top:${c.pos_temp_y}%; width:${c.temp_w}px;">
-          <div class="panel-header">ÉDITION THERMIQUE</div>
+        <div class="glass-panel temp-panel" style="left:${c.pos_temp_x}%; top:${c.pos_temp_y}%;">
+          <div class="panel-header">THERMIQUE</div>
           <div class="temp-main">
-            <span class="temp-value">${tempVal}</span><span class="temp-unit">${tempState.unit}</span>
-          </div>
-          <div class="temp-bar-container">
-            <div class="temp-bar-fill" style="width: ${tempPercent}%"></div>
-          </div>
-          <div class="data-row" style="margin-top:8px;">
-            <span>AIR AMBIANT</span>
-            <span>${this._getState(c.entity_ambient_temp).val}°</span>
+            <span class="temp-value">${this._getState(c.entity_water_temp).val}</span>
+            <span class="temp-unit">${this._getState(c.entity_water_temp).unit}</span>
           </div>
         </div>
 
-        <div class="glass-panel" style="left:${c.pos_chem_x}%; top:${c.pos_chem_y}%; width:${c.chem_w}px;">
-          <div class="panel-header">ANALYSE CHIMIQUE</div>
-          <div class="data-row">
-            <span>pH</span>
-            <span class="value" style="color: ${this._getChemColor('ph', this._getState(c.entity_ph).val)}">
-              ${this._getState(c.entity_ph).val}
-            </span>
-          </div>
-          <div class="data-row">
-            <span>ORP</span>
-            <span class="value" style="color: ${this._getChemColor('orp', this._getState(c.entity_orp).val)}">
-              ${this._getState(c.entity_orp).val} mV
-            </span>
-          </div>
-          <div class="data-row">
-            <span>BROME</span>
-            <span class="value" style="color: ${this._getChemColor('br', this._getState(c.entity_bromine).val)}">
-              ${this._getState(c.entity_bromine).val} mg/L
-            </span>
-          </div>
+        <div class="glass-panel" style="left:${c.pos_chem_x}%; top:${c.pos_chem_y}%;">
+          <div class="panel-header">CHIMIE</div>
+          <div class="data-row"><span>pH</span><span class="value" style="color:${this._getChemColor('ph', this._getState(c.entity_ph).val)}">${this._getState(c.entity_ph).val}</span></div>
+          <div class="data-row"><span>ORP</span><span class="value" style="color:${this._getChemColor('orp', this._getState(c.entity_orp).val)}">${this._getState(c.entity_orp).val}mV</span></div>
         </div>
-
-        ${c.camera_entity ? html`
-          <div class="glass-panel camera-box" style="left:${c.pos_cam_x}%; top:${c.pos_cam_y}%; width:${c.camera_width}px; height:${c.camera_height}px; padding:4px;">
-            <hui-image .hass=${this.hass} .cameraImage=${c.camera_entity} cameraView="live"></hui-image>
-          </div>
-        ` : ''}
-
       </ha-card>
     `;
   }
 
   static styles = css`
     ha-card { 
-      background-size: cover; background-position: center; 
-      border-radius: 24px; overflow: hidden; position: relative; 
-      color: white; font-family: 'system-ui', sans-serif;
-      border: 1px solid rgba(255,255,255,0.15);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      background-size: cover; background-position: center; border-radius: 20px; 
+      overflow: hidden; position: relative; color: white; border: 1px solid rgba(0,249,249,0.3);
     }
-    .overlay { 
-      position: absolute; width: 100%; height: 100%; 
-      background: radial-gradient(circle at center, rgba(0,0,0,0) 20%, rgba(0,0,0,0.4) 100%); 
-    }
-    .header h1 { margin: 0; text-transform: uppercase; font-weight: 200; letter-spacing: 4px; color: #00f9f9; text-shadow: 0 0 15px rgba(0,249,249,0.5); }
-    
-    .button-grid { position: absolute; width: 94%; left: 3%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; z-index: 2; }
-    .btn-item {
-      background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;
-      padding: 15px 5px; display: flex; flex-direction: column; align-items: center;
-      cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .btn-item.active { 
-      background: rgba(0, 249, 249, 0.15); border-color: #00f9f9; 
-      box-shadow: 0 0 20px rgba(0, 249, 249, 0.4), inset 0 0 10px rgba(0, 249, 249, 0.2);
-      color: #00f9f9;
-    }
-    .btn-item ha-icon { --mdc-icon-size: 28px; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5)); }
-    .btn-item span { font-size: 10px; margin-top: 6px; font-weight: 600; opacity: 0.8; }
-
-    .glass-panel {
-      position: absolute; background: rgba(15, 15, 15, 0.7); backdrop-filter: blur(20px);
-      border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 15px; box-sizing: border-box; z-index: 2;
-    }
-    .panel-header { font-size: 9px; letter-spacing: 1px; font-weight: 800; color: rgba(255,255,255,0.5); margin-bottom: 10px; text-transform: uppercase; }
-    
-    .temp-main { display: flex; align-items: baseline; justify-content: center; margin-bottom: 5px; }
-    .temp-value { font-size: 32px; font-weight: 200; color: #00f9f9; }
-    .temp-unit { font-size: 14px; margin-left: 4px; opacity: 0.6; }
-    
-    .temp-bar-container { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
-    .temp-bar-fill { height: 100%; background: linear-gradient(90deg, #00f9f9, #ff4d4d); transition: width 1s ease-in-out; }
-
-    .data-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-top: 6px; }
-    .value { font-family: 'Courier New', monospace; font-size: 13px; font-weight: bold; }
-    
-    hui-image { border-radius: 12px; overflow: hidden; }
+    .overlay { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.3); }
+    .header { position: absolute; top: 15px; width: 100%; display: flex; z-index: 2; }
+    h1 { font-size: 20px; font-weight: 200; letter-spacing: 3px; color: #00f9f9; margin: 0 20px; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
+    .button-grid { position: absolute; width: 94%; left: 3%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; z-index: 2; }
+    .btn-item { background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); padding: 10px; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+    .btn-item.active { background: rgba(0,249,249,0.2); border-color: #00f9f9; color: #00f9f9; box-shadow: 0 0 10px rgba(0,249,249,0.3); }
+    .glass-panel { position: absolute; background: rgba(0,0,0,0.6); backdrop-filter: blur(15px); border-radius: 15px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); z-index: 2; }
+    .panel-header { font-size: 9px; font-weight: bold; color: #00f9f9; margin-bottom: 5px; opacity: 0.7; }
+    .temp-value { font-size: 28px; font-weight: 200; color: #00f9f9; }
+    .data-row { display: flex; justify-content: space-between; font-size: 11px; min-width: 100px; }
+    .value { font-weight: bold; }
   `;
+}
+
+// --- ENREGISTREMENT ---
+customElements.define("spa-card-editor", SpaCardEditor);
+customElements.define("spa-card", SpaCard);
+
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type: "spa-card",
+  name: "SPA MASTER ULTIMATE",
+  description: "Une carte élégante pour piloter votre Spa",
+  preview: true
+});
