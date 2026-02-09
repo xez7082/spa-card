@@ -1,162 +1,184 @@
-import {
-  LitElement,
-  html,
-  css
-} from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-
-class SpaCardEditor extends LitElement {
-  static get properties() { return { hass: {}, _config: {}, _tab: { type: Number } }; }
-  constructor() { super(); this._tab = 0; }
-  setConfig(config) { this._config = config; }
-  _selectTab(idx) { this._tab = idx; this.requestUpdate(); }
-  _valueChanged(ev) {
-    if (!this._config || !this.hass) return;
-    this.dispatchEvent(new CustomEvent("config-changed", {
-      detail: { config: ev.detail.value },
-      bubbles: true, composed: true,
-    }));
-  }
-
-  render() {
-    if (!this.hass || !this._config) return html``;
-    const schemas = [
-      [{ name: "card_title", label: "Titre", selector: { text: {} } }, 
-       { name: "title_align", label: "Alignement", selector: { select: { options: [{value: "left", label: "Gauche"}, {value: "center", label: "Milieu"}, {value: "right", label: "Droite"}] } } },
-       { name: "title_size", label: "Taille Titre (px)", selector: { number: { min: 8, max: 60 } } },
-       { name: "card_height_v", label: "Hauteur Carte (% écran)", selector: { number: { min: 20, max: 100, mode: "slider" } } },
-       { name: "background_image", label: "Image fond (URL)", selector: { text: {} } }],
-      [{ name: "btn_y", label: "Position Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-       { name: "btn_w", label: "Largeur (%)", selector: { number: { min: 10, max: 100 } } }, 
-       { name: "btn_h", label: "Hauteur px", selector: { number: { min: 20, max: 300 } } }, 
-       { name: "btn_fs", label: "Taille texte", selector: { number: { min: 6, max: 30 } } },
-        ...Array.from({length: 8}, (_, i) => [{ name: `switch_${i+1}_entity`, label: `B${i+1} Entité`, selector: { entity: {} } }, { name: `switch_${i+1}_label`, label: `Nom`, selector: { text: {} } }, { name: `switch_${i+1}_icon`, label: `Icone`, selector: { icon: {} } }]).flat()],
-      [{ name: "entity_water_temp", label: "Eau", selector: { entity: {} } }, { name: "entity_ambient_temp", label: "Air", selector: { entity: {} } },
-       { name: "temp_fs", label: "Taille texte Temp", selector: { number: { min: 8, max: 40 } } },
-       { name: "pos_temp_x", label: "Temp X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, { name: "pos_temp_y", label: "Temp Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-       { name: "temp_w", label: "Temp Largeur", selector: { number: { min: 50, max: 500 } } }, { name: "temp_h", label: "Temp Hauteur", selector: { number: { min: 30, max: 400 } } },
-       { name: "entity_ph", label: "pH", selector: { entity: {} } }, { name: "entity_orp", label: "ORP", selector: { entity: {} } }, 
-       { name: "entity_bromine", label: "Brome", selector: { entity: {} } }, { name: "entity_alkalinity", label: "TAC", selector: { entity: {} } },
-       { name: "chem_fs", label: "Taille texte Chimie", selector: { number: { min: 8, max: 40 } } },
-       { name: "pos_chem_x", label: "Chimie X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, { name: "pos_chem_y", label: "Chimie Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-       { name: "chem_w", label: "Chimie Largeur px", selector: { number: { min: 50, max: 600 } } }, { name: "chem_h", label: "Chimie Hauteur px", selector: { number: { min: 50, max: 600 } } }],
-      [...Array.from({length: 14}, (_, i) => [{ name: `sys_entity_${i+1}`, label: `Entité ${i+1}`, selector: { entity: {} } }, { name: `sys_label_${i+1}`, label: `Nom`, selector: { text: {} } }, { name: `sys_icon_${i+1}`, label: `Icone`, selector: { icon: {} } }]).flat(),
-       { name: "sys_fs", label: "Taille texte", selector: { number: { min: 8, max: 35 } } }, { name: "pos_elec_x", label: "X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, { name: "pos_elec_y", label: "Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-       { name: "sys_w", label: "Largeur px", selector: { number: { min: 100, max: 800 } } }, { name: "sys_h", label: "Hauteur px", selector: { number: { min: 50, max: 800 } } }],
-      [{ name: "camera_entity", label: "Caméra", selector: { entity: { domain: "camera" } } }, { name: "pos_cam_x", label: "X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, { name: "pos_cam_y", label: "Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, { name: "camera_width", label: "W px", selector: { number: { min: 100, max: 800 } } }, { name: "camera_height", label: "H px", selector: { number: { min: 100, max: 800 } } }],
-      [{ name: "show_ideal_table", label: "Afficher Cibles?", selector: { boolean: {} } }, { name: "pos_ideal_x", label: "X (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } }, { name: "pos_ideal_y", label: "Y (%)", selector: { number: { min: 0, max: 100, mode: "slider" } } },
-       { name: "ideal_w", label: "W px", selector: { number: { min: 50, max: 500 } } }, { name: "ideal_h", label: "H px", selector: { number: { min: 50, max: 500 } } }, { name: "ideal_fs", label: "Taille texte", selector: { number: { min: 8, max: 35 } } }]
-    ];
-    const tabs = ["Général", "Boutons", "Sondes", "Système", "Caméra", "Idéal"];
-    return html`<div class="tabs">${tabs.map((n, i) => html`<div class="tab ${this._tab === i ? 'active' : ''}" @click=${() => this._selectTab(i)}>${n}</div>`)}</div><ha-form .hass=${this.hass} .data=${this._config} .schema=${schemas[this._tab]} @value-changed=${this._valueChanged}></ha-form>`;
-  }
-  static styles = css`.tabs{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:8px}.tab{padding:4px 8px;background:#444;color:#fff;border-radius:4px;cursor:pointer;font-size:10px}.tab.active{background:#00f9f9;color:#000;font-weight:bold}`;
-}
-
 class SpaCard extends LitElement {
   static getConfigElement() { return document.createElement("spa-card-editor"); }
   static get properties() { return { hass: {}, config: {} }; }
-  setConfig(config) { this.config = config; }
-  
-  _getState(id, icon) {
-    if (!this.hass || !id || !this.hass.states[id]) return { val: '?', unit: '', active: false, icon: icon || 'mdi:help-circle' };
-    const s = this.hass.states[id];
-    const rawVal = parseFloat(s.state);
-    const val = !isNaN(rawVal) ? rawVal.toFixed(1) : s.state;
-    const unit = s.attributes.unit_of_measurement || '';
-    const isPower = unit.toLowerCase().includes('w') || unit.toLowerCase().includes('a');
-    const consuming = isPower && rawVal > 0.5;
 
-    return { val, unit, icon: icon || s.attributes.icon, active: consuming || !['off', 'unavailable', 'unknown', 'standby'].includes(s.state.toLowerCase()), consuming };
+  setConfig(config) { this.config = config; }
+
+  _getState(id, icon) {
+    const s = this.hass?.states?.[id];
+    if (!s) return { val: '?', unit: '', icon: icon || 'mdi:help-circle', active: false };
+
+    const raw = parseFloat(s.state);
+    const val = isNaN(raw) ? s.state : raw.toFixed(1);
+    const unit = s.attributes.unit_of_measurement || '';
+
+    const isPower = /[wa]/i.test(unit);
+    const consuming = isPower && raw > 0.5;
+    const active = consuming || !['off','unknown','unavailable','standby'].includes(s.state);
+
+    return { val, unit, icon: icon || s.attributes.icon, active, consuming };
   }
 
   _getChemColor(type, value) {
     const v = parseFloat(value);
     if (isNaN(v)) return '#00f9f9';
-    if (type === 'ph') return (v < 7.2 || v > 7.6) ? '#ff4d4d' : '#00f9f9';
-    if (type === 'orp') return (v < 650) ? '#ff4d4d' : '#00f9f9';
-    if (type === 'br') return (v < 3.0 || v > 5.0) ? '#ff4d4d' : '#00f9f9';
-    return '#00f9f9';
+
+    const ranges = {
+      ph: [7.2, 7.6],
+      br: [3, 5],
+      orp: [650, Infinity],
+    };
+
+    if (type === 'orp') return v < 650 ? '#ff4d4d' : '#00f9f9';
+
+    const [min, max] = ranges[type] || [];
+    return v < min || v > max ? '#ff4d4d' : '#00f9f9';
   }
+
+  /* ---------- RENDER HELPERS ---------- */
+
+  _renderSwitches(c) {
+    return Array.from({ length: 8 }).map((_, i) => {
+      const e = c[`switch_${i+1}_entity`];
+      if (!e) return '';
+
+      const s = this._getState(e);
+
+      return html`
+        <div class="sw ${s.active ? 'on' : ''}"
+             style="font-size:${c.btn_fs || 10}px;"
+             @click=${() => this.hass.callService("homeassistant","toggle",{entity_id:e})}>
+          <ha-icon icon="${c[`switch_${i+1}_icon`]}"
+                   style="--mdc-icon-size:${(c.btn_fs || 10)*1.8}px"></ha-icon>
+          <div>${c[`switch_${i+1}_label`] || `B${i+1}`}</div>
+        </div>
+      `;
+    });
+  }
+
+  _renderSystem(c) {
+    return Array.from({ length: 14 }).map((_, i) => {
+      const id = c[`sys_entity_${i+1}`];
+      if (!id) return '';
+
+      const s = this._getState(id, c[`sys_icon_${i+1}`]);
+
+      return html`
+        <div class="sys-i" style="font-size:${c.sys_fs || 12}px;">
+          <ha-icon icon="${s.icon}"
+                   class="${s.consuming ? 'power-on' : (s.active ? 'n' : '')}"
+                   style="--mdc-icon-size:${(c.sys_fs || 12)*1.3}px"></ha-icon>
+          <span style="${s.consuming ? 'color:#ffcc00;font-weight:bold;' : ''}">
+            ${c[`sys_label_${i+1}`] || ''}: ${s.val}${s.unit}
+          </span>
+        </div>
+      `;
+    });
+  }
+
+  _renderTemps(c) {
+    const water = this._getState(c.entity_water_temp);
+    const air = this._getState(c.entity_ambient_temp);
+
+    return html`
+      <div class="gb"
+           style="left:${c.pos_temp_x}%; top:${c.pos_temp_y}%;
+                  width:${c.temp_w}px; height:${c.temp_h}px;
+                  font-size:${c.temp_fs}px;">
+        <div class="bh">TEMPÉRATURES</div>
+        <div class="bb">EAU: <span class="n">${water.val}${water.unit}</span></div>
+        <div class="bb">AIR: <span>${air.val}${air.unit}</span></div>
+      </div>
+    `;
+  }
+
+  _renderChem(c) {
+    const ph = this._getState(c.entity_ph);
+    const orp = this._getState(c.entity_orp);
+    const br = this._getState(c.entity_bromine);
+    const tac = this._getState(c.entity_alkalinity);
+
+    return html`
+      <div class="gb"
+           style="left:${c.pos_chem_x}%; top:${c.pos_chem_y}%;
+                  width:${c.chem_w}px; height:${c.chem_h}px;
+                  font-size:${c.chem_fs}px;">
+        <div class="bh">CHIMIE</div>
+        <div class="bb">pH: <span style="color:${this._getChemColor('ph', ph.val)}">${ph.val}</span></div>
+        <div class="bb">ORP: <span style="color:${this._getChemColor('orp', orp.val)}">${orp.val}mV</span></div>
+        <div class="bb">Br: <span style="color:${this._getChemColor('br', br.val)}">${br.val}</span></div>
+        <div class="bb">TAC: <span class="n">${tac.val}</span></div>
+      </div>
+    `;
+  }
+
+  _renderCamera(c) {
+    if (!c.camera_entity) return '';
+    return html`
+      <div class="gb"
+           style="left:${c.pos_cam_x}%; top:${c.pos_cam_y}%;
+                  width:${c.camera_width}px; height:${c.camera_height}px; padding:2px;">
+        <hui-image .hass=${this.hass} .cameraImage=${c.camera_entity} cameraView="live"></hui-image>
+      </div>
+    `;
+  }
+
+  _renderIdeal(c) {
+    if (c.show_ideal_table === false) return '';
+    return html`
+      <div class="gb"
+           style="left:${c.pos_ideal_x}%; top:${c.pos_ideal_y}%;
+                  width:${c.ideal_w}px; height:${c.ideal_h}px;
+                  font-size:${c.ideal_fs}px;">
+        <div class="bh">CIBLES IDÉALES</div>
+        ${[
+          ['pH','7.2 - 7.6'],
+          ['ORP','> 650 mV'],
+          ['Brome','3.0 - 5.0'],
+          ['TAC','80 - 120'],
+        ].map(i => html`<div class="id"><span>${i[0]}</span><span>${i[1]}</span></div>`)}
+      </div>
+    `;
+  }
+
+  /* ---------- MAIN RENDER ---------- */
 
   render() {
     if (!this.hass || !this.config) return html``;
     const c = this.config;
-    const titlePos = c.title_align === 'center' ? 'left:50%;transform:translateX(-50%);' : c.title_align === 'right' ? 'right:20px;' : 'left:20px;';
-    
-    const sys = [];
-    for (let i = 1; i <= 14; i++) {
-      if (c[`sys_entity_${i}`]) {
-        const s = this._getState(c[`sys_entity_${i}`], c[`sys_icon_${i}`]);
-        sys.push(html`
-          <div class="sys-i" style="font-size:${c.sys_fs || 12}px;">
-            <ha-icon icon="${s.icon}" class="${s.consuming ? 'power-on' : (s.active ? 'n' : '')}" style="--mdc-icon-size:${(c.sys_fs || 12)*1.3}px"></ha-icon>
-            <span style="${s.consuming ? 'color:#ffcc00; font-weight:bold;' : ''}">${c[`sys_label_${i}`] || ''}: ${s.val}${s.unit}</span>
-          </div>`);
-      }
-    }
+
+    const titlePos =
+      c.title_align === 'center' ? 'left:50%;transform:translateX(-50%);' :
+      c.title_align === 'right'  ? 'right:20px;' :
+      'left:20px;';
 
     return html`
-      <ha-card style="background-image: url('${c.background_image}'); height: ${c.card_height_v || 80}vh;">
-        <div class="t" style="font-size:${c.title_size || 20}px; ${titlePos}">${c.card_title || 'SPA CONTROL'}</div>
-        
-        <div class="btns-g" style="width:${c.btn_w || 98}%; height:${c.btn_h || 60}px; top:${c.btn_y || 15}%;">
-          ${Array.from({length: 8}).map((_, i) => c[`switch_${i+1}_entity`] ? html`
-            <div class="sw ${this._getState(c[`switch_${i+1}_entity`]).active ? 'on' : ''}" style="font-size:${c.btn_fs || 10}px;" @click=${() => this.hass.callService("homeassistant", "toggle", {entity_id: c[`switch_${i+1}_entity`]})}>
-              <ha-icon icon="${c[`switch_${i+1}_icon`]}" style="--mdc-icon-size:${(c.btn_fs || 10)*1.8}px"></ha-icon><div>${c[`switch_${i+1}_label`] || 'B'+(i+1)}</div>
-            </div>` : '')}
+      <ha-card style="background-image:url('${c.background_image}');
+                     height:${c.card_height_v || 80}vh;">
+        <div class="t" style="font-size:${c.title_size || 20}px; ${titlePos}">
+          ${c.card_title || 'SPA CONTROL'}
         </div>
 
-        <div class="gb" style="left:${c.pos_temp_x}%; top:${c.pos_temp_y}%; width:${c.temp_w}px; height:${c.temp_h}px; font-size:${c.temp_fs}px;">
-          <div class="bh">TEMPÉRATURES</div>
-          <div class="bb">EAU: <span class="n">${this._getState(c.entity_water_temp).val}${this._getState(c.entity_water_temp).unit}</span></div>
-          <div class="bb">AIR: <span>${this._getState(c.entity_ambient_temp).val}${this._getState(c.entity_ambient_temp).unit}</span></div>
+        <div class="btns-g"
+             style="width:${c.btn_w || 98}%;
+                    height:${c.btn_h || 60}px;
+                    top:${c.btn_y || 15}%;">
+          ${this._renderSwitches(c)}
         </div>
 
-        <div class="gb" style="left:${c.pos_chem_x}%; top:${c.pos_chem_y}%; width:${c.chem_w}px; height:${c.chem_h}px; font-size:${c.chem_fs}px;">
-          <div class="bh">CHIMIE</div>
-          <div class="bb">pH: <span style="color:${this._getChemColor('ph', this._getState(c.entity_ph).val)}">${this._getState(c.entity_ph).val}</span></div>
-          <div class="bb">ORP: <span style="color:${this._getChemColor('orp', this._getState(c.entity_orp).val)}">${this._getState(c.entity_orp).val}mV</span></div>
-          <div class="bb">Br: <span style="color:${this._getChemColor('br', this._getState(c.entity_bromine).val)}">${this._getState(c.entity_bromine).val}</span></div>
-          <div class="bb">TAC: <span class="n">${this._getState(c.entity_alkalinity).val}</span></div>
+        ${this._renderTemps(c)}
+        ${this._renderChem(c)}
+
+        <div class="gb"
+             style="left:${c.pos_elec_x}%; top:${c.pos_elec_y}%;
+                    width:${c.sys_w}px; height:${c.sys_h}px;">
+          <div class="bh">SYSTÈME</div>
+          <div class="sys-g">${this._renderSystem(c)}</div>
         </div>
 
-        <div class="gb" style="left:${c.pos_elec_x}%; top:${c.pos_elec_y}%; width:${c.sys_w}px; height:${c.sys_h}px;">
-          <div class="bh">SYSTÈME</div><div class="sys-g">${sys}</div>
-        </div>
-
-        ${c.camera_entity ? html`<div class="gb" style="left:${c.pos_cam_x}%; top:${c.pos_cam_y}%; width:${c.camera_width}px; height:${c.camera_height}px; padding:2px;"><hui-image .hass=${this.hass} .cameraImage=${c.camera_entity} cameraView="live"></hui-image></div>` : ''}
-
-        ${c.show_ideal_table !== false ? html`<div class="gb" style="left:${c.pos_ideal_x}%; top:${c.pos_ideal_y}%; width:${c.ideal_w}px; height:${c.ideal_h}px; font-size:${c.ideal_fs}px;">
-          <div class="bh">CIBLES IDÉALES</div>
-          <div class="id"><span>pH</span><span>7.2 - 7.6</span></div>
-          <div class="id"><span>ORP</span><span>> 650 mV</span></div>
-          <div class="id"><span>Brome</span><span>3.0 - 5.0</span></div>
-          <div class="id"><span>TAC</span><span>80 - 120</span></div>
-        </div>` : ''}
+        ${this._renderCamera(c)}
+        ${this._renderIdeal(c)}
       </ha-card>
     `;
   }
-
-  static styles = css`
-    ha-card { background-size: cover; background-position: center; border: 2px solid #00f9f9; border-radius: 15px; overflow: hidden; position: relative; color: #fff; font-family: 'Roboto', sans-serif; }
-    .t { position: absolute; top: 15px; font-weight: 900; color: #00f9f9; text-transform: uppercase; white-space: nowrap; }
-    .btns-g { position: absolute; left: 1%; display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
-    .sw { background: rgba(0,0,0,0.8); border: 1px solid #00f9f9; border-radius: 8px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; backdrop-filter: blur(5px); }
-    .sw.on { background: rgba(0,249,249,0.4); box-shadow: 0 0 10px #00f9f9; }
-    .gb { position: absolute; background: rgba(0,0,0,0.75); border: 1px solid #00f9f9; border-radius: 12px; padding: 12px; overflow: hidden; backdrop-filter: blur(8px); }
-    .bh { color: #00f9f9; font-size: 11px; font-weight: 900; border-bottom: 1px solid rgba(0,249,249,0.3); margin-bottom: 8px; }
-    .bb { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; }
-    .sys-g { display: grid; grid-template-columns: 1fr; gap: 4px; overflow-y: auto; height: calc(100% - 25px); }
-    .sys-i { display: flex; align-items: center; white-space: nowrap; margin-bottom: 2px; }
-    .id { display: flex; justify-content: space-between; color: #00ff88; font-weight: bold; margin-bottom: 3px; }
-    .n { color: #00f9f9; text-shadow: 0 0 5px #00f9f9; }
-    .power-on { color: #ffcc00 !important; filter: drop-shadow(0 0 3px #ffcc00); }
-    ha-icon { margin-right: 6px; }
-    hui-image { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
-  `;
 }
-
-customElements.define("spa-card-editor", SpaCardEditor);
-customElements.define("spa-card", SpaCard);
-window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "SPA MASTER ULTIMATE", preview: true });
