@@ -1,117 +1,63 @@
-// SPA Card V4 ULTIMATE – Full featured, drag & drop, HACS-ready
+// SPA Card Editor – V4 ULTIMATE
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-class SpaCard extends LitElement {
+class SpaCardEditor extends LitElement {
   static get properties() {
-    return { hass: {}, config: {} };
+    return { hass: {}, _config: {}, _tab: { type: Number } };
   }
 
-  static getConfigElement() {
-    return document.createElement("spa-card-editor");
+  constructor() {
+    super();
+    this._tab = 0;
   }
 
   setConfig(config) {
-    this.config = { title: "SPA", positions: {}, ...config };
+    this._config = config;
   }
 
-  firstUpdated() {
-    this._initDrag();
+  _selectTab(idx) {
+    this._tab = idx;
   }
 
-  updated() {
-    this._initDrag();
-  }
-
-  _initDrag() {
-    const elements = this.renderRoot.querySelectorAll('.draggable');
-    elements.forEach(el => {
-      el.onpointerdown = (e) => this._startDrag(e, el);
-    });
-  }
-
-  _startDrag(e, el) {
-    e.preventDefault();
-    const rect = el.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
-
-    const move = (ev) => {
-      const x = ev.clientX - offsetX;
-      const y = ev.clientY - offsetY;
-      el.style.transform = `translate(${x}px, ${y}px)`;
-      this.config.positions[el.dataset.key] = { x, y };
-    };
-
-    const up = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-      this._saveConfig();
-    };
-
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
-  }
-
-  _saveConfig() {
-    this.dispatchEvent(new CustomEvent('config-changed', {
-      detail: { config: this.config }, bubbles: true, composed: true
-    }));
-  }
-
-  _state(id) {
-    const s = this.hass?.states?.[id];
-    if (!s) return { v: '?', u: '', on: false, icon: 'mdi:help' };
-    const raw = parseFloat(s.state);
-    const v = isNaN(raw) ? s.state : raw.toFixed(1);
-    const u = s.attributes.unit_of_measurement || '';
-    const on = !['off','unknown','unavailable'].includes(s.state);
-    return { v, u, on, icon: s.attributes.icon };
-  }
-
-  _toggle(id) {
-    this.hass.callService('homeassistant', 'toggle', { entity_id: id });
-  }
-
-  /* ---------- RENDER MODULES ---------- */
-
-  _renderTemps() {
-    const water = this._state(this.config.water);
-    const air = this._state(this.config.air);
-    return html`<div class="panel draggable" data-key="temps"> <div class="h">Températures</div> <div>Eau <b>${water.v}${water.u}</b></div> <div>Air <b>${air.v}${air.u}</b></div> </div>`;
-  }
-
-  _renderChem() {
-    const ph = this._state(this.config.ph);
-    const orp = this._state(this.config.orp);
-    const br = this._state(this.config.br);
-    return html`<div class="panel draggable" data-key="chem"> <div class="h">Chimie</div> <div>pH <b>${ph.v}</b></div> <div>ORP <b>${orp.v} mV</b></div> <div>Brome <b>${br.v}</b></div> </div>`;
-  }
-
-  _renderButtons() {
-    return html`<div class="buttons panel draggable" data-key="buttons"> ${[1,2,3,4].map(i=>{const e=this.config[`switch_${i}`]; if(!e) return ''; const s=this._state(e); return html`<div class="btn ${s.on?'on':''}" @click=${()=>this._toggle(e)}><ha-icon icon="${s.icon}"></ha-icon></div>`})} </div>`;
-  }
-
-  _renderCamera() {
-    if(!this.config.camera) return '';
-    return html`<div class="panel cam draggable" data-key="camera"> <hui-image .hass=${this.hass} .cameraImage=${this.config.camera} cameraView="live"></hui-image> </div>`;
+  _valueChanged(ev) {
+    if (!this._config || !this.hass) return;
+    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: ev.detail.value }, bubbles:true, composed:true }));
   }
 
   render() {
-    return html`<ha-card><div class="title">${this.config.title}</div>${this._renderTemps()}${this._renderChem()}${this._renderButtons()}${this._renderCamera()}</ha-card>`;
+    if(!this._config || !this.hass) return html``;
+    const tabs = ['Général','Boutons','Sondes','Système','Caméra','Cibles'];
+    return html`
+      <div class="tabs">
+        ${tabs.map((n,i)=>html`<div class="tab ${this._tab===i?'active':''}" @click=${()=>this._selectTab(i)}>${n}</div>`)}
+      </div>
+      <div class="editor">
+        <!-- ici on peut insérer un formulaire Lovelace dynamique basé sur ha-form -->
+        <ha-form .hass=${this.hass} .data=${this._config} .schema=${this._getSchema(this._tab)} @value-changed=${this._valueChanged}></ha-form>
+      </div>
+    `;
+  }
+
+  _getSchema(tab) {
+    const c=this._config;
+    const schemas = [
+      [ {name:'title', label:'Titre', selector:{text:{}}} ],
+      Array.from({length:4},(_,i)=>({name:`switch_${i+1}`, label:`Bouton ${i+1}`, selector:{entity:{}}})),
+      [ {name:'water', label:'Eau', selector:{entity:{}}}, {name:'air', label:'Air', selector:{entity:{}}}, {name:'ph', label:'pH', selector:{entity:{}}}, {name:'orp', label:'ORP', selector:{entity:{}}}, {name:'br', label:'Brome', selector:{entity:{}}} ],
+      [], // système à étendre si besoin
+      [ {name:'camera', label:'Caméra', selector:{entity:{domain:'camera'}}} ],
+      [ {name:'positions', label:'Positions Drag & Drop', selector:{text:{}}} ]
+    ];
+    return schemas[tab] || [];
   }
 
   static styles = css`
-    ha-card { position: relative; border-radius: 26px; padding:16px; overflow:hidden; backdrop-filter:blur(20px); background:linear-gradient(135deg, rgba(0,255,255,0.18), rgba(0,0,0,0.7)); border:1px solid rgba(0,255,255,0.35); box-shadow:0 0 25px rgba(0,255,255,0.25); color:white; }
-    .title { font-size:22px; font-weight:900; margin-bottom:8px; text-shadow:0 0 12px cyan,0 0 24px cyan; }
-    .panel { border-radius:18px; padding:12px; margin-top:10px; backdrop-filter:blur(14px); background: rgba(0,0,0,0.45); border:1px solid rgba(0,255,255,0.35); box-shadow:0 0 12px rgba(0,255,255,0.25); }
-    .buttons { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
-    .btn { height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; background: rgba(255,255,255,0.05); border:1px solid rgba(0,255,255,0.4); cursor:pointer; transition:all 0.25s ease; }
-    .btn.on { background: rgba(0,255,255,0.3); box-shadow:0 0 14px cyan, inset 0 0 10px rgba(255,255,255,0.25); animation:glow 2s infinite alternate; }
-    @keyframes glow { from{box-shadow:0 0 6px cyan;} to{box-shadow:0 0 18px cyan;} }
-    .cam hui-image { width:100%; height:180px; border-radius:12px; object-fit:cover; }
-    @media(max-width:600px){.buttons{grid-template-columns:repeat(2,1fr);}.cam hui-image{height:140px;}}
+    .tabs { display:flex; gap:4px; margin-bottom:8px; }
+    .tab { padding:4px 8px; background:#444; color:#fff; border-radius:4px; cursor:pointer; font-size:12px; }
+    .tab.active { background:#00f9f9; color:#000; font-weight:bold; }
+    .editor { margin-top:10px; }
   `;
 }
 
-customElements.define('spa-card', SpaCard);
-console.info('SPA-CARD V4 ULTIMATE loaded – drag & drop, HACS ready');
+customElements.define('spa-card-editor', SpaCardEditor);
+console.info('SPA-CARD-EDITOR V4 loaded – drag & drop HACS ready');
