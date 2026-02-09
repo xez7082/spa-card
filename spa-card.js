@@ -1,9 +1,10 @@
-// SPA Card V2 PRO – balanced design, editor-ready
+// SPA Card V3 ULTIMATE – Full featured HACS-ready
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import interact from "https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js";
 
 class SpaCard extends LitElement {
   static get properties() {
-    return { hass: {}, config: {} };
+    return { hass: {}, config: {}, _edit: { type: Boolean } };
   }
 
   static getConfigElement() {
@@ -11,7 +12,48 @@ class SpaCard extends LitElement {
   }
 
   setConfig(config) {
-    this.config = config;
+    this.config = {
+      title: "SPA",
+      ...config,
+    };
+  }
+
+  firstUpdated() {
+    this._initDrag();
+  }
+
+  updated() {
+    this._initDrag();
+  }
+
+  _initDrag() {
+    if (!this._edit) return;
+
+    this.renderRoot.querySelectorAll(".draggable").forEach((el) => {
+      interact(el).draggable({
+        listeners: {
+          move: (event) => {
+            const x = (parseFloat(el.getAttribute("data-x")) || 0) + event.dx;
+            const y = (parseFloat(el.getAttribute("data-y")) || 0) + event.dy;
+
+            el.style.transform = `translate(${x}px, ${y}px)`;
+            el.setAttribute("data-x", x);
+            el.setAttribute("data-y", y);
+          },
+          end: () => this._savePositions(),
+        },
+      });
+    });
+  }
+
+  _savePositions() {
+    this.dispatchEvent(
+      new CustomEvent("config-changed", {
+        detail: { config: this.config },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   _state(id) {
@@ -30,96 +72,161 @@ class SpaCard extends LitElement {
     this.hass.callService("homeassistant", "toggle", { entity_id: e });
   }
 
-  _renderButtons(c) {
-    return Array.from({ length: 6 }).map((_, i) => {
-      const e = c[`switch_${i + 1}`];
-      if (!e) return "";
-      const s = this._state(e);
+  /* ---------- MODULES ---------- */
 
-      return html`
-        <div class="btn ${s.on ? "on" : ""}" @click=${() => this._toggle(e)}>
-          <ha-icon icon="${s.icon}" />
-          <span>${s.v !== "?" ? s.v : ""}</span>
-        </div>
-      `;
-    });
+  _renderTemps(c) {
+    const water = this._state(c.water);
+    const air = this._state(c.air);
+
+    return html`
+      <div class="panel draggable" style="${c.pos_temps || ""}">
+        <div class="h">Températures</div>
+        <div>Eau <b>${water.v}${water.u}</b></div>
+        <div>Air <b>${air.v}${air.u}</b></div>
+      </div>
+    `;
   }
+
+  _renderChem(c) {
+    const ph = this._state(c.ph);
+    const orp = this._state(c.orp);
+    const br = this._state(c.br);
+
+    return html`
+      <div class="panel draggable" style="${c.pos_chem || ""}">
+        <div class="h">Chimie</div>
+        <div>pH <b>${ph.v}</b></div>
+        <div>ORP <b>${orp.v} mV</b></div>
+        <div>Brome <b>${br.v}</b></div>
+      </div>
+    `;
+  }
+
+  _renderCamera(c) {
+    if (!c.camera) return "";
+
+    return html`
+      <div class="panel draggable cam" style="${c.pos_cam || ""}">
+        <hui-image .hass=${this.hass} .cameraImage=${c.camera} cameraView="live"></hui-image>
+      </div>
+    `;
+  }
+
+  _renderButtons(c) {
+    return html`
+      <div class="buttons panel draggable" style="${c.pos_btns || ""}">
+        ${[1, 2, 3, 4].map((i) => {
+          const e = c[`switch_${i}`];
+          if (!e) return "";
+          const s = this._state(e);
+
+          return html`
+            <div class="btn ${s.on ? "on" : ""}" @click=${() => this._toggle(e)}>
+              <ha-icon icon="${s.icon}"></ha-icon>
+            </div>
+          `;
+        })}
+      </div>
+    `;
+  }
+
+  /* ---------- MAIN ---------- */
 
   render() {
     if (!this.hass || !this.config) return html``;
     const c = this.config;
 
-    const water = this._state(c.water);
-    const air = this._state(c.air);
-
     return html`
       <ha-card>
-        <div class="title">${c.title || "SPA"}</div>
+        <div class="title">${c.title}</div>
 
-        <div class="temps">
-          <div>Eau <b>${water.v}${water.u}</b></div>
-          <div>Air <b>${air.v}${air.u}</b></div>
-        </div>
-
-        <div class="buttons">${this._renderButtons(c)}</div>
+        ${this._renderTemps(c)}
+        ${this._renderChem(c)}
+        ${this._renderButtons(c)}
+        ${this._renderCamera(c)}
       </ha-card>
     `;
   }
 
   static styles = css`
     ha-card {
-      border-radius: 24px;
+      position: relative;
+      border-radius: 26px;
       padding: 16px;
-      backdrop-filter: blur(18px);
-      background: linear-gradient(135deg, rgba(0, 255, 255, 0.15), rgba(0, 0, 0, 0.6));
-      border: 1px solid rgba(0, 255, 255, 0.4);
-      box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
+      overflow: hidden;
+      backdrop-filter: blur(20px);
+      background: linear-gradient(135deg, rgba(0, 255, 255, 0.18), rgba(0, 0, 0, 0.7));
+      border: 1px solid rgba(0, 255, 255, 0.35);
+      box-shadow: 0 0 25px rgba(0, 255, 255, 0.25);
       color: white;
     }
 
     .title {
       font-size: 22px;
       font-weight: 900;
-      text-shadow: 0 0 10px cyan;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
+      text-shadow: 0 0 12px cyan, 0 0 24px cyan;
     }
 
-    .temps {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 12px;
+    .panel {
+      border-radius: 18px;
+      padding: 12px;
+      margin-top: 10px;
+      backdrop-filter: blur(14px);
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(0, 255, 255, 0.35);
+      box-shadow: 0 0 12px rgba(0, 255, 255, 0.25);
+      transition: transform 0.25s ease;
+    }
+
+    .panel:hover {
+      transform: scale(1.02);
     }
 
     .buttons {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 10px;
     }
 
     .btn {
+      height: 48px;
+      border-radius: 14px;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 10px;
-      border-radius: 16px;
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(0, 255, 255, 0.4);
-      transition: 0.25s;
       cursor: pointer;
+      transition: all 0.25s ease;
     }
 
     .btn.on {
-      background: rgba(0, 255, 255, 0.25);
-      box-shadow: 0 0 12px cyan;
+      background: rgba(0, 255, 255, 0.3);
+      box-shadow: 0 0 14px cyan, inset 0 0 10px rgba(255, 255, 255, 0.25);
+      animation: glow 2s infinite alternate;
     }
 
-    ha-icon {
-      margin-bottom: 4px;
+    @keyframes glow {
+      from { box-shadow: 0 0 6px cyan; }
+      to { box-shadow: 0 0 18px cyan; }
+    }
+
+    .cam hui-image {
+      width: 100%;
+      height: 180px;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+
+    /* Responsive mobile */
+    @media (max-width: 600px) {
+      .buttons { grid-template-columns: repeat(2, 1fr); }
+      .cam hui-image { height: 140px; }
     }
   `;
 }
 
 customElements.define("spa-card", SpaCard);
 
-console.info("SPA-CARD V2 PRO loaded");
+console.info("SPA‑CARD V3 ULTIMATE loaded – HACS ready");
