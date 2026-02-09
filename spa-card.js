@@ -1,144 +1,158 @@
-// SPA Card Editor V5 - Corrected
 import {
   LitElement,
   html,
   css,
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-class SpaCardEditor extends LitElement {
+class SpaCard extends LitElement {
   static get properties() {
     return {
       hass: { type: Object },
-      _config: { type: Object },
-      _tab: { type: Number },
+      config: { type: Object },
     };
   }
 
-  constructor() {
-    super();
-    this._tab = 0;
+  // Liaison avec l'éditeur
+  static getConfigElement() {
+    return document.createElement("spa-card-editor");
+  }
+
+  static getStubConfig() {
+    return {
+      card_title: "Mon Spa",
+      background_image: "https://images.unsplash.com/photo-1540331547168-8b63109225b7?q=80&w=1000",
+      card_height_v: 80,
+    };
   }
 
   setConfig(config) {
-    this._config = config;
-  }
-
-  _selectTab(idx) {
-    this._tab = idx;
-  }
-
-  _valueChanged(ev) {
-    if (!this._config || !this.hass) return;
-    const config = ev.detail.value;
-    
-    // On émet l'événement pour sauvegarder la config
-    this.dispatchEvent(
-      new CustomEvent("config-changed", {
-        detail: { config },
-        bubbles: true,
-        composed: true,
-      })
-    );
+    if (!config) throw new Error("Configuration invalide");
+    this.config = config;
   }
 
   render() {
-    if (!this.hass || !this._config) return html``;
-
-    const tabs = ["Général", "Boutons", "Sondes", "Caméra", "Chimie"];
-    
-    // Définition des schémas pour ha-form
-    const schemas = [
-      // Onglet 0: Général
-      [
-        { name: "card_title", label: "Titre de la carte", selector: { text: {} } },
-        { name: "background_image", label: "URL de l'image de fond", selector: { text: {} } },
-        { name: "card_height_v", label: "Hauteur de la carte (%)", selector: { number: { min: 20, max: 100, mode: "slider" } } },
-      ],
-      // Onglet 1: Boutons (Générés dynamiquement)
-      Array.from({ length: 8 }, (_, i) => [
-        { name: `switch_${i + 1}_label`, label: `Bouton ${i + 1} - Nom`, selector: { text: {} } },
-        { name: `switch_${i + 1}_entity`, label: `Bouton ${i + 1} - Entité`, selector: { entity: {} } },
-        { name: `switch_${i + 1}_icon`, label: `Bouton ${i + 1} - Icône`, selector: { icon: {} } },
-      ]).flat(),
-      // Onglet 2: Sondes
-      [
-        { name: "entity_water_temp", label: "Capteur Température Eau", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_ambient_temp", label: "Capteur Température Air", selector: { entity: { domain: "sensor" } } },
-      ],
-      // Onglet 3: Caméra
-      [
-        { name: "camera_entity", label: "Entité Caméra", selector: { entity: { domain: "camera" } } },
-        { name: "camera_width", label: "Largeur (px)", selector: { number: { min: 100, max: 800 } } },
-        { name: "camera_height", label: "Hauteur (px)", selector: { number: { min: 100, max: 800 } } },
-      ],
-      // Onglet 4: Chimie
-      [
-        { name: "entity_ph", label: "Capteur pH", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_orp", label: "Capteur ORP", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_bromine", label: "Capteur Brome", selector: { entity: { domain: "sensor" } } },
-      ],
-    ];
+    if (!this.hass || !this.config) return html``;
 
     return html`
-      <div class="tabs">
-        ${tabs.map(
-          (n, i) => html`
-            <div
-              class="tab ${this._tab === i ? "active" : ""}"
-              @click=${() => this._selectTab(i)}
-            >
-              ${n}
-            </div>
-          `
-        )}
-      </div>
+      <ha-card style="height: ${this.config.card_height_v || 80}vh; background-image: url('${this.config.background_image}');">
+        <div class="overlay">
+          <div class="header">
+            <h2>${this.config.card_title || "Spa"}</h2>
+          </div>
 
-      <div class="form-container">
-        <ha-form
-          .hass=${this.hass}
-          .data=${this._config}
-          .schema=${schemas[this._tab]}
-          .computeLabel=${(schema) => schema.label}
-          @value-changed=${this._valueChanged}
-        ></ha-form>
+          <div class="sensors">
+            ${this._renderSensor(this.config.entity_water_temp, "Eau")}
+            ${this._renderSensor(this.config.entity_ambient_temp, "Air")}
+          </div>
+
+          <div class="button-grid">
+            ${Array.from({ length: 8 }).map((_, i) => {
+              const entityId = this.config[`switch_${i + 1}_entity`];
+              if (!entityId) return "";
+              return this._renderButton(
+                entityId,
+                this.config[`switch_${i + 1}_label`] || `B${i + 1}`,
+                this.config[`switch_${i + 1}_icon`] || "mdi:toggle-switch"
+              );
+            })}
+          </div>
+
+          ${this.config.camera_entity ? html`
+            <div class="camera-container">
+               <hui-image
+                .hass=${this.hass}
+                .cameraImage=${this.config.camera_entity}
+                .cameraView=${"live"}
+                style="width: ${this.config.camera_width || 300}px; height: ${this.config.camera_height || 200}px;"
+              ></hui-image>
+            </div>
+          ` : ""}
+        </div>
+      </ha-card>
+    `;
+  }
+
+  _renderSensor(entityId, label) {
+    if (!entityId || !this.hass.states[entityId]) return "";
+    const state = this.hass.states[entityId];
+    return html`
+      <div class="sensor-item">
+        <span class="label">${label}</span>
+        <span class="value">${state.state}${state.attributes.unit_of_measurement || ""}</span>
       </div>
     `;
   }
 
+  _renderButton(entityId, label, icon) {
+    const stateObj = this.hass.states[entityId];
+    const isActive = stateObj && stateObj.state === "on";
+
+    return html`
+      <div class="btn-item ${isActive ? "active" : ""}" @click=${() => this._toggle(entityId)}>
+        <ha-icon icon="${icon}"></ha-icon>
+        <span>${label}</span>
+      </div>
+    `;
+  }
+
+  _toggle(entityId) {
+    this.hass.callService("homeassistant", "toggle", { entity_id: entityId });
+  }
+
   static get styles() {
     return css`
-      .tabs {
+      ha-card {
+        overflow: hidden;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+        border-radius: 12px;
+        color: white;
+      }
+      .overlay {
+        background: rgba(0, 0, 0, 0.4);
+        height: 100%;
+        width: 100%;
         display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 16px;
-        border-bottom: 1px solid var(--divider-color);
-        padding-bottom: 8px;
+        flex-direction: column;
+        padding: 16px;
+        box-sizing: border-box;
       }
-      .tab {
-        padding: 6px 12px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        border-radius: 20px;
+      .header h2 { margin: 0; font-weight: 300; text-align: center; }
+      .sensors { display: flex; justify-content: space-around; margin: 20px 0; }
+      .sensor-item { text-align: center; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; min-width: 80px; }
+      .label { display: block; font-size: 0.8em; opacity: 0.8; }
+      .value { font-size: 1.2em; font-weight: bold; }
+      
+      .button-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: 10px;
+        margin-top: auto;
+      }
+      .btn-item {
+        background: rgba(255,255,255,0.2);
+        padding: 12px;
+        border-radius: 10px;
+        text-align: center;
         cursor: pointer;
-        font-size: 13px;
-        transition: all 0.3s ease;
-        border: 1px solid var(--divider-color);
+        transition: 0.3s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-size: 0.9em;
       }
-      .tab.active {
-        background: var(--accent-color);
-        color: var(--text-primary-color, white);
-        border-color: var(--accent-color);
+      .btn-item.active {
+        background: var(--accent-color, #00f9f9);
+        color: black;
       }
-      .form-container {
-        padding: 8px 0;
-      }
-      ha-form {
-        display: block;
-        margin-bottom: 24px;
+      .camera-container {
+        margin-top: 15px;
+        display: flex;
+        justify-content: center;
       }
     `;
   }
 }
 
-customElements.define("spa-card-editor", SpaCardEditor);
+customElements.define("spa-card", SpaCard);
