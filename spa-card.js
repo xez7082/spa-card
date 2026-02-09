@@ -150,7 +150,6 @@ class SpaCard extends LitElement {
       box-shadow: 0 0 20px rgba(0,0,0,0.5);
     }
 
-    /* Titre Principal Stylisé */
     .t { 
       position: absolute; 
       top: 15px; 
@@ -161,28 +160,23 @@ class SpaCard extends LitElement {
       text-shadow: 0 0 10px rgba(0, 249, 249, 0.8);
     }
 
-    /* Cadres (Modules) Stylisés */
     .gb { 
       position: absolute; 
       background: linear-gradient(135deg, rgba(0,20,30,0.85) 0%, rgba(0,0,0,0.9) 100%);
       border: 1px solid rgba(0, 249, 249, 0.4);
-      /* Bordure asymétrique : haut-gauche et bas-droit plus arrondis */
       border-radius: 15px 4px 15px 4px; 
       padding: 12px; 
       overflow: hidden; 
       backdrop-filter: blur(12px);
-      /* Lueur externe subtile */
       box-shadow: 0 4px 15px rgba(0,0,0,0.6), inset 0 0 10px rgba(0, 249, 249, 0.1);
       transition: all 0.3s ease;
     }
 
-    /* Effet de survol sur les cadres */
     .gb:hover {
       border-color: rgba(0, 249, 249, 1);
       box-shadow: 0 4px 20px rgba(0, 249, 249, 0.3), inset 0 0 15px rgba(0, 249, 249, 0.2);
     }
 
-    /* En-tête des cadres avec barre déco */
     .bh { 
       color: #00f9f9; 
       font-size: 10px; 
@@ -194,7 +188,6 @@ class SpaCard extends LitElement {
       text-transform: uppercase;
     }
 
-    /* Boutons de commande style "Cockpit" */
     .sw { 
       background: rgba(10, 10, 10, 0.8); 
       border: 1px solid rgba(0, 249, 249, 0.3); 
@@ -216,12 +209,17 @@ class SpaCard extends LitElement {
       color: #00f9f9;
     }
 
-    /* Valeurs en surbrillance */
     .n { color: #00f9f9; text-shadow: 0 0 8px rgba(0, 249, 249, 0.6); font-family: 'Courier New', monospace; }
     .power-on { color: #ffcc00 !important; filter: drop-shadow(0 0 5px #ffcc00); }
-    
+    .btns-g { position: absolute; left: 1%; display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+    .bb { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; }
+    .sys-g { display: grid; grid-template-columns: 1fr; gap: 4px; overflow-y: auto; height: calc(100% - 25px); }
+    .sys-i { display: flex; align-items: center; white-space: nowrap; margin-bottom: 2px; }
     .id { display: flex; justify-content: space-between; color: #00ff88; font-weight: bold; margin-bottom: 4px; font-size: 0.9em; }
+    ha-icon { margin-right: 6px; }
+    hui-image { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
   `;
+}
 
 customElements.define("spa-card-editor", SpaCardEditor);
 customElements.define("spa-card", SpaCard);
