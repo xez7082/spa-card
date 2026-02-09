@@ -1,10 +1,9 @@
-// SPA Card V3 ULTIMATE – Full featured HACS-ready
+// SPA Card V3 FIXED – compatible Home Assistant (no external CDN imports)
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-import interact from "https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js";
 
 class SpaCard extends LitElement {
   static get properties() {
-    return { hass: {}, config: {}, _edit: { type: Boolean } };
+    return { hass: {}, config: {} };
   }
 
   static getConfigElement() {
@@ -18,43 +17,7 @@ class SpaCard extends LitElement {
     };
   }
 
-  firstUpdated() {
-    this._initDrag();
-  }
-
-  updated() {
-    this._initDrag();
-  }
-
-  _initDrag() {
-    if (!this._edit) return;
-
-    this.renderRoot.querySelectorAll(".draggable").forEach((el) => {
-      interact(el).draggable({
-        listeners: {
-          move: (event) => {
-            const x = (parseFloat(el.getAttribute("data-x")) || 0) + event.dx;
-            const y = (parseFloat(el.getAttribute("data-y")) || 0) + event.dy;
-
-            el.style.transform = `translate(${x}px, ${y}px)`;
-            el.setAttribute("data-x", x);
-            el.setAttribute("data-y", y);
-          },
-          end: () => this._savePositions(),
-        },
-      });
-    });
-  }
-
-  _savePositions() {
-    this.dispatchEvent(
-      new CustomEvent("config-changed", {
-        detail: { config: this.config },
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
+  /* ---------- SAFE STATE ---------- */
 
   _state(id) {
     const s = this.hass?.states?.[id];
@@ -79,7 +42,7 @@ class SpaCard extends LitElement {
     const air = this._state(c.air);
 
     return html`
-      <div class="panel draggable" style="${c.pos_temps || ""}">
+      <div class="panel">
         <div class="h">Températures</div>
         <div>Eau <b>${water.v}${water.u}</b></div>
         <div>Air <b>${air.v}${air.u}</b></div>
@@ -93,7 +56,7 @@ class SpaCard extends LitElement {
     const br = this._state(c.br);
 
     return html`
-      <div class="panel draggable" style="${c.pos_chem || ""}">
+      <div class="panel">
         <div class="h">Chimie</div>
         <div>pH <b>${ph.v}</b></div>
         <div>ORP <b>${orp.v} mV</b></div>
@@ -106,7 +69,7 @@ class SpaCard extends LitElement {
     if (!c.camera) return "";
 
     return html`
-      <div class="panel draggable cam" style="${c.pos_cam || ""}">
+      <div class="panel cam">
         <hui-image .hass=${this.hass} .cameraImage=${c.camera} cameraView="live"></hui-image>
       </div>
     `;
@@ -114,7 +77,7 @@ class SpaCard extends LitElement {
 
   _renderButtons(c) {
     return html`
-      <div class="buttons panel draggable" style="${c.pos_btns || ""}">
+      <div class="buttons panel">
         ${[1, 2, 3, 4].map((i) => {
           const e = c[`switch_${i}`];
           if (!e) return "";
@@ -176,11 +139,6 @@ class SpaCard extends LitElement {
       background: rgba(0, 0, 0, 0.45);
       border: 1px solid rgba(0, 255, 255, 0.35);
       box-shadow: 0 0 12px rgba(0, 255, 255, 0.25);
-      transition: transform 0.25s ease;
-    }
-
-    .panel:hover {
-      transform: scale(1.02);
     }
 
     .buttons {
@@ -219,7 +177,6 @@ class SpaCard extends LitElement {
       object-fit: cover;
     }
 
-    /* Responsive mobile */
     @media (max-width: 600px) {
       .buttons { grid-template-columns: repeat(2, 1fr); }
       .cam hui-image { height: 140px; }
@@ -229,4 +186,4 @@ class SpaCard extends LitElement {
 
 customElements.define("spa-card", SpaCard);
 
-console.info("SPA‑CARD V3 ULTIMATE loaded – HACS ready");
+console.info("SPA-CARD V3 FIXED loaded");
