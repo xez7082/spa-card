@@ -1,158 +1,100 @@
-import {
-  LitElement,
-  html,
-  css,
-} from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 class SpaCard extends LitElement {
-  static get properties() {
-    return {
-      hass: { type: Object },
-      config: { type: Object },
-    };
-  }
-
-  // Liaison avec l'éditeur
-  static getConfigElement() {
-    return document.createElement("spa-card-editor");
-  }
-
-  static getStubConfig() {
-    return {
-      card_title: "Mon Spa",
-      background_image: "https://images.unsplash.com/photo-1540331547168-8b63109225b7?q=80&w=1000",
-      card_height_v: 80,
-    };
-  }
-
-  setConfig(config) {
-    if (!config) throw new Error("Configuration invalide");
-    this.config = config;
-  }
+  static get properties() { return { hass: {}, config: {} }; }
+  static getConfigElement() { return document.createElement("spa-card-editor"); }
 
   render() {
     if (!this.hass || !this.config) return html``;
+    const c = this.config;
 
     return html`
-      <ha-card style="height: ${this.config.card_height_v || 80}vh; background-image: url('${this.config.background_image}');">
-        <div class="overlay">
-          <div class="header">
-            <h2>${this.config.card_title || "Spa"}</h2>
+      <ha-card style="height: ${c.card_height_v || 80}vh; background-image: url('${c.background_image}');">
+        <div class="glass-container">
+          
+          <div class="top-bar">
+            <div class="title-area">
+               <h1>${c.card_title || "Wellness Center"}</h1>
+               <div class="status-badge">Connecté</div>
+            </div>
           </div>
 
-          <div class="sensors">
-            ${this._renderSensor(this.config.entity_water_temp, "Eau")}
-            ${this._renderSensor(this.config.entity_ambient_temp, "Air")}
+          <div class="main-sensors">
+            ${this._renderSensor(c.entity_water_temp, "Temp. Eau", "mdi:thermometer-water")}
+            ${this._renderSensor(c.entity_ambient_temp, "Air", "mdi:weather-windy")}
           </div>
 
-          <div class="button-grid">
+          <div class="controls-grid">
             ${Array.from({ length: 8 }).map((_, i) => {
-              const entityId = this.config[`switch_${i + 1}_entity`];
-              if (!entityId) return "";
-              return this._renderButton(
-                entityId,
-                this.config[`switch_${i + 1}_label`] || `B${i + 1}`,
-                this.config[`switch_${i + 1}_icon`] || "mdi:toggle-switch"
-              );
+              const eid = c[`switch_${i+1}_entity`];
+              if (!eid) return "";
+              return this._renderBtn(eid, c[`switch_${i+1}_label`] || `B${i+1}`, c[`switch_${i+1}_icon`]);
             })}
           </div>
 
-          ${this.config.camera_entity ? html`
-            <div class="camera-container">
-               <hui-image
-                .hass=${this.hass}
-                .cameraImage=${this.config.camera_entity}
-                .cameraView=${"live"}
-                style="width: ${this.config.camera_width || 300}px; height: ${this.config.camera_height || 200}px;"
-              ></hui-image>
+          ${c.camera_entity ? html`
+            <div class="cam-box">
+               <hui-image .hass=${this.hass} .cameraImage=${c.camera_entity} cameraView="live"></hui-image>
             </div>
           ` : ""}
+
+          <div class="bottom-stats">
+             ${this._renderMini(c.entity_ph, "pH")}
+             ${this._renderMini(c.entity_orp, "ORP")}
+          </div>
         </div>
       </ha-card>
     `;
   }
 
-  _renderSensor(entityId, label) {
-    if (!entityId || !this.hass.states[entityId]) return "";
-    const state = this.hass.states[entityId];
-    return html`
-      <div class="sensor-item">
-        <span class="label">${label}</span>
-        <span class="value">${state.state}${state.attributes.unit_of_measurement || ""}</span>
+  _renderSensor(eid, label, icon) {
+    const s = this.hass.states[eid];
+    return s ? html`
+      <div class="sensor-card">
+        <ha-icon icon="${icon}"></ha-icon>
+        <div class="sensor-data">
+          <span class="val">${s.state}°</span>
+          <span class="lbl">${label}</span>
+        </div>
       </div>
-    `;
+    ` : "";
   }
 
-  _renderButton(entityId, label, icon) {
-    const stateObj = this.hass.states[entityId];
-    const isActive = stateObj && stateObj.state === "on";
-
+  _renderBtn(eid, label, icon) {
+    const active = this.hass.states[eid]?.state === "on";
     return html`
-      <div class="btn-item ${isActive ? "active" : ""}" @click=${() => this._toggle(entityId)}>
-        <ha-icon icon="${icon}"></ha-icon>
+      <div class="btn ${active ? 'on' : ''}" @click=${() => this.hass.callService("homeassistant", "toggle", {entity_id: eid})}>
+        <ha-icon icon="${icon || 'mdi:power'}"></ha-icon>
         <span>${label}</span>
       </div>
     `;
   }
 
-  _toggle(entityId) {
-    this.hass.callService("homeassistant", "toggle", { entity_id: entityId });
+  _renderMini(eid, label) {
+    const s = this.hass.states[eid];
+    return s ? html`<div class="mini-stat"><strong>${label}:</strong> ${s.state}</div>` : "";
   }
 
-  static get styles() {
-    return css`
-      ha-card {
-        overflow: hidden;
-        background-size: cover;
-        background-position: center;
-        position: relative;
-        border-radius: 12px;
-        color: white;
-      }
-      .overlay {
-        background: rgba(0, 0, 0, 0.4);
-        height: 100%;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        padding: 16px;
-        box-sizing: border-box;
-      }
-      .header h2 { margin: 0; font-weight: 300; text-align: center; }
-      .sensors { display: flex; justify-content: space-around; margin: 20px 0; }
-      .sensor-item { text-align: center; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; min-width: 80px; }
-      .label { display: block; font-size: 0.8em; opacity: 0.8; }
-      .value { font-size: 1.2em; font-weight: bold; }
-      
-      .button-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-        gap: 10px;
-        margin-top: auto;
-      }
-      .btn-item {
-        background: rgba(255,255,255,0.2);
-        padding: 12px;
-        border-radius: 10px;
-        text-align: center;
-        cursor: pointer;
-        transition: 0.3s;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        font-size: 0.9em;
-      }
-      .btn-item.active {
-        background: var(--accent-color, #00f9f9);
-        color: black;
-      }
-      .camera-container {
-        margin-top: 15px;
-        display: flex;
-        justify-content: center;
-      }
-    `;
-  }
+  static styles = css`
+    ha-card { background-size: cover; background-position: center; border-radius: 24px; overflow: hidden; position: relative; color: white; border: none; }
+    .glass-container { height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.6) 100%); backdrop-filter: blur(8px); padding: 24px; display: flex; flex-direction: column; }
+    
+    h1 { font-size: 24px; font-weight: 300; margin: 0; letter-spacing: 1px; }
+    .status-badge { font-size: 10px; background: #4caf50; padding: 2px 8px; border-radius: 10px; display: inline-block; }
+
+    .main-sensors { display: flex; gap: 16px; margin: 24px 0; }
+    .sensor-card { background: rgba(255,255,255,0.1); padding: 16px; border-radius: 16px; flex: 1; display: flex; align-items: center; gap: 12px; border: 1px solid rgba(255,255,255,0.1); }
+    .val { font-size: 22px; font-weight: bold; display: block; }
+    .lbl { font-size: 11px; opacity: 0.7; }
+
+    .controls-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .btn { background: rgba(255,255,255,0.1); padding: 12px 8px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; cursor: pointer; border: 1px solid rgba(255,255,255,0.05); }
+    .btn ha-icon { margin-bottom: 8px; --mdc-icon-size: 24px; }
+    .btn span { font-size: 10px; text-transform: uppercase; font-weight: 600; }
+    .btn.on { background: white; color: black; box-shadow: 0 4px 15px rgba(255,255,255,0.3); }
+
+    .cam-box { border-radius: 16px; overflow: hidden; margin: 10px 0; border: 1px solid rgba(255,255,255,0.2); }
+    .bottom-stats { display: flex; justify-content: center; gap: 20px; font-size: 12px; opacity: 0.8; margin-top: auto; }
+  `;
 }
-
 customElements.define("spa-card", SpaCard);
