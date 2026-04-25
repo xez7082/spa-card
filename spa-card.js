@@ -146,13 +146,16 @@ class SpaCard extends LitElement {
         return html`<div class="chem-grid">${sArr.map(s => {
             const val = parseFloat(s.v);
             const isAlert = (s.max && val > s.max) || (s.min && val < s.min);
-            return html`<div class="chem-card ${isAlert ? 'alert' : ''}">
-                <div class="chem-header">
+            return html`<div class="chem-card-v2 ${isAlert ? 'alert' : ''}">
+                <div class="chem-header-v2">
                     <ha-icon icon="${s.i}"></ha-icon>
                     <span>${s.n}</span>
                 </div>
-                <div class="chem-value">${s.v}<small>${s.u||''}</small></div>
-                <div class="chem-range">${s.min||''}${s.min&&s.max?'|':''}${s.max||''}</div>
+                <div class="chem-main-row">
+                    <div class="chem-limit">${s.min || ''}</div>
+                    <div class="chem-value-v2">${s.v}<small>${s.u||''}</small></div>
+                    <div class="chem-limit">${s.max || ''}</div>
+                </div>
             </div>`;
         })}</div>`;
     }
@@ -190,18 +193,22 @@ class SpaCard extends LitElement {
     .hum-val { font-size: 22px; color: #00f9f9; font-weight: 300; }
     .hum-lab { font-size: 9px; opacity: 0.5; }
 
-    /* Grille Chimie Compacte */
-    .chem-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; padding: 5px; }
-    .chem-card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 10px; text-align: center; transition: 0.3s; }
-    .chem-header { display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 5px; opacity: 0.7; }
-    .chem-header ha-icon { --mdc-icon-size: 14px; }
-    .chem-header span { font-size: 10px; font-weight: bold; letter-spacing: 1px; }
-    .chem-value { font-size: 20px; color: #00f9f9; font-weight: 300; }
-    .chem-value small { font-size: 10px; margin-left: 2px; opacity: 0.5; }
-    .chem-range { font-size: 8px; opacity: 0.3; margin-top: 3px; }
+    /* Grille Chimie V2 - Focus Limites */
+    .chem-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%; padding: 5px; }
+    .chem-card-v2 { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 12px 8px; text-align: center; }
+    .chem-header-v2 { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 8px; }
+    .chem-header-v2 ha-icon { --mdc-icon-size: 16px; color: #00f9f9; }
+    .chem-header-v2 span { font-size: 11px; font-weight: 600; text-transform: uppercase; opacity: 0.8; }
     
-    .chem-card.alert { border-color: #ff4d4d; background: rgba(255,77,77,0.1); animation: blink 2s infinite; }
-    .chem-card.alert .chem-value { color: #ff4d4d; }
+    .chem-main-row { display: flex; align-items: baseline; justify-content: space-between; gap: 5px; }
+    .chem-value-v2 { font-size: 24px; color: #00f9f9; font-weight: 300; flex: 1; }
+    .chem-value-v2 small { font-size: 10px; margin-left: 2px; opacity: 0.6; }
+    
+    .chem-limit { font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.3); width: 30px; }
+    
+    .chem-card-v2.alert { border-color: #ff4d4d; background: rgba(255,77,77,0.15); animation: blink 2s infinite; }
+    .chem-card-v2.alert .chem-value-v2 { color: #ff4d4d; font-weight: 600; }
+    .chem-card-v2.alert .chem-limit { color: rgba(255,77,77,0.5); }
 
     /* Boutons */
     .sw-grid-compact { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
@@ -220,4 +227,4 @@ class SpaCard extends LitElement {
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V21", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V22", preview: true });
