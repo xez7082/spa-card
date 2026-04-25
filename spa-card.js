@@ -21,8 +21,8 @@ class SpaCardEditor extends LitElement {
     const schemas = {
       gen: [
         { name: "card_title", label: "Titre du Spa", selector: { text: {} } },
-        { name: "background_image", label: "URL Image (/local/sparond2.png)", selector: { text: {} } },
-        { name: "card_height", label: "Hauteur Carte (ex: 600px)", selector: { text: {} } }
+        { name: "background_image", label: "Image (/local/sparond2.png)", selector: { text: {} } },
+        { name: "card_height", label: "Hauteur FIXE de la carte (ex: 600px)", selector: { text: {} } }
       ],
       sensors: [
         { name: "entity_water_temp", label: "Température Eau", selector: { entity: { domain: "sensor" } } },
@@ -30,11 +30,11 @@ class SpaCardEditor extends LitElement {
         { name: "entity_ph", label: "Sonde pH", selector: { entity: { domain: "sensor" } } },
         { name: "entity_orp", label: "Sonde ORP", selector: { entity: { domain: "sensor" } } },
         { name: "entity_tds", label: "Sonde TDS", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_salt", label: "Sonde Sel / Salinité", selector: { entity: { domain: "sensor" } } }
+        { name: "entity_salt", label: "Sonde Sel", selector: { entity: { domain: "sensor" } } }
       ],
       camera: [
         { name: "entity_camera", label: "Caméra", selector: { entity: { domain: "camera" } } },
-        { name: "camera_height", label: "Hauteur Caméra (ex: 300px)", selector: { text: {} } }
+        { name: "camera_height", label: "Hauteur de la zone Caméra (ex: 350px)", selector: { text: {} } }
       ],
       switches: Array.from({ length: 10 }, (_, i) => ([
         { name: `switch_${i + 1}`, label: `Bouton ${i + 1}`, selector: { entity: {} } },
@@ -77,10 +77,10 @@ class SpaCard extends LitElement {
     if (!this.hass || !this.config) return html``;
     const c = this.config;
     const bg = c.background_image || '/local/sparond2.png';
-    const h = c.card_height || '550px';
+    const forceHeight = c.card_height || '550px';
 
     return html`
-      <ha-card style="height: ${h}; min-height: ${h}; background-image: url('${bg}'); background-size: cover;">
+      <ha-card style="height: ${forceHeight} !important; min-height: ${forceHeight} !important; max-height: ${forceHeight} !important; background-image: url('${bg}');">
         <div class="overlay">
           
           <div class="header">
@@ -88,7 +88,7 @@ class SpaCard extends LitElement {
              <h1>${c.card_title || 'SPA'}</h1>
           </div>
 
-          <div class="main-view">
+          <div class="main-content">
             ${this._renderTab()}
           </div>
 
@@ -106,9 +106,9 @@ class SpaCard extends LitElement {
 
   _renderTab() {
     const c = this.config;
-    if (this._tab === 'home') return html`<div class="big-circle"><div class="v">${this._get(c.entity_water_temp) || '--'}</div><div class="u">°C EAU</div></div>`;
+    if (this._tab === 'home') return html`<div class="center-content"><div class="big-circle"><div class="v">${this._get(c.entity_water_temp) || '--'}</div><div class="u">°C EAU</div></div></div>`;
     
-    if (this._tab === 'cam') return html`<div class="camera-box" style="height:${c.camera_height || '300px'}">${c.entity_camera ? html`<hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : 'Caméra non configurée'}</div>`;
+    if (this._tab === 'cam') return html`<div class="center-content"><div class="camera-box" style="height:${c.camera_height || '300px'}">${c.entity_camera ? html`<hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : 'Caméra non configurée'}</div></div>`;
     
     if (this._tab === 'chem') {
       const sensors = [
@@ -117,8 +117,8 @@ class SpaCard extends LitElement {
         { n: 'TDS', v: this._get(c.entity_tds) },
         { n: 'SEL', v: this._get(c.entity_salt) }
       ];
-      return html`<div class="chem-grid">
-        ${sensors.map(s => s.v ? html`<div class="chem-item"><span>${s.n}</span> <b>${s.v} ${s.u || ''}</b></div>` : '')}
+      return html`<div class="chem-container">
+        ${sensors.map(s => s.v ? html`<div class="chem-row"><span>${s.n}</span> <b>${s.v} ${s.u || ''}</b></div>` : '')}
       </div>`;
     }
     
@@ -128,7 +128,7 @@ class SpaCard extends LitElement {
           if(!id) return '';
           const active = this.hass.states[id]?.state === 'on';
           return html`<div class="sw-unit">
-              <div class="sw-icon ${active ? 'active' : ''}" @click=${()=>this.hass.callService("homeassistant","toggle",{entity_id:id})}>
+              <div class="sw-btn ${active ? 'active' : ''}" @click=${()=>this.hass.callService("homeassistant","toggle",{entity_id:id})}>
                 <ha-icon icon="${this.hass.states[id]?.attributes.icon || 'mdi:power'}"></ha-icon>
               </div>
               <div class="sw-label">${c[`name_switch_${i+1}`] || ''}</div>
@@ -138,27 +138,36 @@ class SpaCard extends LitElement {
   }
 
   static styles = css`
-    ha-card { border-radius: 24px; overflow: hidden; color: white; display: block; }
-    .overlay { height: 100%; width: 100%; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
-    .header { display: flex; justify-content: space-between; align-items: center; }
+    ha-card { border-radius: 24px; overflow: hidden; color: white; display: block; background-size: cover; background-position: center; }
+    .overlay { height: 100%; width: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
+    
+    .header { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; }
     .header h1 { font-size: 18px; color: #00f9f9; margin: 0; }
     .ext-tag { font-size: 10px; background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 15px; }
-    .main-view { flex-grow: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .big-circle { width: 140px; height: 140px; border: 2px solid #00f9f9; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .v { font-size: 45px; color: #00f9f9; }
-    .camera-box { width: 100%; border-radius: 15px; overflow: hidden; background: #000; }
-    .chem-grid { width: 100%; display: flex; flex-direction: column; gap: 8px; }
-    .chem-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; display: flex; justify-content: space-between; }
+
+    .main-content { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; overflow: hidden; width: 100%; }
+    .center-content { width: 100%; display: flex; justify-content: center; }
+
+    .big-circle { width: 140px; height: 140px; border: 2px solid #00f9f9; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); }
+    .v { font-size: 45px; color: #00f9f9; font-weight: 200; }
+    .u { font-size: 10px; opacity: 0.6; }
+
+    .camera-box { width: 100%; border-radius: 15px; overflow: hidden; background: #000; border: 1px solid #333; }
+    .chem-container { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+    .chem-row { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .chem-row b { color: #00f9f9; }
+
     .switches-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; width: 100%; }
     .sw-unit { display: flex; flex-direction: column; align-items: center; }
-    .sw-icon { width: 100%; height: 40px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-    .sw-icon.active { background: rgba(0,249,249,0.3); border: 1px solid #00f9f9; color: #00f9f9; }
-    .sw-label { font-size: 8px; margin-top: 4px; text-align: center; }
-    .bottom-nav { display: flex; justify-content: space-around; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .sw-btn { width: 100%; height: 40px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .sw-btn.active { background: rgba(0,249,249,0.3); border: 1px solid #00f9f9; color: #00f9f9; }
+    .sw-label { font-size: 8px; margin-top: 4px; text-align: center; color: white; }
+
+    .bottom-nav { flex: 0 0 auto; display: flex; justify-content: space-around; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
     .nav-i { opacity: 0.3; cursor: pointer; }
-    .nav-i.on { opacity: 1; color: #00f9f9; }
+    .nav-i.on { opacity: 1; color: #00f9f9; transform: scale(1.1); }
   `;
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V7", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master Fixed", preview: true });
