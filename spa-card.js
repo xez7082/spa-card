@@ -23,23 +23,23 @@ class SpaCardEditor extends LitElement {
         { name: "card_title", label: "Titre du Spa", selector: { text: {} } },
         { name: "background_image", label: "Image (/local/sparond2.png)", selector: { text: {} } },
         { name: "card_height", label: "Hauteur Carte (ex: 600px)", selector: { text: {} } },
-        { name: "main_cons_entity", label: "Sonde Conso Principale (sur Accueil)", selector: { entity: {} } }
+        { name: "main_cons_entity", label: "Sonde Conso (sur Accueil)", selector: { entity: {} } }
       ],
       sensors: [
         { name: "entity_water_temp", label: "Temp Eau", selector: { entity: { domain: "sensor" } } },
         { name: "min_temp", label: "Min", selector: { number: { mode: "box" } } }, { name: "max_temp", label: "Max", selector: { number: { mode: "box" } } },
         { name: "entity_ph", label: "pH", selector: { entity: { domain: "sensor" } } },
         { name: "min_ph", label: "Min", selector: { number: { mode: "box", step: 0.1 } } }, { name: "max_ph", label: "Max", selector: { number: { mode: "box", step: 0.1 } } },
-        { name: "entity_orp", label: "ORP", selector: { entity: { domain: "sensor" } } },
+        { name: "entity_orp", label: "ORP (Redox)", selector: { entity: { domain: "sensor" } } },
         { name: "min_orp", label: "Min", selector: { number: { mode: "box" } } }, { name: "max_orp", label: "Max", selector: { number: { mode: "box" } } },
         { name: "entity_tds", label: "TDS", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_salt", label: "Sel", selector: { entity: { domain: "sensor" } } },
+        { name: "entity_salt", label: "Salinité (Sel)", selector: { entity: { domain: "sensor" } } },
         { name: "entity_cond", label: "Conductivité", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_tac", label: "Alcalinité (TAC)", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_th", label: "Dureté (TH)", selector: { entity: { domain: "sensor" } } }
+        { name: "entity_sg", label: "Densité (Specific Gravity)", selector: { entity: { domain: "sensor" } } },
+        { name: "entity_hum", label: "Humidité Analyseur", selector: { entity: { domain: "sensor" } } }
       ],
       divers: Array.from({ length: 6 }, (_, i) => ([
-        { name: `misc_entity_${i + 1}`, label: `Sonde Divers ${i + 1}`, selector: { entity: {} } },
+        { name: `misc_entity_${i + 1}`, label: `Sonde Conso ${i + 1}`, selector: { entity: {} } },
         { name: `misc_name_${i + 1}`, label: `Nom ${i + 1}`, selector: { text: {} } }
       ])).flat(),
       camera: [
@@ -86,7 +86,8 @@ class SpaCard extends LitElement {
   }
   _getUnit(id) {
     if (!this.hass || !id || !this.hass.states[id]) return '';
-    return this.hass.states[id].attributes.unit_of_measurement || '';
+    const unit = this.hass.states[id].attributes.unit_of_measurement;
+    return unit || '';
   }
 
   render() {
@@ -139,9 +140,9 @@ class SpaCard extends LitElement {
         { n: 'ORP', v: this._get(c.entity_orp), u: 'mV', min: c.min_orp, max: c.max_orp },
         { n: 'TDS', v: this._get(c.entity_tds), u: 'ppm' },
         { n: 'SEL', v: this._get(c.entity_salt), u: 'ppm' },
-        { n: 'COND', v: this._get(c.entity_cond), u: 'µS' },
-        { n: 'TAC', v: this._get(c.entity_tac) },
-        { n: 'TH', v: this._get(c.entity_th) }
+        { n: 'COND', v: this._get(c.entity_cond), u: 'µS/cm' },
+        { n: 'S.G', v: this._get(c.entity_sg) },
+        { n: 'HUM', v: this._get(c.entity_hum), u: '%' }
       ];
       return html`<div class="chem-list">${sArr.map(s => {
           if (!s.v) return '';
@@ -199,4 +200,4 @@ class SpaCard extends LitElement {
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V13", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V14", preview: true });
