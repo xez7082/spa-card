@@ -133,21 +133,30 @@ class SpaCard extends LitElement {
           </div>`;
     }
     if (this._tab === 'cam') return html`<div class="center" style="width:100%">${c.entity_camera ? html`<hui-image style="width:${c.camera_width || '100%'}; height:${c.camera_height || 'auto'};" .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : 'Caméra non configurée'}</div>`;
+    
     if (this._tab === 'chem') {
         const sArr = [
-            { n: 'pH', v: this._get(c.entity_ph), min: c.min_ph, max: c.max_ph },
-            { n: 'ORP', v: this._get(c.entity_orp), u: 'mV', min: c.min_orp, max: c.max_orp },
-            { n: 'TDS', v: this._get(c.entity_tds), u: 'ppm', min: c.min_tds, max: c.max_tds },
-            { n: 'SEL', v: this._get(c.entity_salt), u: 'ppm', min: c.min_salt, max: c.max_salt },
-            { n: 'COND', v: this._get(c.entity_cond), u: 'µS/cm', min: c.min_cond, max: c.max_cond },
-            { n: 'HUM SONDE', v: this._get(c.entity_probe_hum), u: '%', max: c.max_probe_hum }
+            { n: 'pH', v: this._get(c.entity_ph), min: c.min_ph, max: c.max_ph, i: 'mdi:ph' },
+            { n: 'ORP', v: this._get(c.entity_orp), u: 'mV', min: c.min_orp, max: c.max_orp, i: 'mdi:lightning-bolt' },
+            { n: 'TDS', v: this._get(c.entity_tds), u: 'ppm', min: c.min_tds, max: c.max_tds, i: 'mdi:water-opacity' },
+            { n: 'SEL', v: this._get(c.entity_salt), u: 'ppm', min: c.min_salt, max: c.max_salt, i: 'mdi:shaker' },
+            { n: 'COND', v: this._get(c.entity_cond), u: 'µS', min: c.min_cond, max: c.max_cond, i: 'mdi:waves' },
+            { n: 'SONDE', v: this._get(c.entity_probe_hum), u: '%', max: c.max_probe_hum, i: 'mdi:leak' }
         ];
-        return html`<div class="chem-list">${sArr.map(s => {
+        return html`<div class="chem-grid">${sArr.map(s => {
             const val = parseFloat(s.v);
             const isAlert = (s.max && val > s.max) || (s.min && val < s.min);
-            return html`<div class="row ${isAlert ? 'alert-row' : ''}"><span>${s.n}</span><div class="val-box"><b>${s.v} ${s.u||''}</b><small>${s.min||''}${s.min&&s.max?' - ':''}${s.max||''}</small></div></div>`;
+            return html`<div class="chem-card ${isAlert ? 'alert' : ''}">
+                <div class="chem-header">
+                    <ha-icon icon="${s.i}"></ha-icon>
+                    <span>${s.n}</span>
+                </div>
+                <div class="chem-value">${s.v}<small>${s.u||''}</small></div>
+                <div class="chem-range">${s.min||''}${s.min&&s.max?'|':''}${s.max||''}</div>
+            </div>`;
         })}</div>`;
     }
+
     if (this._tab === 'sw') {
         return html`<div class="sw-grid-compact">${Array.from({length:10},(_,i)=>{
             const id = c[`switch_${i+1}`]; if(!id) return '';
@@ -169,31 +178,39 @@ class SpaCard extends LitElement {
     .header h1 { font-size: 16px; color: #00f9f9; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
     .ext-tag { font-size: 11px; background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 12px; display: flex; align-items: center; gap: 5px; }
     .view-port { flex: 1; display: flex; align-items: center; justify-content: center; overflow-y: auto; width: 100%; }
+    
+    /* Accueil */
     .home-view { display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%; }
     .circle { width: 140px; height: 140px; border: 3px solid #00f9f9; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .circle.alert { border-color: #ff4d4d; box-shadow: 0 0 20px #ff4d4d; animation: pulse 2s infinite; }
     .v { font-size: 48px; color: #00f9f9; font-weight: 200; }
     .u { font-size: 10px; opacity: 0.6; }
-    .info-grid { display: flex; gap: 8px; }
     .badge { background: rgba(255,255,255,0.1); padding: 6px 10px; border-radius: 20px; font-size: 11px; display: flex; align-items: center; gap: 5px; }
     .hum-row { display: flex; gap: 30px; text-align: center; }
     .hum-val { font-size: 22px; color: #00f9f9; font-weight: 300; }
     .hum-lab { font-size: 9px; opacity: 0.5; }
-    
-    /* Grille de boutons compacte (3 colonnes) */
-    .sw-grid-compact { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; padding: 2px; }
-    .sw-tile-mini { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 5px; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.2s; text-align: center; }
-    .sw-tile-mini ha-icon { --mdc-icon-size: 24px; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
-    .sw-label-mini { font-size: 9px; font-weight: 500; color: rgba(255,255,255,0.8); line-height: 1.1; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-    
-    .sw-tile-mini.on { background: rgba(0,249,249,0.12); border-color: #00f9f9; }
-    .sw-tile-mini.on ha-icon { color: #00f9f9; filter: drop-shadow(0 0 5px #00f9f9); }
-    .sw-tile-mini.on .sw-label-mini { color: #00f9f9; }
 
-    .chem-list { width: 100%; display: flex; flex-direction: column; gap: 8px; }
-    .row { background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
-    .alert-row { border: 1px solid #ff4d4d; background: rgba(255,77,77,0.15); animation: blink 2s infinite; }
-    .val-box b { color: #00f9f9; display: block; }
+    /* Grille Chimie Compacte */
+    .chem-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; padding: 5px; }
+    .chem-card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 10px; text-align: center; transition: 0.3s; }
+    .chem-header { display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 5px; opacity: 0.7; }
+    .chem-header ha-icon { --mdc-icon-size: 14px; }
+    .chem-header span { font-size: 10px; font-weight: bold; letter-spacing: 1px; }
+    .chem-value { font-size: 20px; color: #00f9f9; font-weight: 300; }
+    .chem-value small { font-size: 10px; margin-left: 2px; opacity: 0.5; }
+    .chem-range { font-size: 8px; opacity: 0.3; margin-top: 3px; }
+    
+    .chem-card.alert { border-color: #ff4d4d; background: rgba(255,77,77,0.1); animation: blink 2s infinite; }
+    .chem-card.alert .chem-value { color: #ff4d4d; }
+
+    /* Boutons */
+    .sw-grid-compact { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+    .sw-tile-mini { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 5px; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+    .sw-tile-mini ha-icon { --mdc-icon-size: 24px; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
+    .sw-label-mini { font-size: 9px; color: rgba(255,255,255,0.8); text-align: center; }
+    .sw-tile-mini.on { border-color: #00f9f9; background: rgba(0,249,249,0.1); }
+    .sw-tile-mini.on ha-icon, .sw-tile-mini.on .sw-label-mini { color: #00f9f9; }
+
     .bottom-nav { display: flex; justify-content: space-around; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 10px; }
     .nav-i { opacity: 0.3; cursor: pointer; transition: 0.3s; }
     .nav-i.on { opacity: 1; color: #00f9f9; }
@@ -203,4 +220,4 @@ class SpaCard extends LitElement {
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V20", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V21", preview: true });
