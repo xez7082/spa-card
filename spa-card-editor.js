@@ -4,76 +4,152 @@ import {
   css
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-class SpaCard extends LitElement {
-  static get properties() { return { hass: {}, config: {} }; }
-  
-  setConfig(config) { this.config = config; }
-
-  _getState(id) {
-    if (!this.hass || !id || !this.hass.states[id]) return { val: '?', unit: '' };
-    const s = this.hass.states[id];
-    const val = parseFloat(s.state);
-    return { 
-      val: !isNaN(val) ? val.toFixed(1) : s.state, 
-      unit: s.attributes.unit_of_measurement || '' 
+// --- 1. L'ÉDITEUR DE CONFIGURATION ---
+class SpaCardEditor extends LitElement {
+  static get properties() {
+    return {
+      hass: { type: Object },
+      _config: { type: Object }
     };
   }
 
-  // Logique de couleur spécifique au Brome et Intex
-  _getColor(type, value) {
+  setConfig(config) {
+    this._config = config;
+  }
+
+  _valueChanged(ev) {
+    if (!this._config || !this.hass) return;
+    const target = ev.target;
+    if (this[`_${target.configValue}`] === target.value) return;
+    
+    const event = new CustomEvent("config-changed", {
+      detail: { config: ev.detail.value },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+  }
+
+  render() {
+    if (!this.hass || !this._config) return html``;
+
+    const schema = [
+      { name: "card_title", label: "Nom du Spa", selector: { text: {} } },
+      { name: "background_image", label: "Lien Image de fond", selector: { text: {} } },
+      {
+        name: "",
+        type: "grid",
+        column_min_width: "200px",
+        schema: [
+          { name: "entity_water_temp", label: "Sonde Température", selector: { entity: { domain: "sensor" } } },
+          { name: "entity_ph", label: "Sonde pH", selector: { entity: { domain: "sensor" } } },
+          { name: "entity_orp", label: "Sonde ORP", selector: { entity: { domain: "sensor" } } },
+          { name: "entity_tds", label: "Sonde TDS", selector: { entity: { domain: "sensor" } } },
+          { name: "entity_ec", label: "Sonde EC", selector: { entity: { domain: "sensor" } } },
+        ],
+      },
+    ];
+
+    return html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${this._config}
+        .schema=${schema}
+        @value-changed=${this._valueChanged}
+      ></ha-form>
+    `;
+  }
+}
+
+customElements.define("spa-card-editor", SpaCardEditor);
+
+// --- 2. LA CARTE PRINCIPALE ---
+class SpaCard extends LitElement {
+  static getConfigElement() {
+    return document.createElement("spa-card-editor");
+  }
+
+  static get properties() {
+    return {
+      hass: { type: Object },
+      config: { type: Object }
+    };
+  }
+
+  setConfig(config) {
+    if (!config) throw new Error("Configuration invalide");
+    this.config = config;
+  }
+
+  _getState(entityId) {
+    if (!this.hass || !entityId || !this.hass.states[entityId]) {
+      return { state: '?', unit: '' };
+    }
+    const stateObj = this.hass.states[entityId];
+    return {
+      state: stateObj.state,
+      unit: stateObj.attributes.unit_of_measurement || ''
+    };
+  }
+
+  // Couleurs adaptées au Brome et à ton Intex 4 places
+  _getChemColor(type, value) {
     const v = parseFloat(value);
     if (isNaN(v)) return '#00f9f9';
     switch (type) {
-      case 'ph': return (v >= 7.2 && v <= 7.6) ? '#00ff88' : '#ff4d4d';
-      case 'orp': return (v >= 650) ? '#00ff88' : '#ffcc00';
-      case 'tds': return (v < 2000) ? '#00ff88' : '#ffcc00';
+      case 'ph': return (v >= 7.2 && v <= 7.6) ? '#00ff88' : '#ff4d4d'; // Vert si OK
+      case 'orp': return (v >= 650) ? '#00ff88' : '#ffcc00'; // Jaune si bas
+      case 'tds': return (v < 2000) ? '#00ff88' : '#ff4d4d'; // Rouge si saturation
       default: return '#00f9f9';
     }
   }
 
   render() {
     if (!this.hass || !this.config) return html``;
-    const c = this.config;
+
+    const waterTemp = this._getState(this.config.entity_water_temp);
+    const ph = this._getState(this.config.entity_ph);
+    const orp = this._getState(this.config.entity_orp);
+    const tds = this._getState(this.config.entity_tds);
+    const ec = this._getState(this.config.entity_ec);
 
     return html`
-      <ha-card style="background-image: url('${c.background_image}');">
+      <ha-card style="background-image: url('${this.config.background_image}');">
         <div class="glass-overlay">
           
           <div class="header">
-            <h1>${c.card_title || 'SPA INTEX BROME'}</h1>
+            <h1>${this.config.card_title || 'SPA INTEX'}</h1>
+            <div class="badge">SYSTÈME TUYA CONNECTÉ</div>
           </div>
 
-          <div class="temp-section">
-            <div class="circle-main">
-              <span class="v-temp">${this._getState(c.entity_water_temp).val}</span>
-              <span class="u-temp">°C</span>
-            </div>
-          </div>
-
-          <div class="tuya-grid">
-            <div class="measure">
-              <span class="m-label">pH</span>
-              <span class="m-val" style="color: ${this._getColor('ph', this._getState(c.entity_ph).val)}">${this._getState(c.entity_ph).val}</span>
-            </div>
-            <div class="measure">
-              <span class="m-label">ORP</span>
-              <span class="m-val" style="color: ${this._getColor('orp', this._getState(c.entity_orp).val)}">${this._getState(c.entity_orp).val} <small>mV</small></span>
-            </div>
-            <div class="measure">
-              <span class="m-label">TDS</span>
-              <span class="m-val" style="color: ${this._getColor('tds', this._getState(c.entity_tds).val)}">${this._getState(c.entity_tds).val}</span>
-            </div>
-            <div class="measure">
-              <span class="m-label">EC</span>
-              <span class="m-val">${this._getState(c.entity_ec).val} <small>µs</small></span>
+          <div class="main-display">
+            <div class="temp-circle">
+              <span class="val">${waterTemp.state}</span>
+              <span class="unit">°C</span>
             </div>
           </div>
 
-          <div class="ideal-table">
-            <div class="ideal-title">CIBLES IDÉALES</div>
-            <div class="ideal-row"><span>pH</span><span>7.2 - 7.6</span></div>
-            <div class="ideal-row"><span>Brome (ORP)</span><span>> 650 mV</span></div>
-            <div class="ideal-row"><span>TDS</span><span>< 2000 ppm</span></div>
+          <div class="stats-grid">
+            <div class="stat-box">
+              <span class="label">pH</span>
+              <span class="value" style="color: ${this._getChemColor('ph', ph.state)}">${ph.state}</span>
+            </div>
+            <div class="stat-box">
+              <span class="label">ORP</span>
+              <span class="value" style="color: ${this._getChemColor('orp', orp.state)}">${orp.state} <small>mV</small></span>
+            </div>
+            <div class="stat-box">
+              <span class="label">TDS</span>
+              <span class="value" style="color: ${this._getChemColor('tds', tds.state)}">${tds.state}</span>
+            </div>
+            <div class="stat-box">
+              <span class="label">CONDUCTIVITÉ</span>
+              <span class="value">${ec.state} <small>µS</small></span>
+            </div>
+          </div>
+
+          <div class="ideal-targets">
+            <span>CIBLES BROME: <b>pH 7.4</b> | <b>ORP 700mV</b> | <b>TDS < 2000</b></span>
           </div>
 
         </div>
@@ -82,26 +158,66 @@ class SpaCard extends LitElement {
   }
 
   static styles = css`
-    ha-card { height: 520px; background-size: cover; border-radius: 25px; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,0.2); }
-    .glass-overlay { height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.8) 100%); backdrop-filter: blur(3px); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; }
+    ha-card {
+      height: 500px;
+      background-size: cover;
+      background-position: center;
+      border-radius: 24px;
+      position: relative;
+      overflow: hidden;
+      color: white;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+    .glass-overlay {
+      height: 100%;
+      background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.8) 100%);
+      backdrop-filter: blur(4px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .header { text-align: center; }
+    h1 { margin: 0; font-weight: 300; letter-spacing: 4px; font-size: 20px; color: #00f9f9; }
+    .badge { font-size: 8px; letter-spacing: 1px; opacity: 0.6; margin-top: 5px; }
     
-    .header h1 { color: #00f9f9; font-weight: 300; letter-spacing: 3px; text-align: center; font-size: 18px; margin: 0; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
-    
-    .temp-section { flex-grow: 1; display: flex; align-items: center; justify-content: center; }
-    .circle-main { width: 160px; height: 160px; border-radius: 50%; border: 2px solid rgba(0,249,249,0.3); background: rgba(0,0,0,0.4); display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(0,0,0,0.6); }
-    .v-temp { font-size: 58px; font-weight: 200; color: #00f9f9; }
-    .u-temp { font-size: 16px; opacity: 0.6; color: white; margin-top: -10px; }
+    .main-display { flex-grow: 1; display: flex; align-items: center; justify-content: center; }
+    .temp-circle {
+      width: 170px; height: 170px; border-radius: 50%;
+      border: 1px solid rgba(0, 249, 249, 0.4);
+      background: rgba(0, 0, 0, 0.3);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      box-shadow: 0 0 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,249,249,0.1);
+    }
+    .temp-circle .val { font-size: 60px; font-weight: 100; color: #00f9f9; }
+    .temp-circle .unit { font-size: 14px; margin-top: -10px; opacity: 0.5; }
 
-    .tuya-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
-    .measure { background: rgba(255,255,255,0.08); padding: 12px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); text-align: center; }
-    .m-label { display: block; font-size: 10px; opacity: 0.6; text-transform: uppercase; margin-bottom: 5px; }
-    .m-val { font-size: 18px; font-weight: bold; }
-    small { font-size: 10px; font-weight: normal; }
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .stat-box {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px; padding: 12px; text-align: center;
+    }
+    .label { display: block; font-size: 9px; opacity: 0.5; letter-spacing: 1px; margin-bottom: 4px; }
+    .value { font-size: 18px; font-weight: 600; }
+    small { font-size: 10px; opacity: 0.7; }
 
-    .ideal-table { background: rgba(0, 255, 136, 0.05); border: 1px dashed rgba(0, 255, 136, 0.2); border-radius: 15px; padding: 10px; }
-    .ideal-title { font-size: 9px; font-weight: 900; color: #00ff88; margin-bottom: 5px; text-align: center; }
-    .ideal-row { display: flex; justify-content: space-between; font-size: 11px; color: white; opacity: 0.8; padding: 2px 0; }
+    .ideal-targets {
+      text-align: center; font-size: 10px; color: #00ff88;
+      background: rgba(0, 255, 136, 0.05);
+      padding: 8px; border-radius: 10px; border: 1px dashed rgba(0, 255, 136, 0.2);
+    }
   `;
 }
 
 customElements.define("spa-card", SpaCard);
+
+// Ajout pour HACS
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type: "spa-card",
+  name: "Spa Master Ultimate",
+  description: "Carte premium pour Spa Intex avec moniteur Tuya 7-en-1",
+  preview: true
+});
