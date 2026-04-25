@@ -22,7 +22,7 @@ class SpaCardEditor extends LitElement {
       gen: [
         { name: "card_title", label: "Titre du Spa", selector: { text: {} } },
         { name: "background_image", label: "Image (/local/sparond2.png)", selector: { text: {} } },
-        { name: "card_height", label: "Hauteur FIXE de la carte (ex: 600px)", selector: { text: {} } }
+        { name: "card_height", label: "HAUTEUR CARTE (ex: 600px)", selector: { text: {} } }
       ],
       sensors: [
         { name: "entity_water_temp", label: "Température Eau", selector: { entity: { domain: "sensor" } } },
@@ -30,11 +30,14 @@ class SpaCardEditor extends LitElement {
         { name: "entity_ph", label: "Sonde pH", selector: { entity: { domain: "sensor" } } },
         { name: "entity_orp", label: "Sonde ORP", selector: { entity: { domain: "sensor" } } },
         { name: "entity_tds", label: "Sonde TDS", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_salt", label: "Sonde Sel", selector: { entity: { domain: "sensor" } } }
+        { name: "entity_salt", label: "Sonde Sel", selector: { entity: { domain: "sensor" } } },
+        { name: "entity_h2o2", label: "Sonde H2O2 / Chlore", selector: { entity: { domain: "sensor" } } },
+        { name: "entity_batt", label: "Batterie Analyseur", selector: { entity: { domain: "sensor" } } }
       ],
       camera: [
-        { name: "entity_camera", label: "Caméra", selector: { entity: { domain: "camera" } } },
-        { name: "camera_height", label: "Hauteur de la zone Caméra (ex: 350px)", selector: { text: {} } }
+        { name: "entity_camera", label: "Choix Caméra", selector: { entity: { domain: "camera" } } },
+        { name: "camera_width", label: "Largeur Vidéo (ex: 100%)", selector: { text: {} } },
+        { name: "camera_height", label: "Hauteur Vidéo (ex: 350px)", selector: { text: {} } }
       ],
       switches: Array.from({ length: 10 }, (_, i) => ([
         { name: `switch_${i + 1}`, label: `Bouton ${i + 1}`, selector: { entity: {} } },
@@ -54,7 +57,7 @@ class SpaCardEditor extends LitElement {
   }
 
   static styles = css`
-    .editor-tabs { display: flex; gap: 8px; margin-bottom: 20px; background: #222; padding: 10px; border-radius: 8px; }
+    .editor-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; background: #222; padding: 10px; border-radius: 8px; }
     button { padding: 8px 12px; cursor: pointer; border-radius: 4px; border: none; background: #444; color: white; }
     button.active { background: #00f9f9; color: black; font-weight: bold; }
   `;
@@ -77,28 +80,30 @@ class SpaCard extends LitElement {
     if (!this.hass || !this.config) return html``;
     const c = this.config;
     const bg = c.background_image || '/local/sparond2.png';
-    const forceHeight = c.card_height || '550px';
+    const h = c.card_height || '550px';
 
     return html`
-      <ha-card style="height: ${forceHeight} !important; min-height: ${forceHeight} !important; max-height: ${forceHeight} !important; background-image: url('${bg}');">
-        <div class="overlay">
-          
-          <div class="header">
-             <div class="ext-tag">EXT: ${this._get(c.entity_ext_temp) || '--'}°C</div>
-             <h1>${c.card_title || 'SPA'}</h1>
-          </div>
+      <ha-card style="height: ${h} !important; min-height: ${h} !important; max-height: ${h} !important; display: block !important;">
+        <div class="main-container" style="background-image: url('${bg}'); height: 100%;">
+          <div class="overlay">
+            
+            <div class="header">
+               <div class="ext-tag">EXT: ${this._get(c.entity_ext_temp) || '--'}°C</div>
+               <h1>${c.card_title || 'SPA'}</h1>
+            </div>
 
-          <div class="main-content">
-            ${this._renderTab()}
-          </div>
+            <div class="view-port">
+              ${this._renderTab()}
+            </div>
 
-          <div class="bottom-nav">
-            <div class="nav-i ${this._tab === 'home' ? 'on' : ''}" @click=${() => this._tab = 'home'}><ha-icon icon="mdi:hot-tub"></ha-icon></div>
-            <div class="nav-i ${this._tab === 'cam' ? 'on' : ''}" @click=${() => this._tab = 'cam'}><ha-icon icon="mdi:camera"></ha-icon></div>
-            <div class="nav-i ${this._tab === 'chem' ? 'on' : ''}" @click=${() => this._tab = 'chem'}><ha-icon icon="mdi:flask-round-bottom"></ha-icon></div>
-            <div class="nav-i ${this._tab === 'sw' ? 'on' : ''}" @click=${() => this._tab = 'sw'}><ha-icon icon="mdi:dots-grid"></ha-icon></div>
+            <div class="bottom-nav">
+              <div class="nav-i ${this._tab === 'home' ? 'on' : ''}" @click=${() => this._tab = 'home'}><ha-icon icon="mdi:hot-tub"></ha-icon></div>
+              <div class="nav-i ${this._tab === 'cam' ? 'on' : ''}" @click=${() => this._tab = 'cam'}><ha-icon icon="mdi:camera"></ha-icon></div>
+              <div class="nav-i ${this._tab === 'chem' ? 'on' : ''}" @click=${() => this._tab = 'chem'}><ha-icon icon="mdi:flask-round-bottom"></ha-icon></div>
+              <div class="nav-i ${this._tab === 'sw' ? 'on' : ''}" @click=${() => this._tab = 'sw'}><ha-icon icon="mdi:dots-grid"></ha-icon></div>
+            </div>
+            
           </div>
-          
         </div>
       </ha-card>
     `;
@@ -106,68 +111,54 @@ class SpaCard extends LitElement {
 
   _renderTab() {
     const c = this.config;
-    if (this._tab === 'home') return html`<div class="center-content"><div class="big-circle"><div class="v">${this._get(c.entity_water_temp) || '--'}</div><div class="u">°C EAU</div></div></div>`;
+    if (this._tab === 'home') return html`<div class="center"><div class="circle"><div class="v">${this._get(c.entity_water_temp) || '--'}</div><div class="u">°C EAU</div></div></div>`;
     
-    if (this._tab === 'cam') return html`<div class="center-content"><div class="camera-box" style="height:${c.camera_height || '300px'}">${c.entity_camera ? html`<hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : 'Caméra non configurée'}</div></div>`;
+    if (this._tab === 'cam') return html`<div class="center"><div class="cam-frame" style="width:${c.camera_width || '100%'}; height:${c.camera_height || '300px'};">${c.entity_camera ? html`<hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : 'Caméra non configurée'}</div></div>`;
     
     if (this._tab === 'chem') {
-      const sensors = [
+      const sArr = [
         { n: 'pH', v: this._get(c.entity_ph) },
         { n: 'ORP', v: this._get(c.entity_orp), u: 'mV' },
         { n: 'TDS', v: this._get(c.entity_tds) },
-        { n: 'SEL', v: this._get(c.entity_salt) }
+        { n: 'SEL', v: this._get(c.entity_salt) },
+        { n: 'CL', v: this._get(c.entity_h2o2) },
+        { n: 'BAT', v: this._get(c.entity_batt), u: '%' }
       ];
-      return html`<div class="chem-container">
-        ${sensors.map(s => s.v ? html`<div class="chem-row"><span>${s.n}</span> <b>${s.v} ${s.u || ''}</b></div>` : '')}
-      </div>`;
+      return html`<div class="chem-list">${sArr.map(s => s.v ? html`<div class="row"><span>${s.n}</span><b>${s.v}${s.u || ''}</b></div>` : '')}</div>`;
     }
     
-    if (this._tab === 'sw') return html`<div class="switches-grid">
-        ${Array.from({length:10},(_,i)=>{
-          const id = c[`switch_${i+1}`];
-          if(!id) return '';
-          const active = this.hass.states[id]?.state === 'on';
-          return html`<div class="sw-unit">
-              <div class="sw-btn ${active ? 'active' : ''}" @click=${()=>this.hass.callService("homeassistant","toggle",{entity_id:id})}>
-                <ha-icon icon="${this.hass.states[id]?.attributes.icon || 'mdi:power'}"></ha-icon>
-              </div>
-              <div class="sw-label">${c[`name_switch_${i+1}`] || ''}</div>
-            </div>`;
-        })}
-    </div>`;
+    if (this._tab === 'sw') return html`<div class="sw-grid">${Array.from({length:10},(_,i)=>{
+        const id = c[`switch_${i+1}`]; if(!id) return '';
+        const on = this.hass.states[id]?.state === 'on';
+        return html`<div class="sw-box"><div class="btn ${on?'on':''}" @click=${()=>this.hass.callService("homeassistant","toggle",{entity_id:id})}><ha-icon icon="${this.hass.states[id]?.attributes.icon || 'mdi:power'}"></ha-icon></div><div class="label">${c[`name_switch_${i+1}`] || ''}</div></div>`;
+    })}</div>`;
   }
 
   static styles = css`
-    ha-card { border-radius: 24px; overflow: hidden; color: white; display: block; background-size: cover; background-position: center; }
+    ha-card { border-radius: 24px; overflow: hidden; color: white; padding: 0 !important; }
+    .main-container { background-size: cover; background-position: center; width: 100%; }
     .overlay { height: 100%; width: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
-    
-    .header { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .header { flex: 0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .header h1 { font-size: 18px; color: #00f9f9; margin: 0; }
     .ext-tag { font-size: 10px; background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 15px; }
-
-    .main-content { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; overflow: hidden; width: 100%; }
-    .center-content { width: 100%; display: flex; justify-content: center; }
-
-    .big-circle { width: 140px; height: 140px; border: 2px solid #00f9f9; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); }
-    .v { font-size: 45px; color: #00f9f9; font-weight: 200; }
-    .u { font-size: 10px; opacity: 0.6; }
-
-    .camera-box { width: 100%; border-radius: 15px; overflow: hidden; background: #000; border: 1px solid #333; }
-    .chem-container { width: 100%; display: flex; flex-direction: column; gap: 8px; }
-    .chem-row { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
-    .chem-row b { color: #00f9f9; }
-
-    .switches-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; width: 100%; }
-    .sw-unit { display: flex; flex-direction: column; align-items: center; }
-    .sw-btn { width: 100%; height: 40px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-    .sw-btn.active { background: rgba(0,249,249,0.3); border: 1px solid #00f9f9; color: #00f9f9; }
-    .sw-label { font-size: 8px; margin-top: 4px; text-align: center; color: white; }
-
-    .bottom-nav { flex: 0 0 auto; display: flex; justify-content: space-around; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .view-port { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .center { width: 100%; display: flex; justify-content: center; }
+    .circle { width: 140px; height: 140px; border: 2px solid #00f9f9; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .v { font-size: 45px; color: #00f9f9; }
+    .cam-frame { border-radius: 15px; overflow: hidden; background: #000; border: 1px solid #333; }
+    .chem-list { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+    .row { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; }
+    .row b { color: #00f9f9; }
+    .sw-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; width: 100%; }
+    .sw-box { display: flex; flex-direction: column; align-items: center; }
+    .btn { width: 100%; height: 40px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .btn.on { background: rgba(0,249,249,0.3); border: 1px solid #00f9f9; color: #00f9f9; }
+    .label { font-size: 8px; margin-top: 4px; text-align: center; }
+    .bottom-nav { flex: 0; display: flex; justify-content: space-around; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 10px; }
     .nav-i { opacity: 0.3; cursor: pointer; }
-    .nav-i.on { opacity: 1; color: #00f9f9; transform: scale(1.1); }
+    .nav-i.on { opacity: 1; color: #00f9f9; }
   `;
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master Fixed", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V10", preview: true });
