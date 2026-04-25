@@ -22,19 +22,26 @@ class SpaCardEditor extends LitElement {
       gen: [
         { name: "card_title", label: "Titre du Spa", selector: { text: {} } },
         { name: "background_image", label: "Image (/local/sparond2.png)", selector: { text: {} } },
-        { name: "card_height", label: "Hauteur Carte (ex: 600px)", selector: { text: {} } }
+        { name: "card_height", label: "Hauteur Carte (ex: 600px)", selector: { text: {} } },
+        { name: "main_cons_entity", label: "Sonde Conso Principale (sur Accueil)", selector: { entity: {} } }
       ],
       sensors: [
         { name: "entity_water_temp", label: "Temp Eau", selector: { entity: { domain: "sensor" } } },
-        { name: "min_temp", label: "Temp Mini", selector: { number: { mode: "box" } } },
-        { name: "max_temp", label: "Temp Maxi", selector: { number: { mode: "box" } } },
+        { name: "min_temp", label: "Min", selector: { number: { mode: "box" } } }, { name: "max_temp", label: "Max", selector: { number: { mode: "box" } } },
         { name: "entity_ph", label: "pH", selector: { entity: { domain: "sensor" } } },
-        { name: "min_ph", label: "pH Mini", selector: { number: { mode: "box", step: 0.1 } } },
-        { name: "max_ph", label: "pH Maxi", selector: { number: { mode: "box", step: 0.1 } } },
+        { name: "min_ph", label: "Min", selector: { number: { mode: "box", step: 0.1 } } }, { name: "max_ph", label: "Max", selector: { number: { mode: "box", step: 0.1 } } },
         { name: "entity_orp", label: "ORP", selector: { entity: { domain: "sensor" } } },
-        { name: "min_orp", label: "ORP Mini", selector: { number: { mode: "box" } } },
-        { name: "max_orp", label: "ORP Maxi", selector: { number: { mode: "box" } } }
+        { name: "min_orp", label: "Min", selector: { number: { mode: "box" } } }, { name: "max_orp", label: "Max", selector: { number: { mode: "box" } } },
+        { name: "entity_tds", label: "TDS", selector: { entity: { domain: "sensor" } } },
+        { name: "entity_salt", label: "Sel", selector: { entity: { domain: "sensor" } } },
+        { name: "entity_cond", label: "Conductivité", selector: { entity: { domain: "sensor" } } },
+        { name: "entity_tac", label: "Alcalinité (TAC)", selector: { entity: { domain: "sensor" } } },
+        { name: "entity_th", label: "Dureté (TH)", selector: { entity: { domain: "sensor" } } }
       ],
+      divers: Array.from({ length: 6 }, (_, i) => ([
+        { name: `misc_entity_${i + 1}`, label: `Sonde Divers ${i + 1}`, selector: { entity: {} } },
+        { name: `misc_name_${i + 1}`, label: `Nom ${i + 1}`, selector: { text: {} } }
+      ])).flat(),
       camera: [
         { name: "entity_camera", label: "Caméra", selector: { entity: { domain: "camera" } } },
         { name: "camera_width", label: "Largeur Vidéo", selector: { text: {} } },
@@ -50,6 +57,7 @@ class SpaCardEditor extends LitElement {
       <div class="editor-tabs">
         <button class="${this._selectedTab === 'gen' ? 'active' : ''}" @click=${() => this._selectedTab = 'gen'}>Général</button>
         <button class="${this._selectedTab === 'sensors' ? 'active' : ''}" @click=${() => this._selectedTab = 'sensors'}>Sondes</button>
+        <button class="${this._selectedTab === 'divers' ? 'active' : ''}" @click=${() => this._selectedTab = 'divers'}>Divers</button>
         <button class="${this._selectedTab === 'camera' ? 'active' : ''}" @click=${() => this._selectedTab = 'camera'}>Caméra</button>
         <button class="${this._selectedTab === 'switches' ? 'active' : ''}" @click=${() => this._selectedTab = 'switches'}>Boutons</button>
       </div>
@@ -58,8 +66,8 @@ class SpaCardEditor extends LitElement {
   }
 
   static styles = css`
-    .editor-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; background: #222; padding: 10px; border-radius: 8px; }
-    button { padding: 8px 12px; cursor: pointer; border-radius: 4px; border: none; background: #444; color: white; }
+    .editor-tabs { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 20px; background: #222; padding: 10px; border-radius: 8px; }
+    button { padding: 8px 10px; cursor: pointer; border-radius: 4px; border: none; background: #444; color: white; font-size: 11px;}
     button.active { background: #00f9f9; color: black; font-weight: bold; }
   `;
 }
@@ -75,6 +83,10 @@ class SpaCard extends LitElement {
   _get(id) {
     if (!this.hass || !id || !this.hass.states[id]) return null;
     return this.hass.states[id].state;
+  }
+  _getUnit(id) {
+    if (!this.hass || !id || !this.hass.states[id]) return '';
+    return this.hass.states[id].attributes.unit_of_measurement || '';
   }
 
   render() {
@@ -96,6 +108,7 @@ class SpaCard extends LitElement {
               <div class="nav-i ${this._tab === 'home' ? 'on' : ''}" @click=${() => this._tab = 'home'}><ha-icon icon="mdi:hot-tub"></ha-icon></div>
               <div class="nav-i ${this._tab === 'cam' ? 'on' : ''}" @click=${() => this._tab = 'cam'}><ha-icon icon="mdi:camera"></ha-icon></div>
               <div class="nav-i ${this._tab === 'chem' ? 'on' : ''}" @click=${() => this._tab = 'chem'}><ha-icon icon="mdi:flask-round-bottom"></ha-icon></div>
+              <div class="nav-i ${this._tab === 'misc' ? 'on' : ''}" @click=${() => this._tab = 'misc'}><ha-icon icon="mdi:chart-timeline-variant"></ha-icon></div>
               <div class="nav-i ${this._tab === 'sw' ? 'on' : ''}" @click=${() => this._tab = 'sw'}><ha-icon icon="mdi:dots-grid"></ha-icon></div>
             </div>
           </div>
@@ -110,7 +123,12 @@ class SpaCard extends LitElement {
     if (this._tab === 'home') {
         const val = parseFloat(this._get(c.entity_water_temp));
         const isAlert = (c.max_temp && val > c.max_temp) || (c.min_temp && val < c.min_temp);
-        return html`<div class="center"><div class="circle ${isAlert ? 'alert' : ''}"><div class="v">${val || '--'}</div><div class="u">°C EAU</div></div></div>`;
+        const mainCons = this._get(c.main_cons_entity);
+        return html`
+          <div class="home-view">
+            <div class="circle ${isAlert ? 'alert' : ''}"><div class="v">${val || '--'}</div><div class="u">°C EAU</div></div>
+            ${mainCons ? html`<div class="main-cons-badge"><ha-icon icon="mdi:flash"></ha-icon> ${mainCons}${this._getUnit(c.main_cons_entity)}</div>` : ''}
+          </div>`;
     }
     
     if (this._tab === 'cam') return html`<div class="center"><div class="cam-frame" style="width:${c.camera_width || '100%'}; height:${c.camera_height || '300px'};">${c.entity_camera ? html`<hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : 'Caméra...'}</div></div>`;
@@ -119,23 +137,25 @@ class SpaCard extends LitElement {
       const sArr = [
         { n: 'pH', v: this._get(c.entity_ph), min: c.min_ph, max: c.max_ph },
         { n: 'ORP', v: this._get(c.entity_orp), u: 'mV', min: c.min_orp, max: c.max_orp },
-        { n: 'TDS', v: this._get(c.entity_tds), min: null, max: c.max_tds },
-        { n: 'SEL', v: this._get(c.entity_salt), min: null, max: c.max_salt }
+        { n: 'TDS', v: this._get(c.entity_tds), u: 'ppm' },
+        { n: 'SEL', v: this._get(c.entity_salt), u: 'ppm' },
+        { n: 'COND', v: this._get(c.entity_cond), u: 'µS' },
+        { n: 'TAC', v: this._get(c.entity_tac) },
+        { n: 'TH', v: this._get(c.entity_th) }
       ];
-      return html`<div class="chem-list">
-        ${sArr.map(s => {
+      return html`<div class="chem-list">${sArr.map(s => {
           if (!s.v) return '';
           const val = parseFloat(s.v);
           const isAlert = (s.max && val > s.max) || (s.min && val < s.min);
-          return html`<div class="row ${isAlert ? 'alert-row' : ''}">
-            <span>${s.n}</span>
-            <div class="val-box">
-                <b>${s.v} ${s.u || ''}</b>
-                <small>${s.min ? s.min : ''}${s.min && s.max ? ' - ' : ''}${s.max ? s.max : ''}</small>
-            </div>
-          </div>`;
-        })}
-      </div>`;
+          return html`<div class="row ${isAlert ? 'alert-row' : ''}"><span>${s.n}</span><div class="val-box"><b>${s.v} ${s.u || ''}</b><small>${s.min||''}${s.min?' - ':''}${s.max||''}</small></div></div>`;
+      })}</div>`;
+    }
+
+    if (this._tab === 'misc') {
+        return html`<div class="chem-list">${Array.from({length:6},(_,i)=>{
+            const id = c[`misc_entity_${i+1}`]; if(!id) return '';
+            return html`<div class="row"><span>${c[`misc_name_${i+1}`] || 'Info'}</span><div class="val-box"><b>${this._get(id)} ${this._getUnit(id)}</b></div></div>`;
+        })}</div>`;
     }
     
     if (this._tab === 'sw') return html`<div class="sw-grid">${Array.from({length:10},(_,i)=>{
@@ -153,18 +173,18 @@ class SpaCard extends LitElement {
     .header h1 { font-size: 18px; color: #00f9f9; margin: 0; font-weight: 300; }
     .ext-tag { font-size: 10px; background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 15px; }
     .view-port { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .home-view { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+    .main-cons-badge { background: rgba(0,249,249,0.15); padding: 8px 15px; border-radius: 12px; border: 1px solid rgba(0,249,249,0.3); font-size: 14px; color: #00f9f9; display: flex; align-items: center; gap: 5px; }
     .center { width: 100%; display: flex; justify-content: center; }
-    .circle { width: 140px; height: 140px; border: 2px solid #00f9f9; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.3s; }
-    .circle.alert { border-color: #ff4d4d; box-shadow: 0 0 15px #ff4d4d; animation: pulse 2s infinite; }
+    .circle { width: 140px; height: 140px; border: 2px solid #00f9f9; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .circle.alert { border-color: #ff4d4d; animation: pulse 2s infinite; }
     .v { font-size: 45px; color: #00f9f9; font-weight: 200; }
-    .circle.alert .v { color: #ff4d4d; }
     .u { font-size: 10px; opacity: 0.6; }
-    .chem-list { width: 100%; display: flex; flex-direction: column; gap: 8px; }
-    .row { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.1); }
-    .alert-row { border-color: #ff4d4d; background: rgba(255,77,77,0.1); animation: blink 2s infinite; }
+    .chem-list { width: 100%; display: flex; flex-direction: column; gap: 8px; max-height: 100%; overflow-y: auto; }
+    .row { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .alert-row { border: 1px solid #ff4d4d; background: rgba(255,77,77,0.1); }
     .val-box { text-align: right; display: flex; flex-direction: column; }
-    .val-box b { color: #00f9f9; font-size: 18px; }
-    .alert-row b { color: #ff4d4d; }
+    .val-box b { color: #00f9f9; font-size: 16px; }
     .val-box small { font-size: 9px; opacity: 0.5; }
     .sw-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; width: 100%; }
     .sw-box { display: flex; flex-direction: column; align-items: center; }
@@ -175,9 +195,8 @@ class SpaCard extends LitElement {
     .nav-i { opacity: 0.3; cursor: pointer; transition: 0.3s; }
     .nav-i.on { opacity: 1; color: #00f9f9; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,77,77,0.7); } 70% { box-shadow: 0 0 0 15px rgba(255,77,77,0); } 100% { box-shadow: 0 0 0 0 rgba(255,77,77,0); } }
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
   `;
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V12", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V13", preview: true });
