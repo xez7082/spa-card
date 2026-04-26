@@ -54,7 +54,9 @@ class SpaCardEditor extends LitElement {
         { name: "max_probe_hum", label: "Alerte Hum Sonde Max", selector: { number: { mode: "box" } } }
       ],
       camera: [
-        { name: "entity_camera", label: "Entité Caméra", selector: { entity: { domain: "camera" } } }
+        { name: "entity_camera", label: "Entité Caméra", selector: { entity: { domain: "camera" } } },
+        { name: "camera_width", label: "Largeur (ex: 100%)", selector: { text: {} } },
+        { name: "camera_height", label: "Hauteur (ex: 300px)", selector: { text: {} } }
       ],
       switches: Array.from({ length: 10 }, (_, i) => ([
         { name: `switch_${i + 1}`, label: `Bouton ${i + 1}`, selector: { entity: {} } },
@@ -87,7 +89,6 @@ class SpaCard extends LitElement {
   _renderTab() {
     const c = this.config;
     
-    // TAB HOME
     if (this._tab === 'home') {
         const valW = parseFloat(this._get(c.entity_water_temp));
         const isAlert = (c.max_temp && valW > c.max_temp) || (c.min_temp && valW < c.min_temp);
@@ -123,14 +124,12 @@ class SpaCard extends LitElement {
           </div>`;
     }
 
-    // TAB CAMERA
     if (this._tab === 'cam') {
-        return html`<div class="cam-view">
+        return html`<div class="cam-view" style="width: ${c.camera_width || '100%'}; height: ${c.camera_height || '300px'};">
             ${c.entity_camera ? html`<hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : 'Caméra non configurée'}
         </div>`;
     }
     
-    // TAB CHIMIE
     if (this._tab === 'chem') {
         const sensors = [
             { n: 'pH', v: this._get(c.entity_ph), min: c.min_ph, max: c.max_ph, i: 'mdi:flask-outline' },
@@ -155,7 +154,6 @@ class SpaCard extends LitElement {
         })}</div>`;
     }
 
-    // TAB SWITCHES
     if (this._tab === 'sw') {
         return html`<div class="sw-grid-elegant">${Array.from({length:10},(_,i)=>{
             const id = c[`switch_${i+1}`]; if(!id) return '';
@@ -194,7 +192,6 @@ class SpaCard extends LitElement {
     ha-card { border-radius: 30px; overflow: hidden; border: none; background: #000; color: #fff; }
     .bg { background-size: cover; background-position: center; height: 100%; transition: 0.5s; }
     .glass-overlay { height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.85) 100%); backdrop-filter: blur(10px); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
-    
     .card-header { text-align: center; font-weight: 200; letter-spacing: 5px; font-size: 13px; margin-bottom: 15px; opacity: 0.6; }
     .content { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 
@@ -205,13 +202,11 @@ class SpaCard extends LitElement {
     .val-big { font-size: 26px; font-weight: 200; }
     .label-tiny { font-size: 8px; letter-spacing: 2px; opacity: 0.4; margin: 4px 0; }
     .hum-pill { font-size: 9px; background: var(--glass); padding: 3px 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
-
     .center-gauge { position: relative; width: 150px; height: 150px; display: flex; align-items: center; justify-content: center; }
     .outer-ring { position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 2px solid transparent; border-top: 2px solid var(--accent); border-bottom: 2px solid var(--accent); animation: rotate 5s linear infinite; opacity: 0.4; }
     .inner-circle { width: 125px; height: 125px; background: rgba(255,255,255,0.03); border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .water-val { font-size: 48px; font-weight: 100; color: var(--accent); text-shadow: 0 0 15px rgba(0,249,249,0.4); }
     .water-label { font-size: 8px; opacity: 0.5; letter-spacing: 2px; }
-
     .energy-card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 12px 20px; display: flex; align-items: center; gap: 15px; width: 90%; }
     .energy-card ha-icon { color: var(--accent); --mdc-icon-size: 24px; }
     .energy-val { font-size: 18px; font-weight: 300; }
@@ -229,7 +224,8 @@ class SpaCard extends LitElement {
     .glass-card.alert { border-color: #ff4b4b; background: rgba(255,75,75,0.1); }
 
     /* CAMERA */
-    .cam-view { width: 100%; border-radius: 15px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+    .cam-view { border-radius: 15px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; background: #000; }
+    .cam-view hui-image { width: 100%; height: 100%; object-fit: cover; }
 
     /* SWITCHES */
     .sw-grid-elegant { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
@@ -251,4 +247,4 @@ class SpaCard extends LitElement {
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V26", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V27", preview: true });
