@@ -98,7 +98,6 @@ class SpaCard extends LitElement {
         <div class="main-container" style="background-image: url('${c.background_image || '/local/sparond2.png'}');">
           <div class="overlay">
             <div class="header">
-               <div class="ext-tag"><ha-icon icon="mdi:thermometer"></ha-icon> ${this._get(c.entity_ext_temp)}°C</div>
                <h1>${c.card_title || 'SPA'}</h1>
             </div>
             <div class="view-port">${this._renderTab()}</div>
@@ -117,21 +116,47 @@ class SpaCard extends LitElement {
   _renderTab() {
     const c = this.config;
     if (this._tab === 'home') {
-        const val = parseFloat(this._get(c.entity_water_temp));
-        const isAlert = (c.max_temp && val > c.max_temp) || (c.min_temp && val < c.min_temp);
+        const valWater = parseFloat(this._get(c.entity_water_temp));
+        const isAlert = (c.max_temp && valWater > c.max_temp) || (c.min_temp && valWater < c.min_temp);
         return html`
           <div class="home-view">
-            <div class="circle ${isAlert ? 'alert' : ''}"><div class="v">${val || '--'}</div><div class="u">°C EAU</div></div>
-            <div class="info-grid">
-                <div class="badge"><ha-icon icon="mdi:home-thermometer"></ha-icon> SPA: ${this._get(c.entity_spa_air_temp)}°C</div>
-                <div class="badge"><ha-icon icon="mdi:flash"></ha-icon> ${this._get(c.main_cons_entity)} ${this._getUnit(c.main_cons_entity)}</div>
+            <div class="temp-main-row">
+                <div class="side-temp">
+                    <div class="t-val">${this._get(c.entity_ext_temp)}°</div>
+                    <div class="t-label">EXTÉRIEUR</div>
+                </div>
+                
+                <div class="circle ${isAlert ? 'alert' : ''}">
+                    <div class="v">${valWater || '--'}</div>
+                    <div class="u">°C EAU</div>
+                </div>
+
+                <div class="side-temp">
+                    <div class="t-val">${this._get(c.entity_spa_air_temp)}°</div>
+                    <div class="t-label">INTÉRIEUR</div>
+                </div>
             </div>
-            <div class="hum-row">
-                <div class="hum-box"><div class="hum-val">${this._get(c.entity_spa_hum)}%</div><div class="hum-lab">HUM SPA</div></div>
-                <div class="hum-box"><div class="hum-val">${this._get(c.entity_ext_hum)}%</div><div class="hum-lab">HUM EXT</div></div>
+
+            <div class="conso-center">
+                <div class="conso-badge">
+                    <ha-icon icon="mdi:flash"></ha-icon>
+                    <span>CONSO: ${this._get(c.main_cons_entity)} ${this._getUnit(c.main_cons_entity)}</span>
+                </div>
+            </div>
+
+            <div class="hum-row-home">
+                <div class="hum-item">
+                    <ha-icon icon="mdi:water-percent"></ha-icon>
+                    <span>${this._get(c.entity_ext_hum)}% EXT</span>
+                </div>
+                <div class="hum-item">
+                    <ha-icon icon="mdi:water-percent"></ha-icon>
+                    <span>${this._get(c.entity_spa_hum)}% SPA</span>
+                </div>
             </div>
           </div>`;
     }
+    
     if (this._tab === 'cam') return html`<div class="center" style="width:100%">${c.entity_camera ? html`<hui-image style="width:${c.camera_width || '100%'}; height:${c.camera_height || 'auto'};" .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : 'Caméra non configurée'}</div>`;
     
     if (this._tab === 'chem') {
@@ -147,10 +172,7 @@ class SpaCard extends LitElement {
             const val = parseFloat(s.v);
             const isAlert = (s.max && val > s.max) || (s.min && val < s.min);
             return html`<div class="chem-card-v2 ${isAlert ? 'alert' : ''}">
-                <div class="chem-header-v2">
-                    <ha-icon icon="${s.i}"></ha-icon>
-                    <span>${s.n}</span>
-                </div>
+                <div class="chem-header-v2"><ha-icon icon="${s.i}"></ha-icon><span>${s.n}</span></div>
                 <div class="chem-main-row">
                     <div class="chem-limit">${s.min || ''}</div>
                     <div class="chem-value-v2">${s.v}<small>${s.u||''}</small></div>
@@ -177,38 +199,41 @@ class SpaCard extends LitElement {
     ha-card { border-radius: 24px; overflow: hidden; color: white; }
     .main-container { background-size: cover; background-position: center; height: 100%; width: 100%; }
     .overlay { height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .header h1 { font-size: 16px; color: #00f9f9; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
-    .ext-tag { font-size: 11px; background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 12px; display: flex; align-items: center; gap: 5px; }
+    .header h1 { font-size: 16px; color: #00f9f9; text-align: center; margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 3px; }
     .view-port { flex: 1; display: flex; align-items: center; justify-content: center; overflow-y: auto; width: 100%; }
     
-    /* Accueil */
-    .home-view { display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%; }
-    .circle { width: 140px; height: 140px; border: 3px solid #00f9f9; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    /* Layout Home V23 */
+    .home-view { width: 100%; display: flex; flex-direction: column; gap: 20px; align-items: center; }
+    .temp-main-row { display: flex; align-items: center; justify-content: center; width: 100%; gap: 15px; }
+    
+    .side-temp { text-align: center; flex: 1; }
+    .t-val { font-size: 22px; color: rgba(255,255,255,0.9); font-weight: 300; }
+    .t-label { font-size: 8px; opacity: 0.4; letter-spacing: 1px; margin-top: 2px; }
+    
+    .circle { width: 130px; height: 130px; border: 3px solid #00f9f9; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0,249,249,0.2); }
     .circle.alert { border-color: #ff4d4d; box-shadow: 0 0 20px #ff4d4d; animation: pulse 2s infinite; }
-    .v { font-size: 48px; color: #00f9f9; font-weight: 200; }
-    .u { font-size: 10px; opacity: 0.6; }
-    .badge { background: rgba(255,255,255,0.1); padding: 6px 10px; border-radius: 20px; font-size: 11px; display: flex; align-items: center; gap: 5px; }
-    .hum-row { display: flex; gap: 30px; text-align: center; }
-    .hum-val { font-size: 22px; color: #00f9f9; font-weight: 300; }
-    .hum-lab { font-size: 9px; opacity: 0.5; }
+    .v { font-size: 44px; color: #00f9f9; font-weight: 200; }
+    .u { font-size: 9px; opacity: 0.6; }
 
-    /* Grille Chimie V2 - Focus Limites */
+    .conso-center { width: 100%; display: flex; justify-content: center; }
+    .conso-badge { background: rgba(0,249,249,0.1); border: 1px solid rgba(0,249,249,0.3); padding: 8px 16px; border-radius: 20px; font-size: 11px; display: flex; align-items: center; gap: 8px; color: #00f9f9; }
+    .conso-badge ha-icon { --mdc-icon-size: 16px; }
+
+    .hum-row-home { display: flex; gap: 20px; opacity: 0.5; }
+    .hum-item { display: flex; align-items: center; gap: 5px; font-size: 10px; }
+    .hum-item ha-icon { --mdc-icon-size: 14px; }
+
+    /* Grille Chimie V22 */
     .chem-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%; padding: 5px; }
     .chem-card-v2 { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 12px 8px; text-align: center; }
     .chem-header-v2 { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 8px; }
     .chem-header-v2 ha-icon { --mdc-icon-size: 16px; color: #00f9f9; }
     .chem-header-v2 span { font-size: 11px; font-weight: 600; text-transform: uppercase; opacity: 0.8; }
-    
     .chem-main-row { display: flex; align-items: baseline; justify-content: space-between; gap: 5px; }
     .chem-value-v2 { font-size: 24px; color: #00f9f9; font-weight: 300; flex: 1; }
     .chem-value-v2 small { font-size: 10px; margin-left: 2px; opacity: 0.6; }
-    
     .chem-limit { font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.3); width: 30px; }
-    
     .chem-card-v2.alert { border-color: #ff4d4d; background: rgba(255,77,77,0.15); animation: blink 2s infinite; }
-    .chem-card-v2.alert .chem-value-v2 { color: #ff4d4d; font-weight: 600; }
-    .chem-card-v2.alert .chem-limit { color: rgba(255,77,77,0.5); }
 
     /* Boutons */
     .sw-grid-compact { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
@@ -227,4 +252,4 @@ class SpaCard extends LitElement {
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V22", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V23", preview: true });
