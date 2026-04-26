@@ -1,92 +1,68 @@
-# 🛁 SPA Card Master Ultimate
+# Spa Master Card - Luxury Edition
 
-[![HACS](https://img.shields.io/badge/HACS-Default-blue.svg)](https://github.com/hacs/integration)
-![Version](https://img.shields.io/github/v/release/xez7082/spa-card?include_prereleases)
-[![License](https://img.shields.io/github/license/xez7082/spa-card)](LICENSE)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/xez7082/spa-card/graphs/commit-activity)
+Une carte Home Assistant avancée et ultra-design pour le pilotage complet de votre SPA. Elle utilise un style **Glassmorphism** (effet de verre dépoli) avec des animations fluides et une interface tactile optimisée.
 
-**SPA Card Master** est la carte Lovelace la plus avancée pour Home Assistant, conçue spécifiquement pour les propriétaires de spas exigeants. Elle transforme vos données brutes en une interface **Glassmorphism** digne d'un yacht de luxe.
+![Aperçu Principal](https://raw.githubusercontent.com/xez7082/solar-master-card/main/img/spa10.png)
 
 ---
 
-## 🖼️ Aperçu de l'interface
+## ✨ Caractéristiques
 
-![Spa Preview](https://raw.githubusercontent.com/xez7082/lumina-spa-card/main/sparond2.png)
-*[Exemple d'intégration avec fond personnalisé et monitoring chimique actif]*
-
----
-
-## ✨ Fonctionnalités Exclusives
-
-* 💎 **Effet Frosted Glass** : Utilisation de `backdrop-filter: blur` pour un rendu translucide premium.
-* 🚨 **Colorimétrie Dynamique** : Système d'alerte visuelle intégré. Les chiffres deviennent **rouges** si le pH, l'ORP ou le Brome dérivent.
-* 📏 **Éditeur "Pixel-Perfect"** : 6 onglets de configuration permettant de déplacer et redimensionner chaque bloc (X, Y, Largeur, Hauteur) directement via l'UI.
-* 📱 **Optimisé Tablette (Fully Kiosk)** : Réglage de la hauteur en `% écran` (vh) pour un affichage plein écran sans scroll.
-* ⚡ **Haute Performance** : Code optimisé pour limiter la charge CPU sur les tablettes d'entrée de gamme.
-* 🎥 **Live Camera Feed** : Intégration transparente de votre flux caméra de surveillance.
+* **Design Premium** : Interface basée sur le Glassmorphism avec flou d'arrière-plan (`backdrop-filter`) et typographie aérienne.
+* **Tableau de Bord Central** : Visualisation immédiate de la température de l'eau (avec anneau animé), des températures extérieures/intérieures et de l'humidité.
+* **Monitoring Énergétique** : Affichage en temps réel de la consommation électrique sous forme de badge néon pulsant.
+* **Suivi Chimique Complet** : Onglet dédié pour le pH, ORP, TDS, Sel, Conductivité et humidité de la sonde avec alertes visuelles de dépassement.
+* **Gestion des Équipements** : Jusqu'à 10 boutons configurables pour les pompes, bulles, éclairages, etc.
+* **Vidéo-surveillance** : Intégration de flux caméra avec réglage dynamique de la largeur et de la hauteur.
+* **Éditeur Visuel** : Configuration simplifiée via l'interface Home Assistant (aucun code YAML requis pour l'usage quotidien).
 
 ---
 
-## 🧪 Intelligence Chimique (Seuils)
+## 📸 Captures d'écran
 
-La carte analyse vos `sensors` en temps réel et applique les styles suivants :
+### 🏠 Vue Principale & 📷 Vidéosurveillance
+| Accueil (Gauges & Météo) | Surveillance Caméra |
+| :---: | :---: |
+| ![Accueil](https://raw.githubusercontent.com/xez7082/solar-master-card/main/img/spa10.png) | ![Caméra](https://raw.githubusercontent.com/xez7082/solar-master-card/main/img/spa11.png) |
 
-| Paramètre | Plage OK | Alerte (Rouge) |
-| :--- | :--- | :--- |
-| **pH** | `7.2` - `7.6` | `< 7.2` ou `> 7.6` |
-| **ORP** | `> 650 mV` | `< 650 mV` |
-| **Brome (Br)** | `3.0` - `5.0` | `< 3.0` ou `> 5.0` |
-
----
-
-## 📦 Installation
-
-### 1. Via HACS (Recommandé)
-1. Dans Home Assistant, allez dans **HACS** -> **Frontend**.
-2. Cliquez sur les **3 points (⋮)** -> **Dépôts personnalisés**.
-3. Ajoutez `https://github.com/xez7082/spa-card` avec la catégorie **Lovelace**.
-4. Cliquez sur **Installer**.
-
-### 2. Installation Manuelle
-1. Téléchargez le fichier `spa-card.js`.
-2. Placez-le dans votre dossier `/config/www/`.
-3. Ajoutez la ressource dans Home Assistant :
-   * **Paramètres** -> **Tableaux de bord** -> **Ressources** -> `Ajouter /local/spa-card.js` (Type: JavaScript Module).
+### ⚗️ Analyse Chimique & ⚡ Contrôles
+| Monitoring Qualité Eau | Panneau de Contrôle (10 boutons) |
+| :---: | :---: |
+| ![Chimie](https://raw.githubusercontent.com/xez7082/solar-master-card/main/img/spa12.png) | ![Contrôles](https://raw.githubusercontent.com/xez7082/solar-master-card/main/img/spa13.png) |
 
 ---
 
-## 🧩 Guide de Configuration
+## 🚀 Installation
 
-L'éditeur visuel est divisé en **6 sections stratégiques** :
-
-1.  **Général** : Image de fond (URL), alignement du titre et hauteur adaptative.
-2.  **Boutons** : Configurez jusqu'à 8 commandes (Pompes, LED, Bulles).
-3.  **Sondes** : Températures (Eau/Air) et chimie (pH, ORP, Br, TAC).
-4.  **Système** : Jusqu'à 14 capteurs techniques (Watts, Ampères, TV, Alexa...).
-5.  **Caméra** : Entité caméra et taille du flux.
-6.  **Cibles** : Affichage optionnel du tableau de référence AquaChek.
-
----
-
-## 🛠️ Dépannage (FAQ)
-
-**Q : L'image de fond ne s'affiche pas ?** *R : Assurez-vous que l'image est dans `/config/www/` et utilisez l'URL `/local/votre_image.jpg`.*
-
-**Q : La carte dépasse en bas de ma tablette ?** *R : Allez dans l'onglet **Général** de l'éditeur et baissez la valeur de **Hauteur Carte (% écran)**.*
-
-**Q : Les couleurs d'alerte ne fonctionnent pas ?** *R : Vérifiez que vos entités retournent bien des valeurs numériques et non des textes.*
+1.  **Téléchargement** : Téléchargez le fichier `spa-card.js` présent sur ce dépôt.
+2.  **Copie** : Placez le fichier dans votre dossier `www` de Home Assistant (généralement `/config/www/spa-card.js`).
+3.  **Déclaration de la Ressource** :
+    * Allez dans **Paramètres** -> **Tableaux de bord**.
+    * Cliquez sur les trois points (en haut à droite) -> **Ressources**.
+    * Ajoutez une ressource avec l'URL : `/local/spa-card.js` et sélectionnez **Module JavaScript**.
+4.  **Ajout de la Carte** :
+    * Sur votre tableau de bord, passez en mode édition.
+    * Ajoutez une carte et cherchez **Spa Master V27** dans la liste.
 
 ---
 
-## 🔄 Mise à jour
-Pour mettre à jour, utilisez simplement HACS. Si vous avez fait une installation manuelle, remplacez le fichier `.js` et forcez le rafraîchissement du cache navigateur (`Ctrl + F5`).
+## ⚙️ Configuration
+
+La carte possède un éditeur visuel intégré divisé en onglets pour une configuration intuitive :
+
+1.  **Général** : Titre personnalisé, image de fond (URL ou `/local/...`) et hauteur globale de la carte.
+2.  **Capteurs** : Liaison des entités de température (Eau, Air, Ext), humidité et capteur de puissance.
+3.  **Chimie** : Liaison des entités de monitoring chimique et définition des seuils **Min** et **Max** pour déclencher les alertes visuelles.
+4.  **Caméra** : Liaison de l'entité caméra et ajustement précis de la taille de l'image (Largeur/Hauteur).
+5.  **Boutons** : Configuration des 10 switchs, des icônes dynamiques et des étiquettes de texte.
 
 ---
 
-## 📜 Licence & Crédits
-* **Auteur** : [xez7082](https://github.com/xez7082)
-* **Licence** : MIT - Utilisation libre pour usage personnel.
-* **Remerciements** : Inspiré par les designs futuristes de dashboards domotiques haut de gamme.
+## 🎨 Personnalisation Graphique
+
+Pour une immersion totale, il est recommandé d'utiliser une photo réelle de votre spa en fond :
+* Uploadez votre image dans `/config/www/mon_spa.jpg`.
+* Dans l'éditeur de la carte, mettez `/local/mon_spa.jpg` dans le champ **Background Image**.
 
 ---
-⭐ **Ce projet vous aide ? Donnez-lui une étoile sur GitHub !**
+*Projet maintenu par [xez7082](https://github.com/xez7082). N'hésitez pas à ouvrir une issue pour toute suggestion !*
