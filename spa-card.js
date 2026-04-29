@@ -61,57 +61,50 @@ class SpaCard extends LitElement {
   constructor() { super(); this._tab = 'home'; }
   setConfig(config) { this.config = config; }
 
-  // VERIFICATION ULTRA-STRICTE
-  _isValide(id) {
-    if (!id || !this.hass.states[id]) return false;
+  // VERIFICATION RADICALE : L'entité existe-t-elle dans la config ET dans HA ?
+  _exists(id) {
+    if (!id || id === "" || id === "undefined") return false;
+    if (!this.hass.states[id]) return false;
     const s = this.hass.states[id].state;
-    // On rejette tout ce qui n'est pas un nombre ou qui est un état d'erreur
-    if (['unavailable', 'unknown', 'null', 'undefined', '--', 'none', '', 'nan'].includes(s.toLowerCase())) return false;
-    // Si c'est un sensor numérique, on vérifie que c'est bien un chiffre
-    return !isNaN(parseFloat(s));
+    return !['unavailable', 'unknown', 'none', '--'].includes(s.toLowerCase());
   }
-
-  _get(id) { return this._isValide(id) ? this.hass.states[id].state : null; }
-  _getUnit(id) { return this._isValide(id) ? this.hass.states[id].attributes.unit_of_measurement || '' : ''; }
 
   _renderTab() {
     const c = this.config;
     
     if (this._tab === 'home') {
-        const hasExt = this._isValide(c.entity_ext_temp) || this._isValide(c.entity_ext_hum);
-        const hasAir = this._isValide(c.entity_spa_air_temp) || this._isValide(c.entity_spa_hum);
+        const hasExt = this._exists(c.entity_ext_temp) || this._exists(c.entity_ext_hum);
+        const hasAir = this._exists(c.entity_spa_air_temp) || this._exists(c.entity_spa_hum);
 
         return html`
           <div class="home-view">
             <div class="main-display">
-                ${hasExt ? html`
-                <div class="side-info">
-                    ${this._isValide(c.entity_ext_temp) ? html`<div class="val-big">${this._get(c.entity_ext_temp)}°</div><div class="label-tiny">EXTÉRIEUR</div>` : ''}
-                    ${this._isValide(c.entity_ext_hum) ? html`<div class="hum-pill">${this._get(c.entity_ext_hum)}% HR</div>` : ''}
+                ${hasExt ? html`<div class="side-info">
+                    ${this._exists(c.entity_ext_temp) ? html`<div class="val-big">${this.hass.states[c.entity_ext_temp].state}°</div><div class="label-tiny">EXTÉRIEUR</div>` : ''}
+                    ${this._exists(c.entity_ext_hum) ? html`<div class="hum-pill">${this.hass.states[c.entity_ext_hum].state}% HR</div>` : ''}
                 </div>` : ''}
                 
                 <div class="gauge-container">
-                    ${this._isValide(c.entity_target_temp) ? html`<div class="temp-btn-v" @click=${() => this._changeTemp(0.5)}><ha-icon icon="mdi:chevron-up"></ha-icon></div>` : ''}
+                    ${this._exists(c.entity_target_temp) ? html`<div class="temp-btn-v" @click=${() => this._changeTemp(0.5)}><ha-icon icon="mdi:chevron-up"></ha-icon></div>` : ''}
                     <div class="center-gauge">
                         <div class="outer-ring"></div>
                         <div class="inner-circle">
-                            ${this._isValide(c.entity_water_temp) ? html`<span class="water-label">EAU</span><span class="water-val">${this._get(c.entity_water_temp)}°</span>` : ''}
-                            ${this._isValide(c.entity_target_temp) ? html`<div class="target-box"><span class="target-val">CIBLE ${this._get(c.entity_target_temp)}°</span></div>` : ''}
+                            ${this._exists(c.entity_water_temp) ? html`<span class="water-label">EAU</span><span class="water-val">${this.hass.states[c.entity_water_temp].state}°</span>` : ''}
+                            ${this._exists(c.entity_target_temp) ? html`<div class="target-box"><span class="target-val">CIBLE ${this.hass.states[c.entity_target_temp].state}°</span></div>` : ''}
                         </div>
                     </div>
-                    ${this._isValide(c.entity_target_temp) ? html`<div class="temp-btn-v" @click=${() => this._changeTemp(-0.5)}><ha-icon icon="mdi:chevron-down"></ha-icon></div>` : ''}
+                    ${this._exists(c.entity_target_temp) ? html`<div class="temp-btn-v" @click=${() => this._changeTemp(-0.5)}><ha-icon icon="mdi:chevron-down"></ha-icon></div>` : ''}
                 </div>
 
-                ${hasAir ? html`
-                <div class="side-info">
-                    ${this._isValide(c.entity_spa_air_temp) ? html`<div class="val-big">${this._get(c.entity_spa_air_temp)}°</div><div class="label-tiny">AIR SPA</div>` : ''}
-                    ${this._isValide(c.entity_spa_hum) ? html`<div class="hum-pill">${this._get(c.entity_spa_hum)}% HR</div>` : ''}
+                ${hasAir ? html`<div class="side-info">
+                    ${this._exists(c.entity_spa_air_temp) ? html`<div class="val-big">${this.hass.states[c.entity_spa_air_temp].state}°</div><div class="label-tiny">AIR SPA</div>` : ''}
+                    ${this._exists(c.entity_spa_hum) ? html`<div class="hum-pill">${this.hass.states[c.entity_spa_hum].state}% HR</div>` : ''}
                 </div>` : ''}
             </div>
-            ${this._isValide(c.main_cons_entity) ? html`
+            ${this._exists(c.main_cons_entity) ? html`
             <div class="energy-card">
                 <ha-icon icon="mdi:lightning-bolt" class="anim-pulse"></ha-icon>
-                <div class="energy-val">${this._get(c.main_cons_entity)} <small>${this._getUnit(c.main_cons_entity)}</small></div>
+                <div class="energy-val">${this.hass.states[c.main_cons_entity].state} <small>${this.hass.states[c.main_cons_entity].attributes.unit_of_measurement || ''}</small></div>
             </div>` : ''}
           </div>`;
     }
@@ -124,41 +117,33 @@ class SpaCard extends LitElement {
             { id: c.entity_salt, n: 'SEL', u: 'ppm', i: 'mdi:shaker-outline' },
             { id: c.entity_cond, n: 'COND', u: 'µS', i: 'mdi:waves' },
             { id: c.entity_probe_hum, n: 'SONDE', u: '%', i: 'mdi:leak' }
-        ].filter(s => this._isValide(s.id));
+        ].filter(s => this._exists(s.id));
 
-        return html`
-          <div class="chemistry-grid">
-            ${sensors.map(s => html`
-                <div class="glass-card">
-                    <div class="g-header"><ha-icon icon="${s.i}"></ha-icon> <span>${s.n}</span></div>
-                    <div class="g-main">${this._get(s.id)}<small>${s.u||''}</small></div>
-                </div>
-            `)}
-          </div>`;
+        return html`<div class="chemistry-grid">${sensors.map(s => html`
+            <div class="glass-card">
+                <div class="g-header"><ha-icon icon="${s.i}"></ha-icon> <span>${s.n}</span></div>
+                <div class="g-main">${this.hass.states[s.id].state}<small>${s.u||''}</small></div>
+            </div>`)}</div>`;
     }
 
     if (this._tab === 'sw') {
-        const sws = Array.from({length:10},(_,i)=>({id:c[`switch_${i+1}`], n:c[`name_switch_${i+1}`]})).filter(s => this._isValide(s.id));
-        return html`
-          <div class="sw-grid-elegant">
-            ${sws.map(s => html`
-              <div class="sw-btn ${this.hass.states[s.id].state === 'on' ? 'on' : ''}" @click=${()=>this.hass.callService("homeassistant","toggle",{entity_id:s.id})}>
-                <ha-icon icon="mdi:power"></ha-icon>
-                <span>${s.n || 'Bouton'}</span>
-              </div>
-            `)}
-          </div>`;
+        const sws = Array.from({length:10},(_,i)=>({id:c[`switch_${i+1}`], n:c[`name_switch_${i+1}`]})).filter(s => this._exists(s.id));
+        return html`<div class="sw-grid-elegant">${sws.map(s => html`
+          <div class="sw-btn ${this.hass.states[s.id].state === 'on' ? 'on' : ''}" @click=${()=>this.hass.callService("homeassistant","toggle",{entity_id:s.id})}>
+            <ha-icon icon="mdi:power"></ha-icon>
+            <span>${s.n || 'Bouton'}</span>
+          </div>`)}</div>`;
     }
 
     if (this._tab === 'cam') {
-        return html`<div class="cam-view">${this._isValide(c.entity_camera) ? html`<hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : ''}</div>`;
+        return html`<div class="cam-view">${this._exists(c.entity_camera) ? html`<hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : ''}</div>`;
     }
   }
 
   _changeTemp(offset) {
     const id = this.config.entity_target_temp;
-    if (!this._isValide(id)) return;
-    const current = parseFloat(this._get(id));
+    if (!this._exists(id)) return;
+    const current = parseFloat(this.hass.states[id].state);
     const newVal = Math.round((current + offset) * 2) / 2;
     const domain = id.split('.')[0];
     this.hass.callService(domain === 'climate' ? "climate" : "input_number", "set_" + (domain === 'climate' ? "temperature" : "value"), domain === 'climate' ? { entity_id: id, temperature: newVal } : { entity_id: id, value: newVal });
@@ -166,9 +151,9 @@ class SpaCard extends LitElement {
 
   render() {
     const c = this.config;
-    const hasCam = this._isValide(c.entity_camera);
-    const hasChem = [c.entity_ph, c.entity_orp, c.entity_tds, c.entity_salt, c.entity_cond, c.entity_probe_hum].some(id => this._isValide(id));
-    const hasSw = Array.from({length:10},(_,i)=>c[`switch_${i+1}`]).some(id => this._isValide(id));
+    const hasCam = this._exists(c.entity_camera);
+    const hasChem = [c.entity_ph, c.entity_orp, c.entity_tds, c.entity_salt, c.entity_cond, c.entity_probe_hum].some(id => this._exists(id));
+    const hasSw = Array.from({length:10},(_,i)=>c[`switch_${i+1}`]).some(id => this._exists(id));
     
     const navItems = [{id:'home', icon:'mdi:home-variant'}];
     if(hasCam) navItems.push({id:'cam', icon:'mdi:camera'});
@@ -181,28 +166,22 @@ class SpaCard extends LitElement {
             <div class="glass-overlay">
                 <div class="card-header">${c.card_title || 'MY SPA'}</div>
                 <div class="content">${this._renderTab()}</div>
-                ${navItems.length > 1 ? html`
-                <div class="navbar">
-                    ${navItems.map(item => html`
-                        <ha-icon class="${this._tab === item.id ? 'active' : ''}" icon="${item.icon}" @click=${() => this._tab = item.id}></ha-icon>
-                    `)}
-                </div>` : ''}
+                ${navItems.length > 1 ? html`<div class="navbar">${navItems.map(item => html`<ha-icon class="${this._tab === item.id ? 'active' : ''}" icon="${item.icon}" @click=${() => this._tab = item.id}></ha-icon>`)}</div>` : ''}
             </div>
         </div>
-      </ha-card>
-    `;
+      </ha-card>`;
   }
 
   static styles = css`
     :host { --accent: #00f9f9; --glass: rgba(255, 255, 255, 0.07); }
     ha-card { border-radius: 30px; overflow: hidden; background: #000; color: #fff; border: none; }
     .bg { background-size: cover; background-position: center; height: 100%; border-radius: 30px; }
-    .glass-overlay { height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.8) 100%); backdrop-filter: blur(15px); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
+    .glass-overlay { height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.85) 100%); backdrop-filter: blur(15px); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
     .card-header { text-align: center; font-weight: 200; letter-spacing: 4px; font-size: 11px; margin-bottom: 5px; opacity: 0.5; }
     .content { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
     .home-view { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 25px; }
     .main-display { display: flex; align-items: center; justify-content: space-evenly; width: 100%; }
-    .side-info { text-align: center; display: flex; flex-direction: column; align-items: center; min-width: 40px; }
+    .side-info { text-align: center; min-width: 45px; }
     .val-big { font-size: 26px; font-weight: 200; }
     .label-tiny { font-size: 7px; opacity: 0.3; letter-spacing: 1px; }
     .hum-pill { font-size: 8px; background: var(--glass); padding: 1px 6px; border-radius: 8px; margin-top: 5px; border: 1px solid rgba(255,255,255,0.05); color: var(--accent); }
@@ -217,9 +196,9 @@ class SpaCard extends LitElement {
     .temp-btn-v { width: 30px; height: 30px; border-radius: 50%; background: var(--glass); display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.08); }
     .energy-card { background: var(--glass); border-radius: 15px; padding: 6px 15px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.08); }
     .energy-val { font-size: 14px; font-weight: 300; color: var(--accent); }
-    .chemistry-grid { display: grid; gap: 10px; width: 100%; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); justify-content: center; }
+    .chemistry-grid { display: grid; gap: 10px; width: 100%; grid-template-columns: repeat(auto-fit, minmax(95px, 1fr)); }
     .glass-card { background: var(--glass); padding: 15px 8px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); text-align: center; }
-    .g-header { font-size: 8px; opacity: 0.3; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 4px;}
+    .g-header { font-size: 8px; opacity: 0.3; margin-bottom: 4px; }
     .g-main { font-size: 22px; color: var(--accent); font-weight: 200; }
     .sw-grid-elegant { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; width: 100%; }
     .sw-btn { background: var(--glass); padding: 15px 5px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; border: 1px solid rgba(255,255,255,0.08); }
@@ -229,9 +208,8 @@ class SpaCard extends LitElement {
     .navbar ha-icon.active { opacity: 1; color: var(--accent); }
     @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .anim-pulse { animation: pulse 2s ease-in-out infinite; color: var(--accent); }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
   `;
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V28.4", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V28.5", preview: true });
