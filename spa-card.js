@@ -19,7 +19,8 @@ class SpaCardEditor extends LitElement {
       gen: [
         { name: "card_title", label: "Titre du Spa", selector: { text: {} } },
         { name: "background_image", label: "Image de fond", selector: { text: {} } },
-        { name: "card_height", label: "Hauteur (ex: 580px)", selector: { text: {} } }
+        { name: "card_height", label: "Hauteur Totale (ex: 580px)", selector: { text: {} } },
+        { name: "blur_amount", label: "Intensité du flou (px)", selector: { number: { mode: "slider", min: 0, max: 25 } } }
       ],
       sensors: [
         { name: "entity_water_temp", label: "Temp Eau (Actuelle)", selector: { entity: { domain: "sensor" } } },
@@ -34,11 +35,12 @@ class SpaCardEditor extends LitElement {
         { name: "entity_ph", label: "pH", selector: { entity: { domain: "sensor" } } },
         { name: "entity_orp", label: "ORP", selector: { entity: { domain: "sensor" } } },
         { name: "entity_tds", label: "TDS", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_salt", label: "Salinité", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_cond", label: "Conductivité", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_probe_hum", label: "Humidité Sonde", selector: { entity: { domain: "sensor" } } }
+        { name: "entity_salt", label: "Salinité", selector: { entity: { domain: "sensor" } } }
       ],
-      camera: [{ name: "entity_camera", label: "Entité Caméra", selector: { entity: { domain: "camera" } } }],
+      camera: [
+        { name: "entity_camera", label: "Entité Caméra", selector: { entity: { domain: "camera" } } },
+        { name: "camera_size", label: "Taille de la caméra (%)", selector: { number: { mode: "slider", min: 50, max: 100 } } }
+      ],
       switches: Array.from({ length: 10 }, (_, i) => ([
         { name: `switch_${i + 1}`, label: `Bouton ${i + 1}`, selector: { entity: {} } },
         { name: `name_switch_${i + 1}`, label: `Nom ${i + 1}`, selector: { text: {} } }
@@ -61,7 +63,6 @@ class SpaCard extends LitElement {
   constructor() { super(); this._tab = 'home'; }
   setConfig(config) { this.config = config; }
 
-  // VERIFICATION RADICALE : L'entité existe-t-elle dans la config ET dans HA ?
   _exists(id) {
     if (!id || id === "" || id === "undefined") return false;
     if (!this.hass.states[id]) return false;
@@ -109,40 +110,24 @@ class SpaCard extends LitElement {
           </div>`;
     }
 
-    if (this._tab === 'chem') {
-        const sensors = [
-            { id: c.entity_ph, n: 'pH', i: 'mdi:flask-outline' },
-            { id: c.entity_orp, n: 'ORP', u: 'mV', i: 'mdi:bolt' },
-            { id: c.entity_tds, n: 'TDS', u: 'ppm', i: 'mdi:water-check' },
-            { id: c.entity_salt, n: 'SEL', u: 'ppm', i: 'mdi:shaker-outline' },
-            { id: c.entity_cond, n: 'COND', u: 'µS', i: 'mdi:waves' },
-            { id: c.entity_probe_hum, n: 'SONDE', u: '%', i: 'mdi:leak' }
-        ].filter(s => this._exists(s.id));
+    if (this._tab === 'cam') {
+        const camScale = (c.camera_size || 100) / 100;
+        return html`<div class="cam-view" style="transform: scale(${camScale});">${this._exists(c.entity_camera) ? html`<hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : ''}</div>`;
+    }
 
-        return html`<div class="chemistry-grid">${sensors.map(s => html`
-            <div class="glass-card">
-                <div class="g-header"><ha-icon icon="${s.i}"></ha-icon> <span>${s.n}</span></div>
-                <div class="g-main">${this.hass.states[s.id].state}<small>${s.u||''}</small></div>
-            </div>`)}</div>`;
+    if (this._tab === 'chem') {
+        const sensors = [{id:c.entity_ph,n:'pH',i:'mdi:flask'},{id:c.entity_orp,n:'ORP',u:'mV',i:'mdi:bolt'},{id:c.entity_tds,n:'TDS',u:'ppm',i:'mdi:water'},{id:c.entity_salt,n:'SEL',u:'ppm',i:'mdi:shaker'}].filter(s=>this._exists(s.id));
+        return html`<div class="chemistry-grid">${sensors.map(s=>html`<div class="glass-card"><div class="g-header"><ha-icon icon="${s.i}"></ha-icon> ${s.n}</div><div class="g-main">${this.hass.states[s.id].state}<small>${s.u||''}</small></div></div>`)}</div>`;
     }
 
     if (this._tab === 'sw') {
         const sws = Array.from({length:10},(_,i)=>({id:c[`switch_${i+1}`], n:c[`name_switch_${i+1}`]})).filter(s => this._exists(s.id));
-        return html`<div class="sw-grid-elegant">${sws.map(s => html`
-          <div class="sw-btn ${this.hass.states[s.id].state === 'on' ? 'on' : ''}" @click=${()=>this.hass.callService("homeassistant","toggle",{entity_id:s.id})}>
-            <ha-icon icon="mdi:power"></ha-icon>
-            <span>${s.n || 'Bouton'}</span>
-          </div>`)}</div>`;
-    }
-
-    if (this._tab === 'cam') {
-        return html`<div class="cam-view">${this._exists(c.entity_camera) ? html`<hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : ''}</div>`;
+        return html`<div class="sw-grid-elegant">${sws.map(s => html`<div class="sw-btn ${this.hass.states[s.id].state==='on'?'on':''}" @click=${()=>this.hass.callService("homeassistant","toggle",{entity_id:s.id})}><ha-icon icon="mdi:power"></ha-icon><span>${s.n||'Bouton'}</span></div>`)}</div>`;
     }
   }
 
   _changeTemp(offset) {
     const id = this.config.entity_target_temp;
-    if (!this._exists(id)) return;
     const current = parseFloat(this.hass.states[id].state);
     const newVal = Math.round((current + offset) * 2) / 2;
     const domain = id.split('.')[0];
@@ -151,19 +136,16 @@ class SpaCard extends LitElement {
 
   render() {
     const c = this.config;
-    const hasCam = this._exists(c.entity_camera);
-    const hasChem = [c.entity_ph, c.entity_orp, c.entity_tds, c.entity_salt, c.entity_cond, c.entity_probe_hum].some(id => this._exists(id));
-    const hasSw = Array.from({length:10},(_,i)=>c[`switch_${i+1}`]).some(id => this._exists(id));
-    
+    const blur = c.blur_amount !== undefined ? c.blur_amount : 15;
     const navItems = [{id:'home', icon:'mdi:home-variant'}];
-    if(hasCam) navItems.push({id:'cam', icon:'mdi:camera'});
-    if(hasChem) navItems.push({id:'chem', icon:'mdi:flask-round-bottom'});
-    if(hasSw) navItems.push({id:'sw', icon:'mdi:tune-vertical'});
+    if(this._exists(c.entity_camera)) navItems.push({id:'cam', icon:'mdi:camera'});
+    if([c.entity_ph, c.entity_orp, c.entity_tds, c.entity_salt].some(id => this._exists(id))) navItems.push({id:'chem', icon:'mdi:flask-round-bottom'});
+    if(Array.from({length:10},(_,i)=>c[`switch_${i+1}`]).some(id => this._exists(id))) navItems.push({id:'sw', icon:'mdi:tune-vertical'});
 
     return html`
       <ha-card style="height: ${c.card_height || '580px'};">
         <div class="bg" style="background-image: url('${c.background_image || '/local/sparond2.png'}');">
-            <div class="glass-overlay">
+            <div class="glass-overlay" style="backdrop-filter: blur(${blur}px); -webkit-backdrop-filter: blur(${blur}px);">
                 <div class="card-header">${c.card_title || 'MY SPA'}</div>
                 <div class="content">${this._renderTab()}</div>
                 ${navItems.length > 1 ? html`<div class="navbar">${navItems.map(item => html`<ha-icon class="${this._tab === item.id ? 'active' : ''}" icon="${item.icon}" @click=${() => this._tab = item.id}></ha-icon>`)}</div>` : ''}
@@ -176,33 +158,40 @@ class SpaCard extends LitElement {
     :host { --accent: #00f9f9; --glass: rgba(255, 255, 255, 0.07); }
     ha-card { border-radius: 30px; overflow: hidden; background: #000; color: #fff; border: none; }
     .bg { background-size: cover; background-position: center; height: 100%; border-radius: 30px; }
-    .glass-overlay { height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.85) 100%); backdrop-filter: blur(15px); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
+    .glass-overlay { height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.85) 100%); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
     .card-header { text-align: center; font-weight: 200; letter-spacing: 4px; font-size: 11px; margin-bottom: 5px; opacity: 0.5; }
-    .content { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
-    .home-view { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 25px; }
-    .main-display { display: flex; align-items: center; justify-content: space-evenly; width: 100%; }
-    .side-info { text-align: center; min-width: 45px; }
+    .content { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; overflow: hidden; }
+    
+    .home-view { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+    .main-display { display: flex; align-items: center; justify-content: center; width: 100%; gap: 30px; }
+    .side-info { text-align: center; display: flex; flex-direction: column; align-items: center; flex: 1; }
     .val-big { font-size: 26px; font-weight: 200; }
     .label-tiny { font-size: 7px; opacity: 0.3; letter-spacing: 1px; }
     .hum-pill { font-size: 8px; background: var(--glass); padding: 1px 6px; border-radius: 8px; margin-top: 5px; border: 1px solid rgba(255,255,255,0.05); color: var(--accent); }
-    .gauge-container { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-    .center-gauge { position: relative; width: 160px; height: 160px; display: flex; align-items: center; justify-content: center; }
+    
+    .gauge-container { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 0 0 180px; }
+    .center-gauge { position: relative; width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; }
     .outer-ring { position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 1px solid rgba(0,249,249,0.05); border-top: 2px solid var(--accent); animation: rotate 8s linear infinite; }
-    .inner-circle { width: 130px; height: 130px; background: rgba(255,255,255,0.02); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .water-val { font-size: 44px; font-weight: 100; color: var(--accent); }
+    .inner-circle { width: 150px; height: 150px; background: rgba(255,255,255,0.02); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .water-val { font-size: 52px; font-weight: 100; color: var(--accent); line-height: 1; }
     .water-label { font-size: 8px; letter-spacing: 2px; opacity: 0.2; }
-    .target-box { margin-top: 5px; padding: 1px 8px; border-radius: 15px; background: rgba(255,255,255,0.05); }
     .target-val { font-size: 10px; opacity: 0.6; }
-    .temp-btn-v { width: 30px; height: 30px; border-radius: 50%; background: var(--glass); display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.08); }
+    .temp-btn-v { width: 35px; height: 35px; border-radius: 50%; background: var(--glass); display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.08); }
+
     .energy-card { background: var(--glass); border-radius: 15px; padding: 6px 15px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.08); }
     .energy-val { font-size: 14px; font-weight: 300; color: var(--accent); }
+
+    .cam-view { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+    .cam-view hui-image { width: 100%; border-radius: 15px; }
+
     .chemistry-grid { display: grid; gap: 10px; width: 100%; grid-template-columns: repeat(auto-fit, minmax(95px, 1fr)); }
     .glass-card { background: var(--glass); padding: 15px 8px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); text-align: center; }
-    .g-header { font-size: 8px; opacity: 0.3; margin-bottom: 4px; }
     .g-main { font-size: 22px; color: var(--accent); font-weight: 200; }
+    
     .sw-grid-elegant { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; width: 100%; }
     .sw-btn { background: var(--glass); padding: 15px 5px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; border: 1px solid rgba(255,255,255,0.08); }
     .sw-btn.on { border-color: var(--accent); background: rgba(0,249,249,0.08); }
+    
     .navbar { display: flex; justify-content: space-around; width: 100%; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px; }
     .navbar ha-icon { cursor: pointer; opacity: 0.2; --mdc-icon-size: 22px; }
     .navbar ha-icon.active { opacity: 1; color: var(--accent); }
@@ -212,4 +201,4 @@ class SpaCard extends LitElement {
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V28.5", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V28.7", preview: true });
