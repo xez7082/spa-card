@@ -4,7 +4,6 @@ import {
   css
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-// --- EDITEUR ---
 class SpaCardEditor extends LitElement {
   static get properties() { return { hass: {}, _config: {}, _selectedTab: { type: String } }; }
   constructor() { super(); this._selectedTab = 'gen'; }
@@ -56,7 +55,6 @@ class SpaCardEditor extends LitElement {
 }
 customElements.define("spa-card-editor", SpaCardEditor);
 
-// --- CARTE PRINCIPALE ---
 class SpaCard extends LitElement {
   static getConfigElement() { return document.createElement("spa-card-editor"); }
   static get properties() { return { hass: {}, config: {}, _tab: { type: String } }; }
@@ -72,30 +70,23 @@ class SpaCard extends LitElement {
   _get(id) { return this._isValid(id) ? this.hass.states[id].state : null; }
   _getUnit(id) { return this._isValid(id) ? this.hass.states[id].attributes.unit_of_measurement || '' : ''; }
 
-  _changeTemp(offset) {
-    const id = this.config.entity_target_temp;
-    if (!this._isValid(id)) return;
-    const current = parseFloat(this._get(id));
-    const newVal = Math.round((current + offset) * 2) / 2;
-    const domain = id.split('.')[0];
-    this.hass.callService(domain === 'climate' ? "climate" : "input_number", domain === 'climate' ? "set_temperature" : "set_value", domain === 'climate' ? { entity_id: id, temperature: newVal } : { entity_id: id, value: newVal });
-  }
-
   _renderTab() {
     const c = this.config;
     
     if (this._tab === 'home') {
         const valW = this._get(c.entity_water_temp);
         const valT = this._get(c.entity_target_temp);
+        const hasExt = this._isValid(c.entity_ext_temp) || this._isValid(c.entity_ext_hum);
+        const hasAir = this._isValid(c.entity_spa_air_temp) || this._isValid(c.entity_spa_hum);
+
         return html`
           <div class="home-view">
             <div class="main-display">
-                ${(this._isValid(c.entity_ext_temp) || this._isValid(c.entity_ext_hum)) ? html`
-                <div class="side-info">
+                ${hasExt ? html`<div class="side-info">
                     <div class="val-big">${this._get(c.entity_ext_temp) || '--'}°</div>
                     <div class="label-tiny">EXTÉRIEUR</div>
                     ${this._isValid(c.entity_ext_hum) ? html`<div class="hum-pill">${this._get(c.entity_ext_hum)}% HR</div>` : ''}
-                </div>` : html`<div class="side-info"></div>`}
+                </div>` : ''}
                 
                 <div class="gauge-container">
                     ${valT ? html`<div class="temp-btn-v" @click=${() => this._changeTemp(0.5)}><ha-icon icon="mdi:chevron-up"></ha-icon></div>` : ''}
@@ -110,12 +101,11 @@ class SpaCard extends LitElement {
                     ${valT ? html`<div class="temp-btn-v" @click=${() => this._changeTemp(-0.5)}><ha-icon icon="mdi:chevron-down"></ha-icon></div>` : ''}
                 </div>
 
-                ${(this._isValid(c.entity_spa_air_temp) || this._isValid(c.entity_spa_hum)) ? html`
-                <div class="side-info">
+                ${hasAir ? html`<div class="side-info">
                     <div class="val-big">${this._get(c.entity_spa_air_temp) || '--'}°</div>
                     <div class="label-tiny">AIR SPA</div>
                     ${this._isValid(c.entity_spa_hum) ? html`<div class="hum-pill">${this._get(c.entity_spa_hum)}% HR</div>` : ''}
-                </div>` : html`<div class="side-info"></div>`}
+                </div>` : ''}
             </div>
             ${this._isValid(c.main_cons_entity) ? html`
             <div class="energy-card">
@@ -128,10 +118,6 @@ class SpaCard extends LitElement {
           </div>`;
     }
 
-    if (this._tab === 'cam') {
-        return html`<div class="cam-view">${c.entity_camera ? html`<hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : ''}</div>`;
-    }
-    
     if (this._tab === 'chem') {
         const sensors = [
             { id: c.entity_ph, n: 'pH', i: 'mdi:flask-outline' },
@@ -142,7 +128,7 @@ class SpaCard extends LitElement {
             { id: c.entity_probe_hum, n: 'SONDE', u: '%', i: 'mdi:leak' }
         ].filter(s => this._isValid(s.id));
 
-        return html`<div class="glass-grid chemistry-grid">${sensors.map(s => html`
+        return html`<div class="chemistry-grid">${sensors.map(s => html`
             <div class="glass-card">
                 <div class="g-header"><ha-icon icon="${s.i}"></ha-icon> <span>${s.n}</span></div>
                 <div class="g-main">${this._get(s.id)}<small>${s.u||''}</small></div>
@@ -160,6 +146,19 @@ class SpaCard extends LitElement {
               </div>`;
         })}</div>`;
     }
+
+    if (this._tab === 'cam') {
+        return html`<div class="cam-view">${c.entity_camera ? html`<hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : ''}</div>`;
+    }
+  }
+
+  _changeTemp(offset) {
+    const id = this.config.entity_target_temp;
+    if (!this._isValid(id)) return;
+    const current = parseFloat(this._get(id));
+    const newVal = Math.round((current + offset) * 2) / 2;
+    const domain = id.split('.')[0];
+    this.hass.callService(domain === 'climate' ? "climate" : "input_number", "set_" + (domain === 'climate' ? "temperature" : "value"), domain === 'climate' ? { entity_id: id, temperature: newVal } : { entity_id: id, value: newVal });
   }
 
   render() {
@@ -167,6 +166,10 @@ class SpaCard extends LitElement {
     const hasCam = !!c.entity_camera;
     const hasChem = [c.entity_ph, c.entity_orp, c.entity_tds, c.entity_salt, c.entity_cond].some(id => this._isValid(id));
     const hasSw = Array.from({length:10},(_,i)=>c[`switch_${i+1}`]).some(id => this._isValid(id));
+    const navItems = [{id:'home', icon:'mdi:home-variant'}];
+    if(hasCam) navItems.push({id:'cam', icon:'mdi:camera'});
+    if(hasChem) navItems.push({id:'chem', icon:'mdi:flask-round-bottom'});
+    if(hasSw) navItems.push({id:'sw', icon:'mdi:tune-vertical'});
 
     return html`
       <ha-card style="height: ${c.card_height || '580px'};">
@@ -174,12 +177,12 @@ class SpaCard extends LitElement {
             <div class="glass-overlay">
                 <div class="card-header">${c.card_title || 'MY SPA'}</div>
                 <div class="content">${this._renderTab()}</div>
+                ${navItems.length > 1 ? html`
                 <div class="navbar">
-                    <ha-icon class="${this._tab==='home'?'active':''}" icon="mdi:home-variant" @click=${()=>this._tab='home'}></ha-icon>
-                    ${hasCam ? html`<ha-icon class="${this._tab==='cam'?'active':''}" icon="mdi:camera" @click=${()=>this._tab='cam'}></ha-icon>` : ''}
-                    ${hasChem ? html`<ha-icon class="${this._tab==='chem'?'active':''}" icon="mdi:flask-round-bottom" @click=${()=>this._tab='chem'}></ha-icon>` : ''}
-                    ${hasSw ? html`<ha-icon class="${this._tab==='sw'?'active':''}" icon="mdi:tune-vertical" @click=${()=>this._tab='sw'}></ha-icon>` : ''}
-                </div>
+                    ${navItems.map(item => html`
+                        <ha-icon class="${this._tab === item.id ? 'active' : ''}" icon="${item.icon}" @click=${() => this._tab = item.id}></ha-icon>
+                    `)}
+                </div>` : ''}
             </div>
         </div>
       </ha-card>
@@ -192,37 +195,27 @@ class SpaCard extends LitElement {
     .bg { background-size: cover; background-position: center; height: 100%; }
     .glass-overlay { height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.85) 100%); backdrop-filter: blur(10px); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
     .card-header { text-align: center; font-weight: 200; letter-spacing: 5px; font-size: 13px; margin-bottom: 15px; opacity: 0.6; }
-    .content { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
-    
+    .content { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; overflow: hidden; }
     .home-view { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; }
-    .main-display { display: flex; align-items: center; justify-content: space-around; width: 100%; }
-    .side-info { text-align: center; flex: 1; min-width: 60px; }
+    .main-display { display: flex; align-items: center; justify-content: space-evenly; width: 100%; }
+    .side-info { text-align: center; display: flex; flex-direction: column; align-items: center; }
     .val-big { font-size: 24px; font-weight: 200; }
     .label-tiny { font-size: 8px; opacity: 0.4; letter-spacing: 1px; }
     .hum-pill { font-size: 9px; background: var(--glass); padding: 2px 8px; border-radius: 10px; margin-top: 5px; border: 1px solid rgba(255,255,255,0.1); }
-    
     .gauge-container { display: flex; flex-direction: column; align-items: center; gap: 5px; }
     .temp-btn-v { width: 35px; height: 35px; border-radius: 50%; background: var(--glass); display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }
     .center-gauge { position: relative; width: 160px; height: 160px; display: flex; align-items: center; justify-content: center; }
     .outer-ring { position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 2px solid transparent; border-top: 2px solid var(--accent); border-bottom: 2px solid var(--accent); animation: rotate 5s linear infinite; opacity: 0.3; }
     .inner-circle { width: 130px; height: 130px; background: rgba(255,255,255,0.03); border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .water-val { font-size: 46px; font-weight: 100; color: var(--accent); }
-    .target-box { background: rgba(255,255,255,0.05); padding: 2px 10px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; }
     .target-val { font-size: 14px; font-weight: 300; }
-
-    .energy-card { background: var(--glass); border-radius: 15px; padding: 10px 20px; display: flex; align-items: center; gap: 15px; width: 85%; border: 1px solid rgba(255,255,255,0.1); }
-    .energy-val { font-size: 18px; font-weight: 300; }
-
-    /* CHIMIE AUTO-ADAPTATIVE */
-    .chemistry-grid { display: grid; gap: 12px; width: 100%; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+    .energy-card { background: var(--glass); border-radius: 15px; padding: 10px 20px; display: flex; align-items: center; gap: 15px; width: fit-content; border: 1px solid rgba(255,255,255,0.1); }
+    .chemistry-grid { display: grid; gap: 12px; width: 100%; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
     .glass-card { background: var(--glass); padding: 15px 10px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); text-align: center; }
-    .g-header { font-size: 10px; opacity: 0.5; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 5px; }
     .g-main { font-size: 22px; color: var(--accent); font-weight: 200; }
-    
-    .sw-grid-elegant { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+    .sw-grid-elegant { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; width: 100%; }
     .sw-btn { background: var(--glass); padding: 15px 5px; border-radius: 15px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }
     .sw-btn.on { border-color: var(--accent); background: rgba(0,249,249,0.1); }
-    
     .navbar { display: flex; justify-content: space-around; width: 100%; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
     .navbar ha-icon { cursor: pointer; opacity: 0.2; transition: 0.3s; --mdc-icon-size: 26px; }
     .navbar ha-icon.active { opacity: 1; color: var(--accent); }
@@ -233,4 +226,4 @@ class SpaCard extends LitElement {
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V27.9", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V28.0", preview: true });
