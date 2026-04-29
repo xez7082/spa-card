@@ -4,7 +4,7 @@ import {
   css
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-// --- EDITEUR DE CONFIGURATION V26.1 ---
+// --- EDITEUR DE CONFIGURATION ---
 class SpaCardEditor extends LitElement {
   static get properties() { return { hass: {}, _config: {}, _selectedTab: { type: String } }; }
   constructor() { super(); this._selectedTab = 'gen'; }
@@ -26,6 +26,7 @@ class SpaCardEditor extends LitElement {
       ],
       sensors: [
         { name: "entity_water_temp", label: "Temp Eau (Cercle)", selector: { entity: { domain: "sensor" } } },
+        { name: "entity_target_temp", label: "Entité Consigne (Réglage)", selector: { entity: {} } },
         { name: "min_temp", label: "Eau Mini", selector: { number: { mode: "box" } } },
         { name: "max_temp", label: "Eau Maxi", selector: { number: { mode: "box" } } },
         { name: "entity_ext_temp", label: "Temp Extérieure", selector: { entity: { domain: "sensor" } } },
@@ -54,7 +55,9 @@ class SpaCardEditor extends LitElement {
         { name: "max_probe_hum", label: "Alerte Hum Sonde Max", selector: { number: { mode: "box" } } }
       ],
       camera: [
-        { name: "entity_camera", label: "Entité Caméra", selector: { entity: { domain: "camera" } } }
+        { name: "entity_camera", label: "Entité Caméra", selector: { entity: { domain: "camera" } } },
+        { name: "camera_width", label: "Largeur (ex: 100%)", selector: { text: {} } },
+        { name: "camera_height", label: "Hauteur (ex: 300px)", selector: { text: {} } }
       ],
       switches: Array.from({ length: 10 }, (_, i) => ([
         { name: `switch_${i + 1}`, label: `Bouton ${i + 1}`, selector: { entity: {} } },
@@ -74,7 +77,7 @@ class SpaCardEditor extends LitElement {
 customElements.define("spa-card-editor", SpaCardEditor);
 
 
-// --- CARTE PRINCIPALE V26.1 ---
+// --- CARTE PRINCIPALE ---
 class SpaCard extends LitElement {
   static getConfigElement() { return document.createElement("spa-card-editor"); }
   static get properties() { return { hass: {}, config: {}, _tab: { type: String } }; }
@@ -83,6 +86,19 @@ class SpaCard extends LitElement {
 
   _get(id) { return (this.hass && id && this.hass.states[id]) ? this.hass.states[id].state : '--'; }
   _getUnit(id) { return (this.hass && id && this.hass.states[id]) ? this.hass.states[id].attributes.unit_of_measurement || '' : ''; }
+
+  _changeTemp(offset) {
+    const id = this.config.entity_target_temp;
+    if (!id || this._get(id) === '--') return;
+    const current = parseFloat(this._get(id));
+    const newVal = Math.round((current + offset) * 2) / 2;
+    const domain = id.split('.')[0];
+    if (domain === 'climate') {
+      this.hass.callService("climate", "set_temperature", { entity_id: id, temperature: newVal });
+    } else {
+      this.hass.callService("input_number", "set_value", { entity_id: id, value: newVal });
+    }
+  }
 
   _renderTab() {
     const c = this.config;
@@ -98,14 +114,20 @@ class SpaCard extends LitElement {
                     <div class="label-tiny">EXTÉRIEUR</div>
                     <div class="hum-pill">${this._get(c.entity_ext_hum)}% HR</div>
                 </div>
-                <div class="center-gauge">
-                    <div class="outer-ring ${isAlert ? 'alert' : ''}"></div>
-                    <div class="inner-circle">
-                        <span class="water-label">TEMP EAU</span>
-                        <span class="water-val">${valW || '--'}</span>
-                        <span class="water-unit">°CELSIUS</span>
+                
+                <div class="gauge-container">
+                    <div class="temp-btn-v" @click=${() => this._changeTemp(0.5)}>+</div>
+                    <div class="center-gauge">
+                        <div class="outer-ring ${isAlert ? 'alert' : ''}"></div>
+                        <div class="inner-circle">
+                            <span class="water-label">TEMP EAU</span>
+                            <span class="water-val">${valW || '--'}</span>
+                            <span class="target-val-small">CIBLE: ${this._get(c.entity_target_temp)}°</span>
+                        </div>
                     </div>
+                    <div class="temp-btn-v" @click=${() => this._changeTemp(-0.5)}>-</div>
                 </div>
+
                 <div class="side-info">
                     <div class="val-big">${this._get(c.entity_spa_air_temp)}°</div>
                     <div class="label-tiny">AIR SPA</div>
@@ -123,7 +145,7 @@ class SpaCard extends LitElement {
     }
 
     if (this._tab === 'cam') {
-        return html`<div class="cam-view">
+        return html`<div class="cam-view" style="width: ${c.camera_width || '100%'}; height: ${c.camera_height || '300px'};">
             ${c.entity_camera ? html`<hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : 'Caméra non configurée'}
         </div>`;
     }
@@ -192,37 +214,44 @@ class SpaCard extends LitElement {
     .glass-overlay { height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.85) 100%); backdrop-filter: blur(10px); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
     .card-header { text-align: center; font-weight: 200; letter-spacing: 5px; font-size: 13px; margin-bottom: 15px; opacity: 0.6; }
     .content { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+    /* HOME */
     .home-view { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; }
     .main-display { display: flex; align-items: center; justify-content: space-around; width: 100%; }
-    .side-info { text-align: center; }
+    .side-info { text-align: center; flex: 1; }
     .val-big { font-size: 26px; font-weight: 200; }
     .label-tiny { font-size: 8px; letter-spacing: 2px; opacity: 0.4; margin: 4px 0; }
     .hum-pill { font-size: 9px; background: var(--glass); padding: 3px 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
+    
+    .gauge-container { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .temp-btn-v { width: 40px; height: 40px; border-radius: 50%; background: var(--glass); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; user-select: none; }
+    .temp-btn-v:active { background: var(--accent); color: #000; }
+    
     .center-gauge { position: relative; width: 150px; height: 150px; display: flex; align-items: center; justify-content: center; }
     .outer-ring { position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 2px solid transparent; border-top: 2px solid var(--accent); border-bottom: 2px solid var(--accent); animation: rotate 5s linear infinite; opacity: 0.4; }
+    .outer-ring.alert { border-color: #ff4b4b; animation-duration: 1s; }
     .inner-circle { width: 125px; height: 125px; background: rgba(255,255,255,0.03); border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .water-val { font-size: 48px; font-weight: 100; color: var(--accent); text-shadow: 0 0 15px rgba(0,249,249,0.4); }
+    .water-val { font-size: 44px; font-weight: 100; color: var(--accent); text-shadow: 0 0 15px rgba(0,249,249,0.4); }
     .water-label { font-size: 8px; opacity: 0.5; letter-spacing: 2px; }
+    .target-val-small { font-size: 8px; opacity: 0.4; margin-top: 5px; }
+
     .energy-card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 12px 20px; display: flex; align-items: center; gap: 15px; width: 90%; }
     .energy-card ha-icon { color: var(--accent); --mdc-icon-size: 24px; }
     .energy-val { font-size: 18px; font-weight: 300; }
     .energy-label { font-size: 8px; opacity: 0.4; letter-spacing: 1px; }
+
+    /* CHIMIE & AUTRES (Restaurés) */
     .glass-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; }
     .glass-card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 15px; }
     .g-header { display: flex; align-items: center; justify-content: center; gap: 5px; opacity: 0.6; margin-bottom: 5px; }
     .g-header ha-icon { --mdc-icon-size: 14px; color: var(--accent); }
-    .g-header span { font-size: 10px; font-weight: bold; }
     .g-body { display: flex; align-items: baseline; justify-content: space-between; }
     .g-main { font-size: 20px; color: var(--accent); font-weight: 200; flex: 1; text-align: center; }
     .g-lim { font-size: 10px; opacity: 0.2; width: 25px; font-weight: bold; }
     .glass-card.alert { border-color: #ff4b4b; background: rgba(255,75,75,0.1); }
-    .cam-view { width: 100%; border-radius: 15px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
     .sw-grid-elegant { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
     .sw-btn { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 12px 5px; border-radius: 15px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; }
-    .sw-btn ha-icon { --mdc-icon-size: 20px; opacity: 0.3; }
-    .sw-btn span { font-size: 8px; opacity: 0.6; text-transform: uppercase; text-align: center; }
     .sw-btn.on { background: rgba(0,249,249,0.15); border-color: var(--accent); }
-    .sw-btn.on ha-icon { opacity: 1; color: var(--accent); }
     .navbar { display: flex; justify-content: space-around; margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); }
     .navbar ha-icon { cursor: pointer; opacity: 0.3; transition: 0.3s; --mdc-icon-size: 24px; }
     .navbar ha-icon.active { opacity: 1; color: var(--accent); filter: drop-shadow(0 0 5px var(--accent)); }
@@ -233,4 +262,4 @@ class SpaCard extends LitElement {
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V26.1", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V27.4", preview: true });
