@@ -61,10 +61,14 @@ class SpaCard extends LitElement {
   constructor() { super(); this._tab = 'home'; }
   setConfig(config) { this.config = config; }
 
+  // VERIFICATION ULTRA-STRICTE
   _isValide(id) {
     if (!id || !this.hass.states[id]) return false;
     const s = this.hass.states[id].state;
-    return !['unavailable', 'unknown', 'null', 'undefined', '--', 'none', ''].includes(s.toLowerCase());
+    // On rejette tout ce qui n'est pas un nombre ou qui est un état d'erreur
+    if (['unavailable', 'unknown', 'null', 'undefined', '--', 'none', '', 'nan'].includes(s.toLowerCase())) return false;
+    // Si c'est un sensor numérique, on vérifie que c'est bien un chiffre
+    return !isNaN(parseFloat(s));
   }
 
   _get(id) { return this._isValide(id) ? this.hass.states[id].state : null; }
@@ -74,8 +78,6 @@ class SpaCard extends LitElement {
     const c = this.config;
     
     if (this._tab === 'home') {
-        const valW = this._get(c.entity_water_temp);
-        const valT = this._get(c.entity_target_temp);
         const hasExt = this._isValide(c.entity_ext_temp) || this._isValide(c.entity_ext_hum);
         const hasAir = this._isValide(c.entity_spa_air_temp) || this._isValide(c.entity_spa_hum);
 
@@ -93,8 +95,8 @@ class SpaCard extends LitElement {
                     <div class="center-gauge">
                         <div class="outer-ring"></div>
                         <div class="inner-circle">
-                            ${valW ? html`<span class="water-label">EAU</span><span class="water-val">${valW}°</span>` : ''}
-                            ${valT ? html`<div class="target-box"><span class="target-val">CIBLE ${valT}°</span></div>` : ''}
+                            ${this._isValide(c.entity_water_temp) ? html`<span class="water-label">EAU</span><span class="water-val">${this._get(c.entity_water_temp)}°</span>` : ''}
+                            ${this._isValide(c.entity_target_temp) ? html`<div class="target-box"><span class="target-val">CIBLE ${this._get(c.entity_target_temp)}°</span></div>` : ''}
                         </div>
                     </div>
                     ${this._isValide(c.entity_target_temp) ? html`<div class="temp-btn-v" @click=${() => this._changeTemp(-0.5)}><ha-icon icon="mdi:chevron-down"></ha-icon></div>` : ''}
@@ -124,23 +126,28 @@ class SpaCard extends LitElement {
             { id: c.entity_probe_hum, n: 'SONDE', u: '%', i: 'mdi:leak' }
         ].filter(s => this._isValide(s.id));
 
-        return html`<div class="chemistry-grid">${sensors.map(s => html`
-            <div class="glass-card">
-                <div class="g-header"><ha-icon icon="${s.i}"></ha-icon> <span>${s.n}</span></div>
-                <div class="g-main">${this._get(s.id)}<small>${s.u||''}</small></div>
-            </div>`)}</div>`;
+        return html`
+          <div class="chemistry-grid">
+            ${sensors.map(s => html`
+                <div class="glass-card">
+                    <div class="g-header"><ha-icon icon="${s.i}"></ha-icon> <span>${s.n}</span></div>
+                    <div class="g-main">${this._get(s.id)}<small>${s.u||''}</small></div>
+                </div>
+            `)}
+          </div>`;
     }
 
     if (this._tab === 'sw') {
         const sws = Array.from({length:10},(_,i)=>({id:c[`switch_${i+1}`], n:c[`name_switch_${i+1}`]})).filter(s => this._isValide(s.id));
-        return html`<div class="sw-grid-elegant">${sws.map(s => {
-            const on = this.hass.states[s.id]?.state === 'on';
-            return html`
-              <div class="sw-btn ${on?'on':''}" @click=${()=>this.hass.callService("homeassistant","toggle",{entity_id:s.id})}>
+        return html`
+          <div class="sw-grid-elegant">
+            ${sws.map(s => html`
+              <div class="sw-btn ${this.hass.states[s.id].state === 'on' ? 'on' : ''}" @click=${()=>this.hass.callService("homeassistant","toggle",{entity_id:s.id})}>
                 <ha-icon icon="mdi:power"></ha-icon>
                 <span>${s.n || 'Bouton'}</span>
-              </div>`;
-        })}</div>`;
+              </div>
+            `)}
+          </div>`;
     }
 
     if (this._tab === 'cam') {
@@ -210,9 +217,9 @@ class SpaCard extends LitElement {
     .temp-btn-v { width: 30px; height: 30px; border-radius: 50%; background: var(--glass); display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.08); }
     .energy-card { background: var(--glass); border-radius: 15px; padding: 6px 15px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.08); }
     .energy-val { font-size: 14px; font-weight: 300; color: var(--accent); }
-    .chemistry-grid { display: grid; gap: 10px; width: 100%; grid-template-columns: repeat(auto-fit, minmax(95px, 1fr)); }
+    .chemistry-grid { display: grid; gap: 10px; width: 100%; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); justify-content: center; }
     .glass-card { background: var(--glass); padding: 15px 8px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); text-align: center; }
-    .g-header { font-size: 8px; opacity: 0.3; margin-bottom: 4px; }
+    .g-header { font-size: 8px; opacity: 0.3; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 4px;}
     .g-main { font-size: 22px; color: var(--accent); font-weight: 200; }
     .sw-grid-elegant { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; width: 100%; }
     .sw-btn { background: var(--glass); padding: 15px 5px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; border: 1px solid rgba(255,255,255,0.08); }
@@ -227,4 +234,4 @@ class SpaCard extends LitElement {
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V28.3", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V28.4", preview: true });
