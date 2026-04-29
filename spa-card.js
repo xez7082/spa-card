@@ -61,14 +61,15 @@ class SpaCard extends LitElement {
   constructor() { super(); this._tab = 'home'; }
   setConfig(config) { this.config = config; }
 
-  _isValid(id) {
+  // VERIFICATION SI LA VALEUR EST UTILISABLE (Pas de tirets, pas d'inconnu)
+  _isValide(id) {
     if (!id || !this.hass.states[id]) return false;
     const s = this.hass.states[id].state;
-    return s !== 'unavailable' && s !== 'unknown' && s !== 'null';
+    return s !== 'unavailable' && s !== 'unknown' && s !== 'null' && s !== '--';
   }
 
-  _get(id) { return this._isValid(id) ? this.hass.states[id].state : null; }
-  _getUnit(id) { return this._isValid(id) ? this.hass.states[id].attributes.unit_of_measurement || '' : ''; }
+  _get(id) { return this._isValide(id) ? this.hass.states[id].state : null; }
+  _getUnit(id) { return this._isValide(id) ? this.hass.states[id].attributes.unit_of_measurement || '' : ''; }
 
   _renderTab() {
     const c = this.config;
@@ -76,8 +77,8 @@ class SpaCard extends LitElement {
     if (this._tab === 'home') {
         const valW = this._get(c.entity_water_temp);
         const valT = this._get(c.entity_target_temp);
-        const hasExt = this._isValid(c.entity_ext_temp) || this._isValid(c.entity_ext_hum);
-        const hasAir = this._isValid(c.entity_spa_air_temp) || this._isValid(c.entity_spa_hum);
+        const hasExt = this._isValide(c.entity_ext_temp) || this._isValide(c.entity_ext_hum);
+        const hasAir = this._isValide(c.entity_spa_air_temp) || this._isValide(c.entity_spa_hum);
 
         return html`
           <div class="home-view">
@@ -85,7 +86,7 @@ class SpaCard extends LitElement {
                 ${hasExt ? html`<div class="side-info">
                     <div class="val-big">${this._get(c.entity_ext_temp) || '--'}°</div>
                     <div class="label-tiny">EXTÉRIEUR</div>
-                    ${this._isValid(c.entity_ext_hum) ? html`<div class="hum-pill">${this._get(c.entity_ext_hum)}% HR</div>` : ''}
+                    ${this._isValide(c.entity_ext_hum) ? html`<div class="hum-pill">${this._get(c.entity_ext_hum)}% HR</div>` : ''}
                 </div>` : ''}
                 
                 <div class="gauge-container">
@@ -104,10 +105,10 @@ class SpaCard extends LitElement {
                 ${hasAir ? html`<div class="side-info">
                     <div class="val-big">${this._get(c.entity_spa_air_temp) || '--'}°</div>
                     <div class="label-tiny">AIR SPA</div>
-                    ${this._isValid(c.entity_spa_hum) ? html`<div class="hum-pill">${this._get(c.entity_spa_hum)}% HR</div>` : ''}
+                    ${this._isValide(c.entity_spa_hum) ? html`<div class="hum-pill">${this._get(c.entity_spa_hum)}% HR</div>` : ''}
                 </div>` : ''}
             </div>
-            ${this._isValid(c.main_cons_entity) ? html`
+            ${this._isValide(c.main_cons_entity) ? html`
             <div class="energy-card">
                 <ha-icon icon="mdi:lightning-bolt" class="anim-pulse"></ha-icon>
                 <div class="energy-details">
@@ -126,7 +127,7 @@ class SpaCard extends LitElement {
             { id: c.entity_salt, n: 'SEL', u: 'ppm', i: 'mdi:shaker-outline' },
             { id: c.entity_cond, n: 'COND', u: 'µS', i: 'mdi:waves' },
             { id: c.entity_probe_hum, n: 'SONDE', u: '%', i: 'mdi:leak' }
-        ].filter(s => this._isValid(s.id));
+        ].filter(s => this._isValide(s.id));
 
         return html`<div class="chemistry-grid">${sensors.map(s => html`
             <div class="glass-card">
@@ -136,7 +137,7 @@ class SpaCard extends LitElement {
     }
 
     if (this._tab === 'sw') {
-        const sws = Array.from({length:10},(_,i)=>({id:c[`switch_${i+1}`], n:c[`name_switch_${i+1}`]})).filter(s => this._isValid(s.id));
+        const sws = Array.from({length:10},(_,i)=>({id:c[`switch_${i+1}`], n:c[`name_switch_${i+1}`]})).filter(s => this._isValide(s.id));
         return html`<div class="sw-grid-elegant">${sws.map(s => {
             const on = this.hass.states[s.id]?.state === 'on';
             return html`
@@ -154,7 +155,7 @@ class SpaCard extends LitElement {
 
   _changeTemp(offset) {
     const id = this.config.entity_target_temp;
-    if (!this._isValid(id)) return;
+    if (!this._isValide(id)) return;
     const current = parseFloat(this._get(id));
     const newVal = Math.round((current + offset) * 2) / 2;
     const domain = id.split('.')[0];
@@ -164,8 +165,9 @@ class SpaCard extends LitElement {
   render() {
     const c = this.config;
     const hasCam = !!c.entity_camera;
-    const hasChem = [c.entity_ph, c.entity_orp, c.entity_tds, c.entity_salt, c.entity_cond].some(id => this._isValid(id));
-    const hasSw = Array.from({length:10},(_,i)=>c[`switch_${i+1}`]).some(id => this._isValid(id));
+    const hasChem = [c.entity_ph, c.entity_orp, c.entity_tds, c.entity_salt, c.entity_cond].some(id => this._isValide(id));
+    const hasSw = Array.from({length:10},(_,i)=>c[`switch_${i+1}`]).some(id => this._isValide(id));
+    
     const navItems = [{id:'home', icon:'mdi:home-variant'}];
     if(hasCam) navItems.push({id:'cam', icon:'mdi:camera'});
     if(hasChem) navItems.push({id:'chem', icon:'mdi:flask-round-bottom'});
@@ -198,7 +200,7 @@ class SpaCard extends LitElement {
     .content { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; overflow: hidden; }
     .home-view { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; }
     .main-display { display: flex; align-items: center; justify-content: space-evenly; width: 100%; }
-    .side-info { text-align: center; display: flex; flex-direction: column; align-items: center; }
+    .side-info { text-align: center; display: flex; flex-direction: column; align-items: center; min-width: 60px; }
     .val-big { font-size: 24px; font-weight: 200; }
     .label-tiny { font-size: 8px; opacity: 0.4; letter-spacing: 1px; }
     .hum-pill { font-size: 9px; background: var(--glass); padding: 2px 8px; border-radius: 10px; margin-top: 5px; border: 1px solid rgba(255,255,255,0.1); }
@@ -226,4 +228,4 @@ class SpaCard extends LitElement {
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V28.0", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V28.1", preview: true });
