@@ -31,9 +31,13 @@ class SpaCardEditor extends LitElement {
         { name: "entity_spa_hum", label: "Humidité Air Spa", selector: { entity: { domain: "sensor" } } },
         { name: "main_cons_entity", label: "Sonde Conso", selector: { entity: {} } }
       ],
-      chimie: [
+     chimie: [
         { name: "entity_ph", label: "pH", selector: { entity: { domain: "sensor" } } },
+        { name: "ph_min", label: "pH Minimum", selector: { number: { step: 0.1, mode: "box" } } },
+        { name: "ph_max", label: "pH Maximum", selector: { number: { step: 0.1, mode: "box" } } },
         { name: "entity_orp", label: "ORP", selector: { entity: { domain: "sensor" } } },
+        { name: "orp_min", label: "ORP Minimum", selector: { number: { mode: "box" } } },
+        { name: "orp_max", label: "ORP Maximum", selector: { number: { mode: "box" } } },
         { name: "entity_tds", label: "TDS", selector: { entity: { domain: "sensor" } } },
         { name: "entity_salt", label: "Salinité", selector: { entity: { domain: "sensor" } } }
       ],
@@ -105,9 +109,29 @@ class SpaCard extends LitElement {
         </div>`;
     }
 
-    if (this._tab === 'chem') {
-        const sensors = [{id:c.entity_ph,n:'pH',i:'mdi:flask'},{id:c.entity_orp,n:'ORP',u:'mV',i:'mdi:bolt'},{id:c.entity_tds,n:'TDS',u:'ppm',i:'mdi:water'},{id:c.entity_salt,n:'SEL',u:'ppm',i:'mdi:shaker'}].filter(s=>this._exists(s.id));
-        return html`<div class="chem-grid">${sensors.map(s=>html`<div class="glass-card"><div class="g-header"><ha-icon icon="${s.i}"></ha-icon> ${s.n}</div><div class="g-main">${this.hass.states[s.id].state}<small>${s.u||''}</small></div></div>`)}</div>`;
+if (this._tab === 'chem') {
+        const sensors = [
+            {id:c.entity_ph, n:'pH', i:'mdi:flask', min:c.ph_min, max:c.ph_max},
+            {id:c.entity_orp, n:'ORP', u:'mV', i:'mdi:bolt', min:c.orp_min, max:c.orp_max},
+            {id:c.entity_tds, n:'TDS', u:'ppm', i:'mdi:water'},
+            {id:c.entity_salt, n:'SEL', u:'ppm', i:'mdi:shaker'}
+        ].filter(s => this._exists(s.id));
+
+        return html`
+          <div class="chem-grid">
+            ${sensors.map(s => {
+                const val = parseFloat(this.hass.states[s.id].state);
+                const isOutOfRange = (s.min && val < s.min) || (s.max && val > s.max);
+                return html`
+                    <div class="glass-card ${isOutOfRange ? 'warning-border' : ''}">
+                        <div class="g-header"><ha-icon icon="${s.i}"></ha-icon> ${s.n}</div>
+                        <div class="g-main">${val}<small>${s.u||''}</small></div>
+                        ${(s.min || s.max) ? html`
+                            <div class="g-range">${s.min || '-'}/${s.max || '-'}</div>
+                        ` : ''}
+                    </div>`;
+            })}
+          </div>`;
     }
 
     if (this._tab === 'sw') {
@@ -183,6 +207,8 @@ class SpaCard extends LitElement {
     .glass-card, .sw-card { background: var(--glass); padding: 15px 10px; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; }
     .sw-card.active { border-color: var(--accent); background: rgba(0,249,249,0.1); }
     .g-main { font-size: 22px; color: var(--accent); font-weight: 200; }
+    .g-range { font-size: 9px; opacity: 0.4; margin-top: 5px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 3px; }
+    .warning-border { border-color: #ff9800 !important; background: rgba(255, 152, 0, 0.1) !important; }
     
     .nav { display: flex; justify-content: space-around; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
     .nav ha-icon { opacity: 0.3; cursor: pointer; --mdc-icon-size: 24px; }
