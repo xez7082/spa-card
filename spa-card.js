@@ -124,12 +124,15 @@ if (this._tab === 'chem') {
                 const isOutOfRange = (s.min && val < s.min) || (s.max && val > s.max);
                 return html`
                     <div class="glass-card ${isOutOfRange ? 'warning-border' : ''}">
-                        <div class="g-header"><ha-icon icon="${s.i}"></ha-icon> ${s.n}</div>
-                        <div class="g-main">${val}<small>${s.u||''}</small></div>
-                        ${(s.min || s.max) ? html`
-                            <div class="g-range">${s.min || '-'}/${s.max || '-'}</div>
-                        ` : ''}
-                    </div>`;
+        <div class="g-header"><ha-icon icon="${s.i}"></ha-icon> ${s.n}</div>
+        <div class="g-main">${val}<small>${s.u||''}</small></div>
+        ${(s.min || s.max) ? html`
+            <div class="g-footer">
+                <span class="g-min">min ${s.min || '-'}</span>
+                <span class="g-max">max ${s.max || '-'}</span>
+            </div>
+        ` : ''}
+    </div>
             })}
           </div>`;
     }
@@ -202,12 +205,33 @@ if (this._tab === 'chem') {
 
     .energy-footer { margin-top: 25px; background: var(--glass); padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-size: 12px; border: 1px solid rgba(255,255,255,0.05); }
     
-    .chem-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; width: 100%; }
+    .chem-grid { 
+        display: grid; 
+        grid-template-columns: 1fr 1fr; /* Deux colonnes égales pour bien voir l'écartement */
+        gap: 12px; 
+        width: 100%; 
+    }
     .sw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 12px; width: 100%; }
     .glass-card, .sw-card { background: var(--glass); padding: 15px 10px; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; }
     .sw-card.active { border-color: var(--accent); background: rgba(0,249,249,0.1); }
     .g-main { font-size: 22px; color: var(--accent); font-weight: 200; }
-    .g-range { font-size: 9px; opacity: 0.4; margin-top: 5px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 3px; }
+    .g-footer { 
+        display: flex; 
+        justify-content: space-between; 
+        width: 100%; 
+        margin-top: 8px; 
+        padding-top: 5px; 
+        border-top: 1px solid rgba(255,255,255,0.05); 
+    }
+    .g-min, .g-max { 
+        font-size: 8px; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px;
+        opacity: 0.4;
+    }
+    .g-min { text-align: left; }
+    .g-max { text-align: right; }
+    .warning-border { border-color: #ff9800 !important; background: rgba(255, 152, 0, 0.1) !important; }
     .warning-border { border-color: #ff9800 !important; background: rgba(255, 152, 0, 0.1) !important; }
     
     .nav { display: flex; justify-content: space-around; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
