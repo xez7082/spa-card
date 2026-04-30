@@ -152,7 +152,18 @@ class SpaCard extends LitElement {
 
     if (this._tab === 'cam') {
         const camScale = (c.camera_size || 100) / 100;
-        return html`<div class="cam-container" style="transform: scale(${camScale});">${this._exists(c.entity_camera) ? html`<hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : ''}</div>`;
+        return html`
+          <div class="cam-container">
+            <div class="cam-crop">
+              ${this._exists(c.entity_camera) ? html`
+                <hui-image 
+                  style="transform: scale(${camScale});"
+                  .hass=${this.hass} 
+                  .cameraImage=${c.entity_camera} 
+                  cameraView="live">
+                </hui-image>` : ''}
+            </div>
+          </div>`;
     }
   }
 
