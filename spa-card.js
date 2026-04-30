@@ -43,10 +43,10 @@ class SpaCardEditor extends LitElement {
       ],
       camera: [
         { name: "entity_camera", label: "Entité Caméra", selector: { entity: { domain: "camera" } } },
-        { name: "cam_w", label: "Largeur / Zoom (%)", selector: { number: { mode: "slider", min: 50, max: 400 } } },
-        { name: "cam_h", label: "Hauteur / Zoom (%)", selector: { number: { mode: "slider", min: 50, max: 400 } } },
-        { name: "cam_x", label: "Décalage Horizontal (px)", selector: { number: { mode: "slider", min: -200, max: 200 } } },
-        { name: "cam_y", label: "Décalage Vertical (px)", selector: { number: { mode: "slider", min: -200, max: 200 } } }
+        { name: "cam_w_px", label: "Largeur Image (px)", selector: { number: { mode: "box", min: 10, max: 2000 } } },
+        { name: "cam_h_px", label: "Hauteur Image (px)", selector: { number: { mode: "box", min: 10, max: 2000 } } },
+        { name: "cam_x", label: "Décalage X (px)", selector: { number: { mode: "box", min: -1000, max: 1000 } } },
+        { name: "cam_y", label: "Décalage Y (px)", selector: { number: { mode: "box", min: -1000, max: 1000 } } }
       ],
       switches: Array.from({ length: 10 }, (_, i) => ([
         { name: `switch_${i + 1}`, label: `Bouton ${i + 1}`, selector: { entity: {} } },
@@ -149,8 +149,8 @@ class SpaCard extends LitElement {
     }
 
     if (this._tab === 'cam') {
-        const scaleW = (c.cam_w || 100) / 100;
-        const scaleH = (c.cam_h || 100) / 100;
+        const w = c.cam_w_px || 300;
+        const h = c.cam_h_px || 200;
         const posX = c.cam_x || 0;
         const posY = c.cam_y || 0;
         return html`
@@ -158,7 +158,7 @@ class SpaCard extends LitElement {
             <div class="cam-crop">
               ${this._exists(c.entity_camera) ? html`
                 <hui-image 
-                  style="transform: translate(${posX}px, ${posY}px) scale(${scaleW}, ${scaleH}); transform-origin: center center;"
+                  style="width: ${w}px; height: ${h}px; transform: translate(${posX}px, ${posY}px);"
                   .hass=${this.hass} 
                   .cameraImage=${c.entity_camera} 
                   cameraView="live">
@@ -223,8 +223,8 @@ class SpaCard extends LitElement {
     .nav ha-icon.active { opacity: 1; color: var(--accent); }
 
     .cam-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-    .cam-crop { width: 100%; height: 100%; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #000; position: relative; }
-    .cam-crop hui-image { width: 100%; height: 100%; transition: none; --ha-camera-object-fit: contain; }
+    .cam-crop { width: 100%; height: 100%; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #000; display: flex; align-items: center; justify-content: center; }
+    .cam-crop hui-image { transition: none; --ha-camera-object-fit: fill; }
 
     @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .anim-pulse { animation: pulse 2s infinite; color: var(--accent); }
