@@ -43,8 +43,10 @@ class SpaCardEditor extends LitElement {
       ],
       camera: [
         { name: "entity_camera", label: "Entité Caméra", selector: { entity: { domain: "camera" } } },
-        { name: "cam_w", label: "Largeur Image (%)", selector: { number: { mode: "slider", min: 50, max: 300 } } },
-        { name: "cam_h", label: "Hauteur Image (%)", selector: { number: { mode: "slider", min: 50, max: 300 } } }
+        { name: "cam_w", label: "Largeur / Zoom (%)", selector: { number: { mode: "slider", min: 50, max: 400 } } },
+        { name: "cam_h", label: "Hauteur / Zoom (%)", selector: { number: { mode: "slider", min: 50, max: 400 } } },
+        { name: "cam_x", label: "Décalage Horizontal (px)", selector: { number: { mode: "slider", min: -200, max: 200 } } },
+        { name: "cam_y", label: "Décalage Vertical (px)", selector: { number: { mode: "slider", min: -200, max: 200 } } }
       ],
       switches: Array.from({ length: 10 }, (_, i) => ([
         { name: `switch_${i + 1}`, label: `Bouton ${i + 1}`, selector: { entity: {} } },
@@ -87,7 +89,6 @@ class SpaCard extends LitElement {
 
   _renderTab() {
     const c = this.config;
-    
     if (this._tab === 'home') {
       return html`
         <div class="home-view">
@@ -150,12 +151,14 @@ class SpaCard extends LitElement {
     if (this._tab === 'cam') {
         const scaleW = (c.cam_w || 100) / 100;
         const scaleH = (c.cam_h || 100) / 100;
+        const posX = c.cam_x || 0;
+        const posY = c.cam_y || 0;
         return html`
           <div class="cam-container">
             <div class="cam-crop">
               ${this._exists(c.entity_camera) ? html`
                 <hui-image 
-                  style="transform: scale(${scaleW}, ${scaleH});"
+                  style="transform: translate(${posX}px, ${posY}px) scale(${scaleW}, ${scaleH}); transform-origin: center center;"
                   .hass=${this.hass} 
                   .cameraImage=${c.entity_camera} 
                   cameraView="live">
@@ -192,7 +195,6 @@ class SpaCard extends LitElement {
     .overlay { height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.85) 100%); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
     .header { text-align: center; opacity: 0.4; font-size: 10px; letter-spacing: 3px; margin-bottom: 5px; }
     .main-content { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    
     .home-view { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .flex-row-center { display: flex; align-items: center; justify-content: center; width: 100%; gap: 10px; }
     .side-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 70px; }
@@ -208,7 +210,6 @@ class SpaCard extends LitElement {
     .label-tiny { font-size: 7px; opacity: 0.3; text-align: center; }
     .hum-pill { font-size: 8px; color: var(--accent); background: var(--glass); padding: 2px 6px; border-radius: 5px; margin-top: 4px; }
     .energy-footer { margin-top: 25px; background: var(--glass); padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-size: 12px; border: 1px solid rgba(255,255,255,0.05); }
-    
     .chem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
     .sw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 12px; width: 100%; }
     .glass-card, .sw-card { background: var(--glass); padding: 15px 10px; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; }
@@ -217,14 +218,13 @@ class SpaCard extends LitElement {
     .g-footer { display: flex; justify-content: space-between; width: 100%; margin-top: 8px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.05); }
     .g-min, .g-max { font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.4; }
     .warning-border { border-color: #ff9800 !important; background: rgba(255, 152, 0, 0.1) !important; }
-    
     .nav { display: flex; justify-content: space-around; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
     .nav ha-icon { opacity: 0.3; cursor: pointer; --mdc-icon-size: 24px; }
     .nav ha-icon.active { opacity: 1; color: var(--accent); }
 
     .cam-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-    .cam-crop { width: 95%; height: 90%; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #000; display: flex; align-items: center; justify-content: center; }
-    .cam-crop hui-image { width: 100%; height: 100%; transition: transform 0.3s ease; --ha-camera-object-fit: contain; }
+    .cam-crop { width: 100%; height: 100%; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #000; position: relative; }
+    .cam-crop hui-image { width: 100%; height: 100%; transition: none; --ha-camera-object-fit: contain; }
 
     @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .anim-pulse { animation: pulse 2s infinite; color: var(--accent); }
