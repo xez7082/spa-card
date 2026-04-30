@@ -43,10 +43,11 @@ class SpaCardEditor extends LitElement {
       ],
       camera: [
         { name: "entity_camera", label: "Entité Caméra", selector: { entity: { domain: "camera" } } },
-        { name: "cam_w_px", label: "Largeur Image (px)", selector: { number: { mode: "box", min: 10, max: 2000 } } },
-        { name: "cam_h_px", label: "Hauteur Image (px)", selector: { number: { mode: "box", min: 10, max: 2000 } } },
-        { name: "cam_x", label: "Décalage X (px)", selector: { number: { mode: "box", min: -1000, max: 1000 } } },
-        { name: "cam_y", label: "Décalage Y (px)", selector: { number: { mode: "box", min: -1000, max: 1000 } } }
+        { name: "cam_w_px", label: "Largeur Cadre (px)", selector: { number: { mode: "box", min: 10, max: 1000 } } },
+        { name: "cam_h_px", label: "Hauteur Cadre (px)", selector: { number: { mode: "box", min: 10, max: 1000 } } },
+        { name: "cam_radius", label: "Arrondi des coins (px)", selector: { number: { mode: "slider", min: 0, max: 50 } } },
+        { name: "cam_x", label: "Position Horiz. X (px)", selector: { number: { mode: "box", min: -500, max: 500 } } },
+        { name: "cam_y", label: "Position Vert. Y (px)", selector: { number: { mode: "box", min: -500, max: 500 } } }
       ],
       switches: Array.from({ length: 10 }, (_, i) => ([
         { name: `switch_${i + 1}`, label: `Bouton ${i + 1}`, selector: { entity: {} } },
@@ -151,14 +152,14 @@ class SpaCard extends LitElement {
     if (this._tab === 'cam') {
         const w = c.cam_w_px || 300;
         const h = c.cam_h_px || 200;
+        const rad = c.cam_radius || 20;
         const posX = c.cam_x || 0;
         const posY = c.cam_y || 0;
         return html`
-          <div class="cam-container">
-            <div class="cam-crop">
+          <div class="cam-container" style="transform: translate(${posX}px, ${posY}px);">
+            <div class="cam-crop" style="width: ${w}px; height: ${h}px; border-radius: ${rad}px;">
               ${this._exists(c.entity_camera) ? html`
                 <hui-image 
-                  style="width: ${w}px; height: ${h}px; transform: translate(${posX}px, ${posY}px);"
                   .hass=${this.hass} 
                   .cameraImage=${c.entity_camera} 
                   cameraView="live">
@@ -194,7 +195,7 @@ class SpaCard extends LitElement {
     .bg { background-size: cover; background-position: center; height: 100%; width: 100%; }
     .overlay { height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.85) 100%); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
     .header { text-align: center; opacity: 0.4; font-size: 10px; letter-spacing: 3px; margin-bottom: 5px; }
-    .main-content { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .main-content { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
     .home-view { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .flex-row-center { display: flex; align-items: center; justify-content: center; width: 100%; gap: 10px; }
     .side-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 70px; }
@@ -222,9 +223,9 @@ class SpaCard extends LitElement {
     .nav ha-icon { opacity: 0.3; cursor: pointer; --mdc-icon-size: 24px; }
     .nav ha-icon.active { opacity: 1; color: var(--accent); }
 
-    .cam-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-    .cam-crop { width: 100%; height: 100%; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #000; display: flex; align-items: center; justify-content: center; }
-    .cam-crop hui-image { transition: none; --ha-camera-object-fit: fill; }
+    .cam-container { display: flex; align-items: center; justify-content: center; }
+    .cam-crop { overflow: hidden; border: 2px solid rgba(255,255,255,0.2); background: #000; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .cam-crop hui-image { width: 100%; height: 100%; --ha-camera-object-fit: fill; }
 
     @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .anim-pulse { animation: pulse 2s infinite; color: var(--accent); }
@@ -233,4 +234,4 @@ class SpaCard extends LitElement {
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V28.9", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V29.0", preview: true });
