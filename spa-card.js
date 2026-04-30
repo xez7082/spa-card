@@ -32,14 +32,18 @@ class SpaCardEditor extends LitElement {
         { name: "main_cons_entity", label: "Sonde Conso", selector: { entity: {} } }
       ],
       chimie: [
-        { name: "entity_ph", label: "pH", selector: { entity: { domain: "sensor" } } },
+        { name: "entity_ph", label: "Entité pH", selector: { entity: { domain: "sensor" } } },
         { name: "ph_min", label: "pH Minimum", selector: { number: { step: 0.1, mode: "box" } } },
         { name: "ph_max", label: "pH Maximum", selector: { number: { step: 0.1, mode: "box" } } },
-        { name: "entity_orp", label: "ORP", selector: { entity: { domain: "sensor" } } },
+        { name: "entity_orp", label: "Entité ORP", selector: { entity: { domain: "sensor" } } },
         { name: "orp_min", label: "ORP Minimum", selector: { number: { mode: "box" } } },
         { name: "orp_max", label: "ORP Maximum", selector: { number: { mode: "box" } } },
-        { name: "entity_tds", label: "TDS", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_salt", label: "Salinité", selector: { entity: { domain: "sensor" } } }
+        { name: "entity_tds", label: "Entité TDS", selector: { entity: { domain: "sensor" } } },
+        { name: "tds_min", label: "TDS Minimum", selector: { number: { mode: "box" } } },
+        { name: "tds_max", label: "TDS Maximum", selector: { number: { mode: "box" } } },
+        { name: "entity_salt", label: "Entité Sel", selector: { entity: { domain: "sensor" } } },
+        { name: "salt_min", label: "Sel Minimum", selector: { number: { mode: "box" } } },
+        { name: "salt_max", label: "Sel Maximum", selector: { number: { mode: "box" } } }
       ],
       camera: [
         { name: "entity_camera", label: "Entité Caméra", selector: { entity: { domain: "camera" } } },
@@ -126,19 +130,23 @@ class SpaCard extends LitElement {
         const sensors = [
             {id:c.entity_ph, n:'pH', i:'mdi:flask', min:c.ph_min, max:c.ph_max},
             {id:c.entity_orp, n:'ORP', u:'mV', i:'mdi:bolt', min:c.orp_min, max:c.orp_max},
-            {id:c.entity_tds, n:'TDS', u:'ppm', i:'mdi:water'},
-            {id:c.entity_salt, n:'SEL', u:'ppm', i:'mdi:shaker'}
+            {id:c.entity_tds, n:'TDS', u:'ppm', i:'mdi:water', min:c.tds_min, max:c.tds_max},
+            {id:c.entity_salt, n:'SEL', u:'ppm', i:'mdi:shaker', min:c.salt_min, max:c.salt_max}
         ].filter(s => this._exists(s.id));
+        
         return html`
           <div class="chem-grid">
             ${sensors.map(s => {
                 const val = parseFloat(this.hass.states[s.id].state);
-                const isOutOfRange = (s.min && val < s.min) || (s.max && val > s.max);
+                const isOutOfRange = (s.min !== undefined && val < s.min) || (s.max !== undefined && val > s.max);
                 return html`
                     <div class="glass-card ${isOutOfRange ? 'warning-border' : ''}">
                         <div class="g-header"><ha-icon icon="${s.i}"></ha-icon> ${s.n}</div>
                         <div class="g-main">${val}<small>${s.u||''}</small></div>
-                        ${(s.min || s.max) ? html`<div class="g-footer"><span class="g-min">min ${s.min || '-'}</span><span class="g-max">max ${s.max || '-'}</span></div>` : ''}
+                        <div class="g-footer">
+                            <span class="g-min">min ${s.min ?? '--'}</span>
+                            <span class="g-max">max ${s.max ?? '--'}</span>
+                        </div>
                     </div>`;
             })}
           </div>`;
@@ -196,6 +204,16 @@ class SpaCard extends LitElement {
     .overlay { height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.85) 100%); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
     .header { text-align: center; opacity: 0.4; font-size: 10px; letter-spacing: 3px; margin-bottom: 5px; }
     .main-content { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+    
+    .chem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; padding: 10px; }
+    .glass-card { background: var(--glass); padding: 15px 10px; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+    .g-header { font-size: 10px; opacity: 0.6; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .g-main { font-size: 24px; color: var(--accent); font-weight: 200; }
+    .g-main small { font-size: 10px; margin-left: 3px; opacity: 0.8; }
+    .g-footer { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.05); }
+    .g-min, .g-max { font-size: 8px; opacity: 0.4; text-transform: uppercase; }
+    .warning-border { border-color: #ff9800 !important; background: rgba(255, 152, 0, 0.15) !important; }
+
     .home-view { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .flex-row-center { display: flex; align-items: center; justify-content: center; width: 100%; gap: 10px; }
     .side-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 70px; }
@@ -211,14 +229,9 @@ class SpaCard extends LitElement {
     .label-tiny { font-size: 7px; opacity: 0.3; text-align: center; }
     .hum-pill { font-size: 8px; color: var(--accent); background: var(--glass); padding: 2px 6px; border-radius: 5px; margin-top: 4px; }
     .energy-footer { margin-top: 25px; background: var(--glass); padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-size: 12px; border: 1px solid rgba(255,255,255,0.05); }
-    .chem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
     .sw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 12px; width: 100%; }
-    .glass-card, .sw-card { background: var(--glass); padding: 15px 10px; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; }
+    .sw-card { background: var(--glass); padding: 15px 10px; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; cursor: pointer; }
     .sw-card.active { border-color: var(--accent); background: rgba(0,249,249,0.1); }
-    .g-main { font-size: 22px; color: var(--accent); font-weight: 200; }
-    .g-footer { display: flex; justify-content: space-between; width: 100%; margin-top: 8px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.05); }
-    .g-min, .g-max { font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.4; }
-    .warning-border { border-color: #ff9800 !important; background: rgba(255, 152, 0, 0.1) !important; }
     .nav { display: flex; justify-content: space-around; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
     .nav ha-icon { opacity: 0.3; cursor: pointer; --mdc-icon-size: 24px; }
     .nav ha-icon.active { opacity: 1; color: var(--accent); }
@@ -234,4 +247,4 @@ class SpaCard extends LitElement {
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V29.0", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V30.0", preview: true });
