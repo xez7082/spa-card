@@ -31,7 +31,7 @@ class SpaCardEditor extends LitElement {
         { name: "entity_spa_hum", label: "Humidité Air Spa", selector: { entity: { domain: "sensor" } } },
         { name: "main_cons_entity", label: "Sonde Conso", selector: { entity: {} } }
       ],
-     chimie: [
+      chimie: [
         { name: "entity_ph", label: "pH", selector: { entity: { domain: "sensor" } } },
         { name: "ph_min", label: "pH Minimum", selector: { number: { step: 0.1, mode: "box" } } },
         { name: "ph_max", label: "pH Maximum", selector: { number: { step: 0.1, mode: "box" } } },
@@ -72,8 +72,16 @@ class SpaCard extends LitElement {
     return !['unavailable', 'unknown', 'none', '--'].includes(s.toLowerCase());
   }
 
+  _changeTemp(offset) {
+    const id = this.config.entity_target_temp;
+    const val = Math.round((parseFloat(this.hass.states[id].state) + offset) * 2) / 2;
+    const domain = id.split('.')[0];
+    this.hass.callService(domain === 'climate' ? "climate" : "input_number", domain === 'climate' ? "set_temperature" : "set_value", domain === 'climate' ? { entity_id: id, temperature: val } : { entity_id: id, value: val });
+  }
+
   _renderTab() {
     const c = this.config;
+    
     if (this._tab === 'home') {
       return html`
         <div class="home-view">
@@ -109,7 +117,7 @@ class SpaCard extends LitElement {
         </div>`;
     }
 
-if (this._tab === 'chem') {
+    if (this._tab === 'chem') {
         const sensors = [
             {id:c.entity_ph, n:'pH', i:'mdi:flask', min:c.ph_min, max:c.ph_max},
             {id:c.entity_orp, n:'ORP', u:'mV', i:'mdi:bolt', min:c.orp_min, max:c.orp_max},
@@ -124,15 +132,15 @@ if (this._tab === 'chem') {
                 const isOutOfRange = (s.min && val < s.min) || (s.max && val > s.max);
                 return html`
                     <div class="glass-card ${isOutOfRange ? 'warning-border' : ''}">
-        <div class="g-header"><ha-icon icon="${s.i}"></ha-icon> ${s.n}</div>
-        <div class="g-main">${val}<small>${s.u||''}</small></div>
-        ${(s.min || s.max) ? html`
-            <div class="g-footer">
-                <span class="g-min">min ${s.min || '-'}</span>
-                <span class="g-max">max ${s.max || '-'}</span>
-            </div>
-        ` : ''}
-    </div>
+                        <div class="g-header"><ha-icon icon="${s.i}"></ha-icon> ${s.n}</div>
+                        <div class="g-main">${val}<small>${s.u||''}</small></div>
+                        ${(s.min || s.max) ? html`
+                            <div class="g-footer">
+                                <span class="g-min">min ${s.min || '-'}</span>
+                                <span class="g-max">max ${s.max || '-'}</span>
+                            </div>
+                        ` : ''}
+                    </div>`;
             })}
           </div>`;
     }
@@ -146,13 +154,6 @@ if (this._tab === 'chem') {
         const camScale = (c.camera_size || 100) / 100;
         return html`<div class="cam-container" style="transform: scale(${camScale});">${this._exists(c.entity_camera) ? html`<hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>` : ''}</div>`;
     }
-  }
-
-  _changeTemp(offset) {
-    const id = this.config.entity_target_temp;
-    const val = Math.round((parseFloat(this.hass.states[id].state) + offset) * 2) / 2;
-    const domain = id.split('.')[0];
-    this.hass.callService(domain === 'climate' ? "climate" : "input_number", domain === 'climate' ? "set_temperature" : "set_value", domain === 'climate' ? { entity_id: id, temperature: val } : { entity_id: id, value: val });
   }
 
   render() {
@@ -186,7 +187,6 @@ if (this._tab === 'chem') {
     .home-view { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .flex-row-center { display: flex; align-items: center; justify-content: center; width: 100%; gap: 10px; }
     
-    /* Piliers latéraux pour garder le centre fixe */
     .side-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 70px; }
     
     .gauge-container { flex: 0 0 180px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -207,7 +207,7 @@ if (this._tab === 'chem') {
     
     .chem-grid { 
         display: grid; 
-        grid-template-columns: 1fr 1fr; /* Deux colonnes égales pour bien voir l'écartement */
+        grid-template-columns: 1fr 1fr; 
         gap: 12px; 
         width: 100%; 
     }
@@ -229,9 +229,6 @@ if (this._tab === 'chem') {
         letter-spacing: 0.5px;
         opacity: 0.4;
     }
-    .g-min { text-align: left; }
-    .g-max { text-align: right; }
-    .warning-border { border-color: #ff9800 !important; background: rgba(255, 152, 0, 0.1) !important; }
     .warning-border { border-color: #ff9800 !important; background: rgba(255, 152, 0, 0.1) !important; }
     
     .nav { display: flex; justify-content: space-around; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
