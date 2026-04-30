@@ -41,9 +41,11 @@ class SpaCardEditor extends LitElement {
         { name: "entity_tds", label: "TDS", selector: { entity: { domain: "sensor" } } },
         { name: "entity_salt", label: "Salinité", selector: { entity: { domain: "sensor" } } }
       ],
+      // Dans la section camera du schéma :
       camera: [
         { name: "entity_camera", label: "Entité Caméra", selector: { entity: { domain: "camera" } } },
-        { name: "camera_size", label: "Taille de la caméra (%)", selector: { number: { mode: "slider", min: 50, max: 200 } } }
+        { name: "cam_w", label: "Largeur Image (%)", selector: { number: { mode: "slider", min: 50, max: 300 } } },
+        { name: "cam_h", label: "Hauteur Image (%)", selector: { number: { mode: "slider", min: 50, max: 300 } } }
       ],
       switches: Array.from({ length: 10 }, (_, i) => ([
         { name: `switch_${i + 1}`, label: `Bouton ${i + 1}`, selector: { entity: {} } },
@@ -146,14 +148,17 @@ class SpaCard extends LitElement {
         return html`<div class="sw-grid">${sws.map(s => html`<div class="sw-card ${this.hass.states[s.id].state==='on'?'active':''}" @click=${()=>this.hass.callService("homeassistant","toggle",{entity_id:s.id})}><ha-icon icon="mdi:power"></ha-icon><span>${s.n||'Bouton'}</span></div>`)}</div>`;
     }
 
-    if (this._tab === 'cam') {
-        const camScale = (c.camera_size || 100) / 100;
+ if (this._tab === 'cam') {
+        // Valeurs par défaut à 100% si non définies
+        const scaleW = (c.cam_w || 100) / 100;
+        const scaleH = (c.cam_h || 100) / 100;
+        
         return html`
           <div class="cam-container">
             <div class="cam-crop">
               ${this._exists(c.entity_camera) ? html`
                 <hui-image 
-                  style="transform: scale(${camScale});"
+                  style="transform: scale(${scaleW}, ${scaleH});"
                   .hass=${this.hass} 
                   .cameraImage=${c.entity_camera} 
                   cameraView="live">
