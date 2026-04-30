@@ -43,7 +43,7 @@ class SpaCardEditor extends LitElement {
       ],
       camera: [
         { name: "entity_camera", label: "Entité Caméra", selector: { entity: { domain: "camera" } } },
-        { name: "camera_size", label: "Taille de la caméra (%)", selector: { number: { mode: "slider", min: 50, max: 100 } } }
+        { name: "camera_size", label: "Taille de la caméra (%)", selector: { number: { mode: "slider", min: 50, max: 200 } } }
       ],
       switches: Array.from({ length: 10 }, (_, i) => ([
         { name: `switch_${i + 1}`, label: `Bouton ${i + 1}`, selector: { entity: {} } },
@@ -55,6 +55,11 @@ class SpaCardEditor extends LitElement {
         ${Object.keys(schemas).map(t => html`<button class="${this._selectedTab === t ? 'active' : ''}" @click=${() => this._selectedTab = t}>${t.toUpperCase()}</button>`)}
       </div>
       <ha-form .hass=${this.hass} .data=${this._config} .schema=${schemas[this._selectedTab]} @value-changed=${this._valueChanged}></ha-form>
+      <style>
+        .editor-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
+        .editor-tabs button { flex: 1; padding: 8px; cursor: pointer; background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; }
+        .editor-tabs button.active { background: #00f9f9; color: #000; }
+      </style>
     `;
   }
 }
@@ -90,7 +95,6 @@ class SpaCard extends LitElement {
               ${this._exists(c.entity_ext_temp) ? html`<div class="side-info"><div class="val-big">${this.hass.states[c.entity_ext_temp].state}°</div><div class="label-tiny">EXTÉRIEUR</div></div>` : ''}
               ${this._exists(c.entity_ext_hum) ? html`<div class="hum-pill">${this.hass.states[c.entity_ext_hum].state}% HR</div>` : ''}
             </div>
-
             <div class="gauge-container">
                 ${this._exists(c.entity_target_temp) ? html`<div class="temp-btn" @click=${() => this._changeTemp(0.5)}><ha-icon icon="mdi:chevron-up"></ha-icon></div>` : ''}
                 <div class="center-gauge">
@@ -102,13 +106,11 @@ class SpaCard extends LitElement {
                 </div>
                 ${this._exists(c.entity_target_temp) ? html`<div class="temp-btn" @click=${() => this._changeTemp(-0.5)}><ha-icon icon="mdi:chevron-down"></ha-icon></div>` : ''}
             </div>
-
             <div class="side-col">
               ${this._exists(c.entity_spa_air_temp) ? html`<div class="side-info"><div class="val-big">${this.hass.states[c.entity_spa_air_temp].state}°</div><div class="label-tiny">AIR SPA</div></div>` : ''}
               ${this._exists(c.entity_spa_hum) ? html`<div class="hum-pill">${this.hass.states[c.entity_spa_hum].state}% HR</div>` : ''}
             </div>
           </div>
-
           ${this._exists(c.main_cons_entity) ? html`
             <div class="energy-footer">
                 <ha-icon icon="mdi:lightning-bolt" class="anim-pulse"></ha-icon>
@@ -124,7 +126,6 @@ class SpaCard extends LitElement {
             {id:c.entity_tds, n:'TDS', u:'ppm', i:'mdi:water'},
             {id:c.entity_salt, n:'SEL', u:'ppm', i:'mdi:shaker'}
         ].filter(s => this._exists(s.id));
-
         return html`
           <div class="chem-grid">
             ${sensors.map(s => {
@@ -134,12 +135,7 @@ class SpaCard extends LitElement {
                     <div class="glass-card ${isOutOfRange ? 'warning-border' : ''}">
                         <div class="g-header"><ha-icon icon="${s.i}"></ha-icon> ${s.n}</div>
                         <div class="g-main">${val}<small>${s.u||''}</small></div>
-                        ${(s.min || s.max) ? html`
-                            <div class="g-footer">
-                                <span class="g-min">min ${s.min || '-'}</span>
-                                <span class="g-max">max ${s.max || '-'}</span>
-                            </div>
-                        ` : ''}
+                        ${(s.min || s.max) ? html`<div class="g-footer"><span class="g-min">min ${s.min || '-'}</span><span class="g-max">max ${s.max || '-'}</span></div>` : ''}
                     </div>`;
             })}
           </div>`;
@@ -190,63 +186,44 @@ class SpaCard extends LitElement {
   static styles = css`
     :host { --accent: #00f9f9; --glass: rgba(255,255,255,0.08); }
     ha-card { border-radius: 30px; overflow: hidden; background: #000; color: #fff; border: none; }
-    .bg { background-size: cover; background-position: center; height: 100%; }
+    .bg { background-size: cover; background-position: center; height: 100%; width: 100%; }
     .overlay { height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.85) 100%); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
     .header { text-align: center; opacity: 0.4; font-size: 10px; letter-spacing: 3px; margin-bottom: 5px; }
     .main-content { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
     
     .home-view { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .flex-row-center { display: flex; align-items: center; justify-content: center; width: 100%; gap: 10px; }
-    
     .side-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 70px; }
-    
     .gauge-container { flex: 0 0 180px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .center-gauge { position: relative; width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; }
     .outer-ring { position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 1px solid rgba(0,249,249,0.1); border-top: 2px solid var(--accent); animation: rotate 8s linear infinite; }
     .inner-circle { width: 150px; height: 150px; background: rgba(255,255,255,0.03); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.05); }
-    
     .water-val { font-size: 50px; font-weight: 100; color: var(--accent); line-height: 1; }
     .water-label { font-size: 8px; opacity: 0.3; letter-spacing: 2px; }
     .target-box { margin-top: 5px; background: var(--glass); padding: 2px 8px; border-radius: 10px; font-size: 10px; opacity: 0.7; }
     .temp-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--glass); display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }
-
     .val-big { font-size: 24px; font-weight: 200; }
     .label-tiny { font-size: 7px; opacity: 0.3; text-align: center; }
     .hum-pill { font-size: 8px; color: var(--accent); background: var(--glass); padding: 2px 6px; border-radius: 5px; margin-top: 4px; }
-
     .energy-footer { margin-top: 25px; background: var(--glass); padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-size: 12px; border: 1px solid rgba(255,255,255,0.05); }
     
-    .chem-grid { 
-        display: grid; 
-        grid-template-columns: 1fr 1fr; 
-        gap: 12px; 
-        width: 100%; 
-    }
+    .chem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
     .sw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 12px; width: 100%; }
     .glass-card, .sw-card { background: var(--glass); padding: 15px 10px; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; }
     .sw-card.active { border-color: var(--accent); background: rgba(0,249,249,0.1); }
     .g-main { font-size: 22px; color: var(--accent); font-weight: 200; }
-    .g-footer { 
-        display: flex; 
-        justify-content: space-between; 
-        width: 100%; 
-        margin-top: 8px; 
-        padding-top: 5px; 
-        border-top: 1px solid rgba(255,255,255,0.05); 
-    }
-    .g-min, .g-max { 
-        font-size: 8px; 
-        text-transform: uppercase; 
-        letter-spacing: 0.5px;
-        opacity: 0.4;
-    }
+    .g-footer { display: flex; justify-content: space-between; width: 100%; margin-top: 8px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.05); }
+    .g-min, .g-max { font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.4; }
     .warning-border { border-color: #ff9800 !important; background: rgba(255, 152, 0, 0.1) !important; }
     
     .nav { display: flex; justify-content: space-around; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
     .nav ha-icon { opacity: 0.3; cursor: pointer; --mdc-icon-size: 24px; }
     .nav ha-icon.active { opacity: 1; color: var(--accent); }
-    .cam-container { width: 100%; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
-    .cam-container hui-image { width: 100%; border-radius: 15px; }
+
+    .cam-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+    .cam-crop { width: 95%; height: 90%; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #000; display: flex; align-items: center; justify-content: center; }
+    .cam-crop hui-image { width: 100%; height: 100%; transition: transform 0.3s ease; --ha-camera-object-fit: contain; }
+
     @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .anim-pulse { animation: pulse 2s infinite; color: var(--accent); }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
