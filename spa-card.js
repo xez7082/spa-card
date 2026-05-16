@@ -138,13 +138,10 @@ class SpaCard extends LitElement {
           <div class="pool-monitor-style">
             ${sensors.map(s => {
                 const val = parseFloat(this.hass.states[s.id].state);
-                
-                // Calcul du pourcentage pour la jauge linéaire (sécurisé entre 0 et 100%)
                 const totalRange = s.dMax - s.dMin;
                 let pct = ((val - s.dMin) / totalRange) * 100;
                 pct = Math.max(0, Math.min(100, pct));
                 
-                // Détermination de l'état (Trop bas, Idéal, Trop haut)
                 let statusClass = 'ideal';
                 let statusLabel = 'Idéal';
                 if (val < s.min) { statusClass = 'low'; statusLabel = 'Trop Bas'; }
@@ -250,8 +247,10 @@ class SpaCard extends LitElement {
     .pool-zone.high-zone { background: #ff9800; border-top-right-radius: 3px; border-bottom-right-radius: 3px; opacity: 0.6; }
     
     .pool-marker { position: absolute; width: 12px; height: 12px; background: #fff; border-radius: 50%; top: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 6px rgba(0,0,0,0.8); border: 2px solid #222; z-index: 2; transition: left 0.5s ease-in-out; }
-    .pool-gauge-labels { display: flex; justify-content: space-between; font-size: 8px; opacity: 0.4; margin-top: 4px; padding: 0 2px; }
-    .mid-label { font-weight: bold; opacity: 0.7; }
+    
+    /* MODIFICATIONS TAILLE DES VALEURS DU BAS */
+    .pool-gauge-labels { display: flex; justify-content: space-between; font-size: 11px; opacity: 0.7; margin-top: 5px; padding: 0 2px; font-weight: 400; }
+    .mid-label { font-weight: 700; color: #fff; opacity: 0.9; }
 
     /* RESTE DU STYLE ORIGINAL */
     .home-view { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -287,4 +286,4 @@ class SpaCard extends LitElement {
 }
 customElements.define("spa-card", SpaCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V31.0", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Master V32.0", preview: true });
