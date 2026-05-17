@@ -106,6 +106,15 @@ class SpaCardEditor extends LitElement {
           { name: 'entity_spa_hum',   label: 'Humidité spa',            selector: { entity: { domain: 'sensor' } } },
           { name: 'main_cons_entity', label: 'Sonde conso électrique', selector: { entity: {} } }
         ]
+      )}
+      ${this._acc('a-flood',
+        'background:rgba(56,189,248,.15);color:#0ea5e9;',
+        '💧', 'Capteur d\'inondation',
+        [
+          { name: 'entity_water_leak', label: 'Détecteur fuite eau',    selector: { entity: { domain: 'binary_sensor' } } },
+          { name: 'entity_tamper',     label: 'Alerte sabotage',        selector: { entity: { domain: 'binary_sensor' } } },
+          { name: 'entity_flood_bat',  label: 'Batterie capteur (%)',   selector: { entity: { domain: 'sensor' } } }
+        ]
       )}`;
   }
 
@@ -465,6 +474,59 @@ class SpaCard extends LitElement {
               ${this.hass.states[c.main_cons_entity].attributes?.unit_of_measurement ?? ''}
             </span>
           </div>` : ''}
+
+        ${this._renderFlood()}
+      </div>`;
+  }
+
+  // ── Capteur inondation (affiché sur l'accueil) ─────────────────
+  _renderFlood() {
+    const c = this.config;
+    const leakId   = c.entity_water_leak;
+    const tamperId = c.entity_tamper;
+    const batId    = c.entity_flood_bat;
+    const hasAny   = this._exists(leakId) || this._exists(tamperId) || this._exists(batId);
+    if (!hasAny) return html``;
+
+    // États
+    const leak   = this._exists(leakId)   ? this.hass.states[leakId].state   === 'on' : false;
+    const tamper = this._exists(tamperId)  ? this.hass.states[tamperId].state === 'on' : false;
+    const bat    = this._exists(batId)     ? parseFloat(this.hass.states[batId].state) : null;
+
+    const alerting = leak || tamper;
+
+    // Icône batterie selon niveau
+    const batIcon = bat === null ? 'mdi:battery-unknown'
+      : bat >= 90 ? 'mdi:battery'
+      : bat >= 70 ? 'mdi:battery-80'
+      : bat >= 50 ? 'mdi:battery-60'
+      : bat >= 30 ? 'mdi:battery-40'
+      : bat >= 15 ? 'mdi:battery-20'
+      : 'mdi:battery-alert';
+    const batLow = bat !== null && bat < 20;
+
+    return html`
+      <div class="flood-bar ${alerting ? 'flood-alert' : 'flood-ok'}">
+        <div class="flood-left">
+          <ha-icon
+            icon="${leak ? 'mdi:water-alert' : 'mdi:water-check'}"
+            class="flood-icon ${leak ? 'flood-icon-alert' : ''}">
+          </ha-icon>
+          <span class="flood-label">${leak ? 'FUITE DÉTECTÉE !' : 'Pas de fuite'}</span>
+        </div>
+        <div class="flood-right">
+          ${this._exists(tamperId) ? html`
+            <ha-icon
+              icon="${tamper ? 'mdi:shield-alert' : 'mdi:shield-check'}"
+              class="flood-pill ${tamper ? 'pill-warn' : 'pill-ok'}"
+              title="${tamper ? 'Sabotage !' : 'Intégrité OK'}">
+            </ha-icon>` : ''}
+          ${bat !== null ? html`
+            <div class="flood-pill ${batLow ? 'pill-warn' : 'pill-ok'}">
+              <ha-icon icon="${batIcon}"></ha-icon>
+              <span>${Math.round(bat)}%</span>
+            </div>` : ''}
+        </div>
       </div>`;
   }
 
@@ -728,6 +790,43 @@ class SpaCard extends LitElement {
       font-size: 12px; border: 1px solid rgba(255,255,255,.05);
     }
 
+    /* ── Capteur inondation ── */
+    .flood-bar {
+      margin-top: 12px; width: 100%;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 14px; border-radius: 14px; box-sizing: border-box;
+      border: 1px solid; transition: all .3s;
+    }
+    .flood-ok {
+      background: rgba(0,249,249,.06);
+      border-color: rgba(0,249,249,.2);
+    }
+    .flood-alert {
+      background: rgba(255,50,50,.12);
+      border-color: rgba(255,80,80,.6);
+      animation: flood-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes flood-pulse {
+      0%,100% { box-shadow: 0 0 0px rgba(255,50,50,0); }
+      50%      { box-shadow: 0 0 12px rgba(255,80,80,.4); }
+    }
+    .flood-left {
+      display: flex; align-items: center; gap: 7px;
+    }
+    .flood-icon { --mdc-icon-size: 20px; color: var(--accent); }
+    .flood-icon-alert { color: #ff4444; animation: pulse 1s infinite; }
+    .flood-label { font-size: 11px; font-weight: 500; letter-spacing: .5px; }
+    .flood-right {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .flood-pill {
+      display: flex; align-items: center; gap: 3px;
+      padding: 2px 7px; border-radius: 8px; font-size: 10px;
+      --mdc-icon-size: 14px;
+    }
+    .pill-ok   { background: rgba(0,249,249,.1);  color: var(--accent); }
+    .pill-warn { background: rgba(255,152,0,.18); color: #ff9800; }
+
     /* ── Chimie — jauges horizontales ── */
     .chem-list {
       display: flex; flex-direction: column;
@@ -883,7 +982,7 @@ customElements.define('spa-card', SpaCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:        'spa-card',
-  name:        'Spa Master V32.2',
+  name:        'Spa Master V32.3',
   description: 'Supervision spa — températures, chimie, caméra, équipements.',
   preview:     true
 });
