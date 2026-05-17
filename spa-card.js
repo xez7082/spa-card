@@ -468,45 +468,76 @@ class SpaCard extends LitElement {
       </div>`;
   }
 
-  // ── Onglet Chimie ───────────────────────────────────────────────
+  // ── Onglet Chimie — jauges horizontales ────────────────────────
   _renderChem() {
     const c = this.config;
-    // FIX: forcer en Number() — ha-form peut renvoyer des strings
     const n = v => (v !== undefined && v !== null && v !== '') ? Number(v) : undefined;
 
+    // Plages d'affichage fixes — la jauge reste lisible même hors plage
+    const DISPLAY = {
+      ph:   { lo: 6.0,  hi: 9.0,  dec: 1 },
+      orp:  { lo: -200, hi: 1000, dec: 0 },
+      tds:  { lo: 0,    hi: 3000, dec: 0 },
+      salt: { lo: 0,    hi: 6000, dec: 0 }
+    };
+
     const sensors = [
-      { id: c.entity_ph,   n: 'pH',  i: 'mdi:flask',  min: n(c.ph_min),   max: n(c.ph_max),   u: ''    },
-      { id: c.entity_orp,  n: 'ORP', i: 'mdi:bolt',   min: n(c.orp_min),  max: n(c.orp_max),  u: 'mV'  },
-      { id: c.entity_tds,  n: 'TDS', i: 'mdi:water',  min: n(c.tds_min),  max: n(c.tds_max),  u: 'ppm' },
-      { id: c.entity_salt, n: 'SEL', i: 'mdi:shaker', min: n(c.salt_min), max: n(c.salt_max), u: 'ppm' }
+      { id: c.entity_ph,   key: 'ph',   label: 'pH',  icon: 'mdi:flask',          min: n(c.ph_min),   max: n(c.ph_max),   u: ''    },
+      { id: c.entity_orp,  key: 'orp',  label: 'ORP', icon: 'mdi:lightning-bolt',  min: n(c.orp_min),  max: n(c.orp_max),  u: 'mV'  },
+      { id: c.entity_tds,  key: 'tds',  label: 'TDS', icon: 'mdi:water-percent',   min: n(c.tds_min),  max: n(c.tds_max),  u: 'ppm' },
+      { id: c.entity_salt, key: 'salt', label: 'SEL', icon: 'mdi:shaker-outline',  min: n(c.salt_min), max: n(c.salt_max), u: 'ppm' }
     ].filter(s => this._exists(s.id));
 
     return html`
-      <div class="chem-grid">
+      <div class="chem-list">
         ${sensors.map(s => {
-          const val      = parseFloat(this.hass.states[s.id].state);
-          const hasRange = s.min !== undefined && s.max !== undefined;
-          const oor      = (s.min !== undefined && val < s.min) || (s.max !== undefined && val > s.max);
-          const pct      = hasRange && s.max > s.min
-            ? Math.min(100, Math.max(0, (val - s.min) / (s.max - s.min) * 100))
-            : 50;
-          return html`
-            <div class="glass-card ${oor ? 'warning-border' : ''}">
-              <div class="g-header">
-                <ha-icon icon="${s.i}"></ha-icon> ${s.n}
-                ${oor ? html`<ha-icon icon="mdi:alert" class="warn-icon"></ha-icon>` : ''}
+          const val = parseFloat(this.hass.states[s.id].state);
+          const d   = DISPLAY[s.key];
+          const hasRange = s.min !== undefined && s.max !== undefined
+                        && !isNaN(s.min) && !isNaN(s.max);
+
+          const tooLow  = hasRange && val < s.min;
+          const tooHigh = hasRange && val > s.max;
+          const oor     = tooLow || tooHigh;
+
+          // Position [0..100] dans la plage d'affichage
+          const toPos = v => Math.min(100, Math.max(0, (v - d.lo) / (d.hi - d.lo) * 100));
+          const cursorPct = toPos(val);
+          const minPct    = hasRange ? toPos(s.min) : 20;
+          const maxPct    = hasRange ? toPos(s.max) : 80;
+
+          const cc = oor ? '#ff9800' : '#00f9f9';
+          const statusLabel = tooLow ? 'TROP BAS' : tooHigh ? 'TROP HAUT' : 'OK';
+
+          return html\`
+            <div class="cg-row \${oor ? 'cg-oor' : ''}">
+              <div class="cg-top">
+                <div class="cg-left">
+                  <ha-icon class="cg-icon \${oor ? 'cg-icon-warn' : ''}" icon="\${s.icon}"></ha-icon>
+                  <span class="cg-label">\${s.label}</span>
+                </div>
+                <div class="cg-val">\${val.toFixed(d.dec)}<span class="cg-unit">\${s.u}</span></div>
+                <div class="cg-status \${oor ? 'cs-warn' : 'cs-ok'}">\${statusLabel}</div>
               </div>
-              <div class="g-main">${val}<small>${s.u}</small></div>
-              ${hasRange ? html`
-                <div class="g-progress-track">
-                  <div class="g-progress-fill ${oor ? 'warn' : ''}"
-                       style="width:${pct}%"></div>
-                </div>` : ''}
-              <div class="g-footer">
-                <span class="g-min">min ${s.min ?? '--'}</span>
-                <span class="g-max">max ${s.max ?? '--'}</span>
+              <div class="cg-track-wrap">
+                <div class="cg-track">
+                  <div class="cg-zone cg-danger" style="left:0%;width:\${minPct}%"></div>
+                  <div class="cg-zone cg-ok"     style="left:\${minPct}%;width:\${maxPct - minPct}%"></div>
+                  <div class="cg-zone cg-danger" style="left:\${maxPct}%;width:\${100 - maxPct}%"></div>
+                  \${hasRange ? html\`
+                    <div class="cg-sep" style="left:\${minPct}%"></div>
+                    <div class="cg-sep" style="left:\${maxPct}%"></div>\` : ''}
+                  <div class="cg-cursor" style="left:\${cursorPct}%;background:\${cc};box-shadow:0 0 8px \${cc}80;">
+                    <div class="cg-needle" style="border-top-color:\${cc}"></div>
+                  </div>
+                </div>
+                \${hasRange ? html\`
+                  <div class="cg-labs">
+                    <div class="cg-lab" style="left:\${minPct}%">\${s.min}</div>
+                    <div class="cg-lab" style="left:\${maxPct}%">\${s.max}</div>
+                  </div>\` : ''}
               </div>
-            </div>`;
+            </div>\`;
         })}
       </div>`;
   }
@@ -702,43 +733,91 @@ class SpaCard extends LitElement {
       font-size: 12px; border: 1px solid rgba(255,255,255,.05);
     }
 
-    /* ── Chimie ── */
-    .chem-grid {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 12px; width: 100%; padding: 10px;
+    /* ── Chimie — jauges horizontales ── */
+    .chem-list {
+      display: flex; flex-direction: column;
+      gap: 10px; width: 100%; padding: 4px 6px;
     }
-    .glass-card {
-      background: var(--glass); padding: 12px 10px;
-      border-radius: 20px; text-align: center;
-      border: 1px solid rgba(255,255,255,.1);
+    .cg-row {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px;
+      padding: 10px 13px 12px;
       transition: border-color .3s, background .3s;
     }
-    .warning-border {
-      border-color: var(--warn) !important;
-      background: rgba(255,152,0,.12) !important;
+    .cg-row.cg-oor {
+      border-color: rgba(255,152,0,.5);
+      background: rgba(255,152,0,.07);
     }
-    .g-header {
-      font-size: 10px; opacity: .6; margin-bottom: 5px;
-      display: flex; align-items: center; justify-content: center; gap: 4px;
+    /* Ligne du haut : icône + nom + valeur + badge */
+    .cg-top {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 9px;
     }
-    .warn-icon { color: var(--warn); --mdc-icon-size: 14px; }
-    .g-main    { font-size: 24px; color: var(--accent); font-weight: 200; }
-    .g-main small { font-size: 10px; margin-left: 2px; opacity: .8; }
-    .g-progress-track {
-      height: 3px; background: rgba(255,255,255,.1);
-      border-radius: 2px; margin: 8px 4px 4px; overflow: hidden;
+    .cg-left {
+      display: flex; align-items: center; gap: 5px; flex: 0 0 64px;
     }
-    .g-progress-fill {
-      height: 100%; background: var(--accent);
-      border-radius: 2px; transition: width .6s ease;
+    .cg-icon { --mdc-icon-size: 16px; opacity: .55; }
+    .cg-icon-warn { color: var(--warn); opacity: 1; }
+    .cg-label { font-size: 11px; font-weight: 500; letter-spacing: .8px; opacity: .7; }
+    .cg-val {
+      flex: 1; font-size: 22px; font-weight: 200;
+      color: var(--accent); line-height: 1; text-align: center;
     }
-    .g-progress-fill.warn { background: var(--warn); }
-    .g-footer {
-      display: flex; justify-content: space-between;
-      margin-top: 6px; padding-top: 5px;
-      border-top: 1px solid rgba(255,255,255,.05);
+    .cg-unit { font-size: 9px; opacity: .7; margin-left: 2px; }
+    .cg-status {
+      font-size: 9px; font-weight: 600; letter-spacing: .8px;
+      padding: 3px 8px; border-radius: 8px;
     }
-    .g-min, .g-max { font-size: 8px; opacity: .4; text-transform: uppercase; }
+    .cs-ok   { background: rgba(0,249,249,.12); color: #00f9f9; }
+    .cs-warn { background: rgba(255,152,0,.18);  color: #ff9800; }
+
+    /* Jauge */
+    .cg-track-wrap { position: relative; padding-bottom: 14px; }
+    .cg-track {
+      position: relative; height: 8px;
+      border-radius: 4px; overflow: visible;
+      background: rgba(255,255,255,.06);
+    }
+    /* Zones colorées */
+    .cg-zone {
+      position: absolute; top: 0; height: 100%;
+      border-radius: 0;
+    }
+    .cg-danger { background: rgba(255,80,80,.25); }
+    .cg-ok     { background: rgba(0,249,249,.22); border-radius: 0; }
+    /* Arrondir uniquement les extrémités extérieures */
+    .cg-zone:first-child { border-radius: 4px 0 0 4px; }
+    .cg-zone:last-child  { border-radius: 0 4px 4px 0; }
+
+    /* Séparateurs de zone */
+    .cg-sep {
+      position: absolute; top: -2px; height: 12px;
+      width: 1.5px; background: rgba(255,255,255,.25);
+      transform: translateX(-50%);
+    }
+    /* Curseur (rond + flèche vers le bas) */
+    .cg-cursor {
+      position: absolute; top: 50%; transform: translate(-50%, -50%);
+      width: 13px; height: 13px; border-radius: 50%;
+      transition: left .5s cubic-bezier(.4,0,.2,1);
+      z-index: 2;
+    }
+    .cg-needle {
+      position: absolute; top: 100%; left: 50%;
+      transform: translateX(-50%) translateY(2px);
+      width: 0; height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid;
+    }
+    /* Labels min / max */
+    .cg-labs {
+      position: relative; height: 14px; margin-top: 3px;
+    }
+    .cg-lab {
+      position: absolute; transform: translateX(-50%);
+      font-size: 9px; opacity: .45; white-space: nowrap;
+    }
 
     /* ── Interrupteurs ── */
     .sw-grid {
@@ -809,7 +888,7 @@ customElements.define('spa-card', SpaCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:        'spa-card',
-  name:        'Spa Master V32.1',
+  name:        'Spa Master V32.2',
   description: 'Supervision spa — températures, chimie, caméra, équipements.',
   preview:     true
 });
