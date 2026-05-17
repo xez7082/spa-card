@@ -473,7 +473,6 @@ class SpaCard extends LitElement {
     const c = this.config;
     const n = v => (v !== undefined && v !== null && v !== '') ? Number(v) : undefined;
 
-    // Plages d'affichage fixes — la jauge reste lisible même hors plage
     const DISPLAY = {
       ph:   { lo: 6.0,  hi: 9.0,  dec: 1 },
       orp:  { lo: -200, hi: 1000, dec: 0 },
@@ -482,63 +481,59 @@ class SpaCard extends LitElement {
     };
 
     const sensors = [
-      { id: c.entity_ph,   key: 'ph',   label: 'pH',  icon: 'mdi:flask',          min: n(c.ph_min),   max: n(c.ph_max),   u: ''    },
-      { id: c.entity_orp,  key: 'orp',  label: 'ORP', icon: 'mdi:lightning-bolt',  min: n(c.orp_min),  max: n(c.orp_max),  u: 'mV'  },
-      { id: c.entity_tds,  key: 'tds',  label: 'TDS', icon: 'mdi:water-percent',   min: n(c.tds_min),  max: n(c.tds_max),  u: 'ppm' },
-      { id: c.entity_salt, key: 'salt', label: 'SEL', icon: 'mdi:shaker-outline',  min: n(c.salt_min), max: n(c.salt_max), u: 'ppm' }
+      { id: c.entity_ph,   key: 'ph',   label: 'pH',  icon: 'mdi:flask',         min: n(c.ph_min),   max: n(c.ph_max),   u: ''    },
+      { id: c.entity_orp,  key: 'orp',  label: 'ORP', icon: 'mdi:lightning-bolt', min: n(c.orp_min),  max: n(c.orp_max),  u: 'mV'  },
+      { id: c.entity_tds,  key: 'tds',  label: 'TDS', icon: 'mdi:water-percent',  min: n(c.tds_min),  max: n(c.tds_max),  u: 'ppm' },
+      { id: c.entity_salt, key: 'salt', label: 'SEL', icon: 'mdi:shaker-outline', min: n(c.salt_min), max: n(c.salt_max), u: 'ppm' }
     ].filter(s => this._exists(s.id));
 
     return html`
       <div class="chem-list">
-        ${sensors.map(s => {
-          const val = parseFloat(this.hass.states[s.id].state);
-          const d   = DISPLAY[s.key];
-          const hasRange = s.min !== undefined && s.max !== undefined
-                        && !isNaN(s.min) && !isNaN(s.max);
+        ${sensors.map(s => this._chemGauge(s, DISPLAY[s.key]))}
+      </div>`;
+  }
 
-          const tooLow  = hasRange && val < s.min;
-          const tooHigh = hasRange && val > s.max;
-          const oor     = tooLow || tooHigh;
+  _chemGauge(s, d) {
+    const val     = parseFloat(this.hass.states[s.id].state);
+    const hasR    = s.min !== undefined && s.max !== undefined && !isNaN(s.min) && !isNaN(s.max);
+    const tooLow  = hasR && val < s.min;
+    const tooHigh = hasR && val > s.max;
+    const oor     = tooLow || tooHigh;
+    const toPos   = v => Math.min(100, Math.max(0, (v - d.lo) / (d.hi - d.lo) * 100));
+    const cp      = toPos(val);
+    const mnP     = hasR ? toPos(s.min) : 20;
+    const mxP     = hasR ? toPos(s.max) : 80;
+    const cc      = oor ? '#ff9800' : '#00f9f9';
+    const slabel  = tooLow ? 'TROP BAS' : tooHigh ? 'TROP HAUT' : 'OK';
 
-          // Position [0..100] dans la plage d'affichage
-          const toPos = v => Math.min(100, Math.max(0, (v - d.lo) / (d.hi - d.lo) * 100));
-          const cursorPct = toPos(val);
-          const minPct    = hasRange ? toPos(s.min) : 20;
-          const maxPct    = hasRange ? toPos(s.max) : 80;
-
-          const cc = oor ? '#ff9800' : '#00f9f9';
-          const statusLabel = tooLow ? 'TROP BAS' : tooHigh ? 'TROP HAUT' : 'OK';
-
-          return html\`
-            <div class="cg-row \${oor ? 'cg-oor' : ''}">
-              <div class="cg-top">
-                <div class="cg-left">
-                  <ha-icon class="cg-icon \${oor ? 'cg-icon-warn' : ''}" icon="\${s.icon}"></ha-icon>
-                  <span class="cg-label">\${s.label}</span>
-                </div>
-                <div class="cg-val">\${val.toFixed(d.dec)}<span class="cg-unit">\${s.u}</span></div>
-                <div class="cg-status \${oor ? 'cs-warn' : 'cs-ok'}">\${statusLabel}</div>
-              </div>
-              <div class="cg-track-wrap">
-                <div class="cg-track">
-                  <div class="cg-zone cg-danger" style="left:0%;width:\${minPct}%"></div>
-                  <div class="cg-zone cg-ok"     style="left:\${minPct}%;width:\${maxPct - minPct}%"></div>
-                  <div class="cg-zone cg-danger" style="left:\${maxPct}%;width:\${100 - maxPct}%"></div>
-                  \${hasRange ? html\`
-                    <div class="cg-sep" style="left:\${minPct}%"></div>
-                    <div class="cg-sep" style="left:\${maxPct}%"></div>\` : ''}
-                  <div class="cg-cursor" style="left:\${cursorPct}%;background:\${cc};box-shadow:0 0 8px \${cc}80;">
-                    <div class="cg-needle" style="border-top-color:\${cc}"></div>
-                  </div>
-                </div>
-                \${hasRange ? html\`
-                  <div class="cg-labs">
-                    <div class="cg-lab" style="left:\${minPct}%">\${s.min}</div>
-                    <div class="cg-lab" style="left:\${maxPct}%">\${s.max}</div>
-                  </div>\` : ''}
-              </div>
-            </div>\`;
-        })}
+    return html`
+      <div class="cg-row ${oor ? 'cg-oor' : ''}">
+        <div class="cg-top">
+          <div class="cg-left">
+            <ha-icon class="cg-icon ${oor ? 'cg-icon-warn' : ''}" icon="${s.icon}"></ha-icon>
+            <span class="cg-label">${s.label}</span>
+          </div>
+          <div class="cg-val">${val.toFixed(d.dec)}<span class="cg-unit">${s.u}</span></div>
+          <div class="cg-status ${oor ? 'cs-warn' : 'cs-ok'}">${slabel}</div>
+        </div>
+        <div class="cg-track-wrap">
+          <div class="cg-track">
+            <div class="cg-zone cg-danger" style="left:0%;width:${mnP}%"></div>
+            <div class="cg-zone cg-ok"     style="left:${mnP}%;width:${mxP - mnP}%"></div>
+            <div class="cg-zone cg-danger" style="left:${mxP}%;width:${100 - mxP}%"></div>
+            ${hasR ? html`
+              <div class="cg-sep" style="left:${mnP}%"></div>
+              <div class="cg-sep" style="left:${mxP}%"></div>` : ''}
+            <div class="cg-cursor" style="left:${cp}%;background:${cc};box-shadow:0 0 8px ${cc}80;">
+              <div class="cg-needle" style="border-top-color:${cc}"></div>
+            </div>
+          </div>
+          ${hasR ? html`
+            <div class="cg-labs">
+              <div class="cg-lab" style="left:${mnP}%">${s.min}</div>
+              <div class="cg-lab" style="left:${mxP}%">${s.max}</div>
+            </div>` : ''}
+        </div>
       </div>`;
   }
 
