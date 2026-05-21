@@ -280,10 +280,10 @@ class SpaCard extends LitElement {
   }
 
   static get properties() {
-    return { hass:{}, config:{}, _tab:{ type:String } };
+    return { hass:{}, config:{}, _tab:{ type:String }, _camExpanded:{ type:Boolean } };
   }
 
-  constructor() { super(); this._tab = 'home'; }
+  constructor() { super(); this._tab = 'home'; this._camExpanded = false; }
   setConfig(config) { this.config = config; }
   getCardSize() { return Math.ceil((parseInt(this.config?.card_height)||640)/50); }
 
@@ -832,34 +832,28 @@ class SpaCard extends LitElement {
   }
 
   // ═══════════════════════════════════════════════
-  //  CAMÉRA + PROGRAMMATION
+  //  CAMÉRA + PROGRAMMATION (layout côte à côte)
   // ═══════════════════════════════════════════════
   _renderCamera() {
-    const c   = this.config;
-    const w   = c.cam_w_px  || 280;
-    const h   = c.cam_h_px  || 160;
-    const rad = c.cam_radius || 16;
-    const px  = c.cam_x || 0;
-    const py  = c.cam_y || 0;
+    const c        = this.config;
+    const rad      = c.cam_radius || 14;
+    const schedId  = c.entity_lz_schedule;
+    const hasSched = schedId && this.hass?.states[schedId];
+    const calc     = this._calcHeatingTime();
+    const curTemp  = parseFloat(this._waterTemp() ?? 0);
+    const tgtTemp  = parseFloat(this._targetTemp() ?? 34);
+    const isHeating= this._state(c.entity_lz_heater) === 'on';
+    const isReady  = this._state(c.entity_lz_ready)  === 'on';
 
-    const schedId   = c.entity_lz_schedule;
-    const hasSched  = schedId && this.hass?.states[schedId];
-
-    const calc      = this._calcHeatingTime();
-    const curTemp   = parseFloat(this._waterTemp() ?? 0);
-    const tgtTemp   = parseFloat(this._targetTemp() ?? 34);
-    const isHeating = this._state(c.entity_lz_heater) === 'on';
-    const isReady   = this._state(c.entity_lz_ready)  === 'on';
-
-    // Temps formaté
+    // Durée formatée
     let timeStr = '';
     if (calc && calc !== 0) {
-      const hh  = Math.floor(calc.timeH);
-      const mm  = Math.round((calc.timeH - hh) * 60);
-      timeStr   = hh > 0 ? `${hh}h${mm > 0 ? mm.toString().padStart(2,'0') : ''}` : `${mm} min`;
+      const hh = Math.floor(calc.timeH);
+      const mm = Math.round((calc.timeH - hh) * 60);
+      timeStr  = hh > 0 ? `${hh}h${mm > 0 ? mm.toString().padStart(2,'0') : ''}` : `${mm} min`;
     }
 
-    // Heure programmée + calcul heure de démarrage
+    // Heure prêt + démarrage
     let readyStr = '--:--', startStr = '--:--';
     if (hasSched) {
       const raw   = this.hass.states[schedId].state;
@@ -901,92 +895,92 @@ class SpaCard extends LitElement {
     };
 
     const toggleHeat = () => {
-      const id  = c.entity_target_temp;
-      const hvac= this.hass.states[id]?.state;
+      const id   = c.entity_target_temp;
+      const hvac = this.hass.states[id]?.state;
       this.hass.callService('climate', 'set_hvac_mode', {
-        entity_id: id,
-        hvac_mode: hvac === 'heat' ? 'off' : 'heat'
+        entity_id: id, hvac_mode: hvac === 'heat' ? 'off' : 'heat'
       });
     };
 
-    return html`
-      <div class="cam-page">
+    // ── Modal plein écran caméra ──
+    const camModal = this._camExpanded ? html`
+      <div class="cam-modal" @click=${()=>{ this._camExpanded = false; }}>
+        <div class="cam-modal-inner" @click=${(e)=>e.stopPropagation()}>
+          <button class="cam-modal-close" @click=${()=>{ this._camExpanded = false; }}>✕</button>
+          ${this._exists(c.entity_camera) ? html`
+            <hui-image .hass=${this.hass} .cameraImage=${c.entity_camera}
+                       cameraView="live" style="width:100%;height:100%;object-fit:contain;">
+            </hui-image>` : ''}
+        </div>
+      </div>` : '';
 
-        <!-- Caméra -->
-        <div class="cam-container" style="transform:translate(${px}px,${py}px);margin-bottom:10px;">
-          <div class="cam-crop" style="width:${w}px;height:${h}px;border-radius:${rad}px;">
+    return html`
+      ${camModal}
+      <div class="cam-split">
+
+        <!-- ── Gauche : caméra ── -->
+        <div class="cam-left">
+          <div class="cam-crop-side" style="border-radius:${rad}px;"
+               @click=${()=>{ this._camExpanded = true; }}>
             ${this._exists(c.entity_camera) ? html`
-              <hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live">
+              <hui-image .hass=${this.hass} .cameraImage=${c.entity_camera}
+                         cameraView="live">
               </hui-image>` : html`
               <div class="cam-unavailable">
                 <ha-icon icon="mdi:camera-off"></ha-icon>
                 <span>Caméra indisponible</span>
               </div>`}
+            <div class="cam-expand-hint">
+              <ha-icon icon="mdi:fullscreen"></ha-icon>
+            </div>
           </div>
         </div>
 
-        <!-- Bloc programmation principal -->
-        <div class="prog-card">
+        <!-- ── Droite : programmation ── -->
+        <div class="prog-right">
 
-          <!-- Titre + statut -->
-          <div class="prog-header">
-            <ha-icon icon="mdi:clock-time-four-outline" class="prog-hicon"></ha-icon>
-            <span class="prog-htitle">Programmation</span>
+          <!-- Statut -->
+          <div class="prog-status-row">
             <span class="prog-status-pill ${isReady?'ps-ready':isHeating?'ps-heat':'ps-idle'}">
-              ${isReady ? '✓ Prêt' : isHeating ? '🔥 En chauffe' : '⏸ En veille'}
+              ${isReady ? '✓ Prêt' : isHeating ? '🔥 Chauffe' : '⏸ Veille'}
             </span>
           </div>
 
-          <!-- Infos température -->
-          <div class="prog-temps">
-            <div class="prog-temp-item">
-              <span class="prog-temp-lbl">EAU</span>
-              <span class="prog-temp-val">${curTemp}°</span>
-            </div>
-            <ha-icon icon="mdi:arrow-right" style="opacity:.3;--mdc-icon-size:16px;"></ha-icon>
-            <div class="prog-temp-item">
-              <span class="prog-temp-lbl">CIBLE</span>
-              <span class="prog-temp-val prog-temp-accent">${tgtTemp}°</span>
-            </div>
-            ${timeStr ? html`
-              <ha-icon icon="mdi:timer-outline" style="opacity:.3;--mdc-icon-size:14px;"></ha-icon>
-              <div class="prog-temp-item">
-                <span class="prog-temp-lbl">DURÉE</span>
-                <span class="prog-temp-val">${timeStr}</span>
-              </div>` : ''}
+          <!-- Températures -->
+          <div class="prog-temps-mini">
+            <span class="ptm-val">${curTemp}°</span>
+            <span class="ptm-arr">→</span>
+            <span class="ptm-val ptm-accent">${tgtTemp}°</span>
+            ${timeStr ? html`<span class="ptm-dur">${timeStr}</span>` : ''}
           </div>
 
-          <!-- Sélecteur d'heure -->
+          <!-- Sélecteur heure -->
           ${hasSched ? html`
-            <div class="prog-time-section">
-              <div class="prog-time-label">Prêt à</div>
-              <div class="prog-time-row">
-                <button class="prog-adj-btn" @click=${()=>changeTime(-1,0)}>−1h</button>
+            <div class="prog-time-mini">
+              <div class="ptm-label">Prêt à</div>
+              <div class="ptm-row">
+                <button class="prog-adj-btn" @click=${()=>changeTime(-1,0)}>−h</button>
                 <button class="prog-adj-btn" @click=${()=>changeTime(0,-15)}>−15'</button>
                 <div class="prog-time-display">${readyStr}</div>
                 <button class="prog-adj-btn" @click=${()=>changeTime(0,15)}>+15'</button>
-                <button class="prog-adj-btn" @click=${()=>changeTime(1,0)}>+1h</button>
+                <button class="prog-adj-btn" @click=${()=>changeTime(1,0)}>+h</button>
               </div>
-              <div class="prog-start-row">
-                <ha-icon icon="mdi:play-circle-outline" style="--mdc-icon-size:13px;opacity:.5;"></ha-icon>
-                <span>Démarrage calculé à <strong>${startStr}</strong></span>
+              <div class="prog-start-mini">
+                ▶ démarrage à <strong>${startStr}</strong>
               </div>
-            </div>` : html`
-            <div class="prog-no-helper">
-              Ajoutez <code>entity_lz_schedule: input_datetime.spa_ready_at</code>
-            </div>`}
+            </div>` : ''}
 
-          <!-- Boutons d'action -->
-          <div class="prog-actions">
+          <!-- Actions -->
+          <div class="prog-actions-mini">
             <button class="prog-action-btn ${isHeating?'pab-on':'pab-off'}"
                     @click=${toggleHeat}>
               <ha-icon icon="${isHeating?'mdi:radiator':'mdi:radiator-off'}"></ha-icon>
-              ${isHeating ? 'Arrêter' : 'Chauffer maintenant'}
+              ${isHeating ? 'Stop' : 'Chauffer'}
             </button>
             ${hasSched ? html`
               <button class="prog-action-btn pab-sched" @click=${activateSched}>
                 <ha-icon icon="mdi:alarm-check"></ha-icon>
-                Programmer ${readyStr}
+                ${readyStr}
               </button>` : ''}
           </div>
 
@@ -994,7 +988,7 @@ class SpaCard extends LitElement {
       </div>`;
   }
 
-  _renderTab() {
+    _renderTab() {
     switch (this._tab) {
       case 'home': return this._renderHome();
       case 'chem': return this._renderChem();
@@ -1265,85 +1259,106 @@ class SpaCard extends LitElement {
     .maint-reset-btn:hover  { background:rgba(52,211,153,.3); }
     .maint-reset-btn:active { transform:scale(.93); }
 
-    /* ── Caméra + programmation ── */
-    .cam-page {
-      width:100%; height:100%;
-      display:flex; flex-direction:column;
-      align-items:center; justify-content:flex-start;
-      overflow-y:auto; padding:2px 0;
+    /* ── Caméra + programmation (split gauche/droite) ── */
+    .cam-split {
+      display:flex; gap:10px; width:100%; height:100%;
+      align-items:stretch;
     }
-    .cam-page::-webkit-scrollbar { display:none; }
 
-    .prog-card {
-      width:100%; background:rgba(255,255,255,.05);
-      border:1px solid rgba(107,142,255,.25);
-      border-radius:18px; padding:12px 14px;
-      box-sizing:border-box;
+    /* Gauche — caméra */
+    .cam-left { flex:1; display:flex; align-items:center; justify-content:center; }
+    .cam-crop-side {
+      position:relative; width:100%; height:100%;
+      overflow:hidden; cursor:pointer;
+      border:1px solid rgba(255,255,255,.15); background:#000;
+      box-shadow:0 4px 16px rgba(0,0,0,.5);
+      transition:box-shadow .2s;
     }
-    .prog-header {
-      display:flex; align-items:center; gap:7px; margin-bottom:10px;
+    .cam-crop-side:hover { box-shadow:0 4px 24px rgba(0,249,249,.2); }
+    .cam-crop-side hui-image { width:100%; height:100%; object-fit:cover; }
+    .cam-expand-hint {
+      position:absolute; bottom:6px; right:6px;
+      background:rgba(0,0,0,.5); border-radius:6px; padding:3px 5px;
+      --mdc-icon-size:14px; color:rgba(255,255,255,.6); opacity:0;
+      transition:opacity .2s;
     }
-    .prog-hicon  { --mdc-icon-size:18px; color:#6b8eff; }
-    .prog-htitle { flex:1; font-size:13px; font-weight:600; letter-spacing:.3px; }
+    .cam-crop-side:hover .cam-expand-hint { opacity:1; }
+
+    /* Modal plein écran */
+    .cam-modal {
+      position:absolute; inset:0; z-index:100;
+      background:rgba(0,0,0,.92);
+      display:flex; align-items:center; justify-content:center;
+      border-radius:30px; cursor:pointer;
+    }
+    .cam-modal-inner {
+      position:relative; width:calc(100% - 24px); height:calc(100% - 48px);
+      cursor:default;
+    }
+    .cam-modal-close {
+      position:absolute; top:-28px; right:0; z-index:10;
+      background:rgba(255,255,255,.15); border:none; color:#fff;
+      border-radius:8px; padding:3px 10px; font-size:13px; cursor:pointer;
+      transition:.15s;
+    }
+    .cam-modal-close:hover { background:rgba(255,80,80,.4); }
+    .cam-modal-inner hui-image { width:100%; height:100%; object-fit:contain; }
+
+    /* Droite — programmation */
+    .prog-right {
+      flex:0 0 140px; display:flex; flex-direction:column;
+      gap:6px;
+    }
+    .prog-status-row { display:flex; }
     .prog-status-pill {
-      font-size:10px; font-weight:600; padding:3px 9px;
+      font-size:9px; font-weight:600; padding:3px 8px;
       border-radius:8px; letter-spacing:.3px;
     }
     .ps-ready { background:rgba(52,211,153,.18); color:#34d399; }
     .ps-heat  { background:rgba(251,146,60,.18);  color:#fb923c; }
     .ps-idle  { background:rgba(255,255,255,.08); color:rgba(255,255,255,.4); }
 
-    .prog-temps {
-      display:flex; align-items:center; gap:8px;
-      background:rgba(255,255,255,.04); border-radius:12px;
-      padding:8px 12px; margin-bottom:10px;
+    .prog-temps-mini {
+      display:flex; align-items:center; gap:4px;
+      background:rgba(255,255,255,.05); border-radius:10px;
+      padding:6px 8px; flex-wrap:wrap;
     }
-    .prog-temp-item { display:flex; flex-direction:column; align-items:center; gap:2px; }
-    .prog-temp-lbl  { font-size:7px; opacity:.35; letter-spacing:1px; }
-    .prog-temp-val  { font-size:20px; font-weight:200; }
-    .prog-temp-accent { color:var(--accent); }
+    .ptm-val    { font-size:16px; font-weight:200; }
+    .ptm-accent { color:var(--accent); }
+    .ptm-arr    { font-size:10px; opacity:.3; }
+    .ptm-dur    { font-size:9px; opacity:.5; margin-left:auto; }
 
-    .prog-time-section { margin-bottom:10px; }
-    .prog-time-label {
-      font-size:9px; text-transform:uppercase; letter-spacing:1px;
-      opacity:.4; margin-bottom:6px;
+    .prog-time-mini { display:flex; flex-direction:column; gap:4px; }
+    .ptm-label {
+      font-size:8px; text-transform:uppercase; letter-spacing:.8px; opacity:.35;
     }
-    .prog-time-row {
-      display:flex; align-items:center; gap:5px; justify-content:center;
-      margin-bottom:7px;
+    .ptm-row {
+      display:flex; align-items:center; gap:3px; flex-wrap:wrap;
     }
     .prog-adj-btn {
       background:rgba(107,142,255,.12); border:1px solid rgba(107,142,255,.3);
-      color:#6b8eff; border-radius:8px; padding:5px 9px;
-      font-size:11px; font-weight:600; cursor:pointer;
+      color:#6b8eff; border-radius:6px; padding:3px 5px;
+      font-size:9px; font-weight:600; cursor:pointer;
       transition:.15s; font-family:inherit;
     }
     .prog-adj-btn:hover  { background:rgba(107,142,255,.25); }
     .prog-adj-btn:active { transform:scale(.93); }
     .prog-time-display {
-      font-size:28px; font-weight:200; color:#6b8eff;
-      min-width:72px; text-align:center; letter-spacing:1px;
+      font-size:20px; font-weight:200; color:#6b8eff;
+      min-width:52px; text-align:center; letter-spacing:.5px;
     }
-    .prog-start-row {
-      display:flex; align-items:center; gap:5px;
-      font-size:11px; opacity:.55; justify-content:center;
-      --mdc-icon-size:13px;
+    .prog-start-mini {
+      font-size:9px; opacity:.5; text-align:center;
     }
-    .prog-start-row strong { color:rgba(255,255,255,.8); }
+    .prog-start-mini strong { color:rgba(255,255,255,.75); }
 
-    .prog-no-helper {
-      font-size:10px; opacity:.4; text-align:center;
-      padding:8px; background:rgba(255,255,255,.04);
-      border-radius:10px; margin-bottom:10px;
-    }
-    .prog-no-helper code { color:#6b8eff; }
-
-    .prog-actions { display:flex; gap:7px; }
+    .prog-actions-mini { display:flex; flex-direction:column; gap:5px; margin-top:auto; }
     .prog-action-btn {
-      flex:1; display:flex; align-items:center; justify-content:center;
-      gap:6px; padding:9px 10px; border-radius:12px; border:1px solid;
-      cursor:pointer; font-size:11px; font-weight:600; letter-spacing:.3px;
-      transition:all .2s; font-family:inherit; --mdc-icon-size:16px;
+      display:flex; align-items:center; justify-content:center;
+      gap:5px; padding:7px 6px; border-radius:10px; border:1px solid;
+      cursor:pointer; font-size:10px; font-weight:600;
+      transition:all .2s; font-family:inherit; --mdc-icon-size:14px;
+      width:100%;
     }
     .pab-on    { background:rgba(251,146,60,.15); border-color:rgba(251,146,60,.5); color:#fb923c; }
     .pab-off   { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.18); color:rgba(255,255,255,.5); }
@@ -1369,7 +1384,7 @@ customElements.define('spa-card', SpaCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:        'spa-card',
-  name:        'Spa Master V33.5 — LayZSpa',
+  name:        'Spa Master V33.6 — LayZSpa',
   description: 'Supervision spa — températures, statut LayZSpa, chimie, maintenance, caméra, équipements.',
   preview:     true
 });
