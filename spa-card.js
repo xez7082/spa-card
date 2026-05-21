@@ -130,8 +130,8 @@ class SpaCardEditor extends LitElement {
     return html`
       ${this._acc('a-cdim','background:rgba(56,189,248,.15);color:#0ea5e9;','CAM','Caméra & dimensions',[
         { name:'entity_camera', label:'Entité caméra',         selector:{ entity:{ domain:'camera' } } },
-        { name:'cam_w_px',      label:'Largeur cadre (px)',     selector:{ number:{ mode:'box', min:10, max:1000 } } },
-        { name:'cam_h_px',      label:'Hauteur cadre (px)',     selector:{ number:{ mode:'box', min:10, max:1000 } } },
+        { name:'cam_w_px',      label:'Largeur caméra (px) — vide = 50% auto', selector:{ number:{ mode:'box', min:40, max:800 } } },
+        { name:'cam_h_px',      label:'Hauteur caméra (px) — vide = hauteur auto', selector:{ number:{ mode:'box', min:40, max:800 } } },
         { name:'cam_radius',    label:'Arrondi des coins (px)', selector:{ number:{ mode:'slider', min:0, max:50 } } }
       ])}
       ${this._acc('a-cpos','background:rgba(56,189,248,.15);color:#0ea5e9;','XY','Position',[
@@ -837,6 +837,9 @@ class SpaCard extends LitElement {
   _renderCamera() {
     const c        = this.config;
     const rad      = c.cam_radius || 14;
+    // Taille caméra configurable — la prog prend le reste
+    const camW     = c.cam_w_px ? `${c.cam_w_px}px` : '50%';   // largeur fixe ou 50%
+    const camH     = c.cam_h_px ? `${c.cam_h_px}px` : '100%';  // hauteur fixe ou auto
     const schedId  = c.entity_lz_schedule;
     const hasSched = schedId && this.hass?.states[schedId];
     const calc     = this._calcHeatingTime();
@@ -919,8 +922,8 @@ class SpaCard extends LitElement {
       <div class="cam-split">
 
         <!-- ── Gauche : caméra ── -->
-        <div class="cam-left">
-          <div class="cam-crop-side" style="border-radius:${rad}px;"
+        <div class="cam-left" style="flex:0 0 ${camW};min-height:${camH};">
+          <div class="cam-crop-side" style="border-radius:${rad}px;width:100%;height:${camH};"
                @click=${()=>{ this._camExpanded = true; }}>
             ${this._exists(c.entity_camera) ? html`
               <hui-image .hass=${this.hass} .cameraImage=${c.entity_camera}
@@ -1306,8 +1309,8 @@ class SpaCard extends LitElement {
 
     /* Droite — programmation */
     .prog-right {
-      flex:0 0 140px; display:flex; flex-direction:column;
-      gap:6px;
+      flex:1; min-width:100px; display:flex; flex-direction:column;
+      gap:6px; overflow:hidden;
     }
     .prog-status-row { display:flex; }
     .prog-status-pill {
@@ -1384,7 +1387,7 @@ customElements.define('spa-card', SpaCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:        'spa-card',
-  name:        'Spa Master V33.6 — LayZSpa',
+  name:        'Spa Master V33.7 — LayZSpa',
   description: 'Supervision spa — températures, statut LayZSpa, chimie, maintenance, caméra, équipements.',
   preview:     true
 });
