@@ -1311,6 +1311,13 @@ class SpaCard extends LitElement {
     .prog-right {
       flex:1; min-width:110px; display:flex; flex-direction:column;
       gap:10px; overflow:hidden;
+      background:rgba(0,0,0,.72);
+      border-radius:14px;
+      padding:10px 9px;
+      box-sizing:border-box;
+      border:1px solid rgba(255,255,255,.06);
+      backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);
     }
 
     /* Badge statut */
@@ -1400,7 +1407,7 @@ customElements.define('spa-card', SpaCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:        'spa-card',
-  name:        'Spa Master V33.9 — LayZSpa',
+  name:        'Spa Master V33.10 — LayZSpa',
   description: 'Supervision spa — températures, statut LayZSpa, chimie, maintenance, caméra, équipements.',
   preview:     true
 });
