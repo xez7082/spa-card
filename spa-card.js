@@ -231,7 +231,7 @@ class SpaCard extends LitElement {
 
   static getStubConfig() {
     return {
-      card_title:'MY LAYZSPA', blur_amount:15, card_height:'620px',
+      card_title:'MY LAYZSPA', blur_amount:15, card_height:'640px',
       // Températures LayZSpa
       entity_water_temp:  'sensor.layzspa_temp_c',
       entity_target_temp: 'climate.layzspa_temperature_control',
@@ -273,7 +273,7 @@ class SpaCard extends LitElement {
 
   constructor() { super(); this._tab = 'home'; }
   setConfig(config) { this.config = config; }
-  getCardSize() { return Math.ceil((parseInt(this.config?.card_height)||620)/50); }
+  getCardSize() { return Math.ceil((parseInt(this.config?.card_height)||640)/50); }
 
   _exists(id) {
     if (!id || !this.hass?.states[id]) return false;
@@ -686,7 +686,7 @@ class SpaCard extends LitElement {
     if (!nav.find(n=>n.id===this._tab)) this._tab='home';
 
     return html`
-      <ha-card style="height:${c.card_height||'620px'};">
+      <ha-card style="height:${c.card_height||'640px'};">
         <div class="bg" style="background-image:url('${c.background_image||'/local/sparond2.png'}');">
           <div class="overlay"
                style="backdrop-filter:blur(${blur}px);-webkit-backdrop-filter:blur(${blur}px);">
@@ -714,16 +714,16 @@ class SpaCard extends LitElement {
     .overlay {
       height:100%;
       background:linear-gradient(180deg,rgba(0,0,0,.2) 0%,rgba(0,0,0,.85) 100%);
-      display:flex; flex-direction:column; padding:16px 20px 18px; box-sizing:border-box;
+      display:flex; flex-direction:column; padding:12px 16px 14px; box-sizing:border-box;
     }
-    .header { text-align:center; opacity:.4; font-size:10px; letter-spacing:3px; margin-bottom:4px; }
+    .header { text-align:center; opacity:.4; font-size:10px; letter-spacing:3px; margin-bottom:2px; }
     .main-content { flex:1; display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; }
 
     /* ── Statut LayZSpa ── */
     .lz-status {
       width:100%; display:flex; align-items:center; gap:8px;
       padding:7px 14px; border-radius:14px; box-sizing:border-box;
-      margin-bottom:10px; border:1px solid; font-size:11px; font-weight:500;
+      margin-bottom:7px; border:1px solid; font-size:11px; font-weight:500;
       letter-spacing:.3px; transition:all .4s;
     }
     .lz-icon { --mdc-icon-size:18px; }
@@ -735,30 +735,30 @@ class SpaCard extends LitElement {
     .lz-disconnected{ background:rgba(255,80,80,.1);    border-color:rgba(255,80,80,.4);   color:#f87171; }
 
     /* ── Accueil ── */
-    .home-view { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-    .flex-row-center { display:flex; align-items:center; justify-content:center; width:100%; gap:10px; }
+    .home-view { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:4px; }
+    .flex-row-center { display:flex; align-items:center; justify-content:center; width:100%; gap:6px; }
     .side-col  { flex:1; display:flex; flex-direction:column; align-items:center; min-width:70px; }
     .side-info { display:flex; flex-direction:column; align-items:center; gap:2px; }
-    .val-big   { font-size:24px; font-weight:200; }
+    .val-big   { font-size:20px; font-weight:200; }
     .label-tiny{ font-size:7px; opacity:.3; text-align:center; letter-spacing:1px; }
     .hum-pill  { font-size:8px; color:var(--accent); background:var(--glass); padding:2px 6px; border-radius:5px; margin-top:4px; }
-    .gauge-container { flex:0 0 180px; display:flex; flex-direction:column; align-items:center; gap:10px; }
-    .center-gauge    { position:relative; width:180px; height:180px; display:flex; align-items:center; justify-content:center; }
+    .gauge-container { flex:0 0 150px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .center-gauge    { position:relative; width:150px; height:150px; display:flex; align-items:center; justify-content:center; }
     .outer-ring {
       position:absolute; width:100%; height:100%; border-radius:50%;
       border:1px solid rgba(0,249,249,.1); border-top:2px solid var(--accent);
       animation:rotate 8s linear infinite;
     }
     .inner-circle {
-      width:150px; height:150px; background:rgba(255,255,255,.03); border-radius:50%;
+      width:124px; height:124px; background:rgba(255,255,255,.03); border-radius:50%;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
       border:1px solid rgba(255,255,255,.05);
     }
-    .water-val   { font-size:50px; font-weight:100; color:var(--accent); line-height:1; }
+    .water-val   { font-size:42px; font-weight:100; color:var(--accent); line-height:1; }
     .water-label { font-size:8px; opacity:.3; letter-spacing:2px; }
     .target-box  { margin-top:5px; background:var(--glass); padding:2px 8px; border-radius:10px; font-size:10px; opacity:.7; }
     .temp-btn {
-      width:38px; height:38px; border-radius:50%; background:var(--glass);
+      width:32px; height:32px; border-radius:50%; background:var(--glass);
       display:flex; align-items:center; justify-content:center;
       cursor:pointer; border:1px solid rgba(255,255,255,.1); transition:background .2s,border-color .2s;
     }
@@ -766,24 +766,24 @@ class SpaCard extends LitElement {
     .temp-btn:active { transform:scale(.92); }
 
     /* ── Footer conso + énergie ── */
-    .footer-row { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; justify-content:center; }
+    .footer-row { display:flex; gap:6px; margin-top:7px; flex-wrap:wrap; justify-content:center; }
     .footer-pill {
-      background:var(--glass); padding:4px 12px; border-radius:14px;
-      display:flex; align-items:center; gap:6px; font-size:11px;
+      background:var(--glass); padding:3px 10px; border-radius:12px;
+      display:flex; align-items:center; gap:5px; font-size:10px;
       border:1px solid rgba(255,255,255,.06);
     }
 
     /* ── Maintenance filtre / chlore ── */
-    .maint-row { display:flex; gap:8px; margin-top:10px; width:100%; }
+    .maint-row { display:flex; gap:6px; margin-top:6px; width:100%; }
     .maint-item {
       flex:1; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
-      border-radius:14px; padding:8px 10px; transition:.3s;
+      border-radius:12px; padding:6px 9px; transition:.3s;
     }
     .maint-item.maint-warn { border-color:rgba(255,152,0,.5); background:rgba(255,152,0,.08); }
     .maint-head {
       display:flex; align-items:center; gap:5px;
-      font-size:10px; opacity:.65; margin-bottom:6px;
-      --mdc-icon-size:13px;
+      font-size:9px; opacity:.65; margin-bottom:4px;
+      --mdc-icon-size:12px;
     }
     .maint-badge {
       margin-left:auto; font-size:8px; font-weight:700; letter-spacing:.5px;
@@ -796,7 +796,7 @@ class SpaCard extends LitElement {
 
     /* ── Inondation ── */
     .flood-bar {
-      margin-top:10px; width:100%;
+      margin-top:6px; width:100%;
       display:flex; align-items:center; justify-content:space-between;
       padding:7px 14px; border-radius:14px; box-sizing:border-box; border:1px solid; transition:all .3s;
     }
@@ -878,7 +878,7 @@ customElements.define('spa-card', SpaCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:        'spa-card',
-  name:        'Spa Master V33 — LayZSpa',
+  name:        'Spa Master V33.1 — LayZSpa',
   description: 'Supervision spa — températures, statut LayZSpa, chimie, maintenance, caméra, équipements.',
   preview:     true
 });
