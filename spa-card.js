@@ -1063,82 +1063,129 @@ class SpaCard extends LitElement {
     .lz-disconnected{ background:rgba(255,80,80,.1);    border-color:rgba(255,80,80,.4);   color:#f87171; }
 
     /* ── Accueil ── */
-    .home-view { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:4px; }
+    .home-view {
+      width:100%; height:100%; display:flex; flex-direction:column;
+      align-items:center; justify-content:flex-start; padding-top:4px; gap:0;
+    }
+
+    /* Bandeau statut LayZSpa */
+    .lz-status {
+      width:100%; display:flex; align-items:center; gap:8px;
+      padding:8px 14px; border-radius:14px; box-sizing:border-box;
+      margin-bottom:7px; border:1px solid; font-size:12px; font-weight:600;
+      letter-spacing:.3px; transition:all .4s;
+      background:rgba(0,0,0,.6) !important;
+      backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+      text-shadow:0 1px 4px rgba(0,0,0,.8);
+    }
+
+    /* Contrôle chauffe */
+    .heat-ctrl { background:rgba(0,0,0,.6); border-radius:14px; padding:6px 8px;
+      backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
+    .heat-btn { font-size:12px; }
+    .heat-target { font-size:20px; }
+
     .flex-row-center { display:flex; align-items:center; justify-content:center; width:100%; gap:6px; }
-    .side-col  { flex:1; display:flex; flex-direction:column; align-items:center; min-width:70px; }
-    .side-info { display:flex; flex-direction:column; align-items:center; gap:2px; }
-    .val-big   { font-size:20px; font-weight:200; }
-    .label-tiny{ font-size:7px; opacity:.3; text-align:center; letter-spacing:1px; }
-    .hum-pill  { font-size:8px; color:var(--accent); background:var(--glass); padding:2px 6px; border-radius:5px; margin-top:4px; }
+
+    /* Colonnes latérales — fond noir lisible */
+    .side-col  { flex:1; display:flex; flex-direction:column; align-items:center; min-width:64px; }
+    .side-info {
+      display:flex; flex-direction:column; align-items:center; gap:3px;
+      background:rgba(0,0,0,.65); border-radius:12px; padding:8px 10px;
+      border:1px solid rgba(255,255,255,.08);
+      backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+      width:100%; box-sizing:border-box;
+    }
+    .val-big   { font-size:22px; font-weight:300; text-shadow:0 1px 6px rgba(0,0,0,1); }
+    .label-tiny{ font-size:8px; opacity:.55; text-align:center; letter-spacing:1.5px; font-weight:500; }
+    .hum-pill  {
+      font-size:9px; color:var(--accent); font-weight:600;
+      background:rgba(0,0,0,.6); padding:3px 8px;
+      border-radius:8px; margin-top:4px; border:1px solid rgba(0,249,249,.25);
+    }
+
+    /* Jauge centrale */
     .gauge-container { flex:0 0 150px; display:flex; flex-direction:column; align-items:center; gap:6px; }
     .center-gauge    { position:relative; width:150px; height:150px; display:flex; align-items:center; justify-content:center; }
     .outer-ring {
       position:absolute; width:100%; height:100%; border-radius:50%;
-      border:1px solid rgba(0,249,249,.1); border-top:2px solid var(--accent);
+      border:1px solid rgba(0,249,249,.15); border-top:2px solid var(--accent);
       animation:rotate 8s linear infinite;
     }
     .inner-circle {
-      width:124px; height:124px; background:rgba(255,255,255,.03); border-radius:50%;
+      width:124px; height:124px;
+      background:rgba(0,0,0,.75);
+      border-radius:50%;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
-      border:1px solid rgba(255,255,255,.05);
+      border:1px solid rgba(0,249,249,.15);
+      box-shadow:0 0 20px rgba(0,0,0,.8), inset 0 0 20px rgba(0,0,0,.4);
     }
-    .water-val   { font-size:42px; font-weight:100; color:var(--accent); line-height:1; }
-    .water-label { font-size:8px; opacity:.3; letter-spacing:2px; }
-    .target-box  { margin-top:5px; background:var(--glass); padding:2px 8px; border-radius:10px; font-size:10px; opacity:.7; }
+    .water-val   { font-size:44px; font-weight:100; color:var(--accent); line-height:1; text-shadow:0 0 20px rgba(0,249,249,.5); }
+    .water-label { font-size:9px; opacity:.5; letter-spacing:2px; font-weight:500; }
+    .target-box  {
+      margin-top:5px; background:rgba(0,0,0,.7);
+      padding:3px 10px; border-radius:10px; font-size:11px;
+      font-weight:600; border:1px solid rgba(0,249,249,.2); color:rgba(255,255,255,.85);
+    }
     .temp-btn {
-      width:32px; height:32px; border-radius:50%; background:var(--glass);
+      width:34px; height:34px; border-radius:50%; background:rgba(0,0,0,.7);
       display:flex; align-items:center; justify-content:center;
-      cursor:pointer; border:1px solid rgba(255,255,255,.1); transition:background .2s,border-color .2s;
+      cursor:pointer; border:1px solid rgba(255,255,255,.2); transition:background .2s,border-color .2s;
     }
-    .temp-btn:hover  { background:rgba(0,249,249,.15); border-color:var(--accent); }
+    .temp-btn:hover  { background:rgba(0,249,249,.2); border-color:var(--accent); }
     .temp-btn:active { transform:scale(.92); }
 
     /* ── Footer conso + énergie ── */
     .footer-row { display:flex; gap:6px; margin-top:7px; flex-wrap:wrap; justify-content:center; }
     .footer-pill {
-      background:var(--glass); padding:3px 10px; border-radius:12px;
-      display:flex; align-items:center; gap:5px; font-size:10px;
-      border:1px solid rgba(255,255,255,.06);
+      background:rgba(0,0,0,.65); padding:5px 12px; border-radius:12px;
+      display:flex; align-items:center; gap:6px; font-size:11px; font-weight:500;
+      border:1px solid rgba(255,255,255,.12);
+      text-shadow:0 1px 3px rgba(0,0,0,.8);
     }
 
     /* ── Maintenance filtre / chlore ── */
-    .maint-row { display:flex; gap:6px; margin-top:6px; width:100%; }
+    .maint-row { display:flex; gap:7px; margin-top:7px; width:100%; }
     .maint-item {
-      flex:1; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
-      border-radius:12px; padding:6px 9px; transition:.3s;
+      flex:1; background:rgba(0,0,0,.68); border:1px solid rgba(255,255,255,.12);
+      border-radius:13px; padding:8px 10px; transition:.3s;
+      backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
     }
-    .maint-item.maint-warn { border-color:rgba(255,152,0,.5); background:rgba(255,152,0,.08); }
+    .maint-item.maint-warn { border-color:rgba(255,152,0,.6); background:rgba(20,8,0,.8); }
     .maint-head {
       display:flex; align-items:center; gap:5px;
-      font-size:9px; opacity:.65; margin-bottom:4px;
-      --mdc-icon-size:12px;
+      font-size:10px; font-weight:600; opacity:.85; margin-bottom:5px;
+      --mdc-icon-size:14px;
     }
     .maint-badge {
-      margin-left:auto; font-size:8px; font-weight:700; letter-spacing:.5px;
-      background:rgba(255,152,0,.25); color:#ff9800; padding:1px 6px; border-radius:5px;
+      margin-left:auto; font-size:9px; font-weight:700; letter-spacing:.5px;
+      background:rgba(255,152,0,.3); color:#ffb040; padding:2px 7px; border-radius:6px;
     }
-    .maint-bar { height:4px; background:rgba(255,255,255,.1); border-radius:2px; overflow:hidden; }
-    .maint-fill      { height:100%; background:rgba(0,249,249,.6); border-radius:2px; transition:width .5s; }
+    .maint-bar { height:5px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; }
+    .maint-fill      { height:100%; background:rgba(0,249,249,.7); border-radius:3px; transition:width .5s; }
     .maint-fill-warn { background:#ff9800; }
-    .maint-val { font-size:8px; opacity:.35; margin-top:4px; text-align:right; }
+    .maint-val { font-size:9px; opacity:.55; margin-top:4px; text-align:right; font-weight:500; }
 
     /* ── Inondation ── */
     .flood-bar {
-      margin-top:6px; width:100%;
+      margin-top:7px; width:100%;
       display:flex; align-items:center; justify-content:space-between;
-      padding:7px 14px; border-radius:14px; box-sizing:border-box; border:1px solid; transition:all .3s;
+      padding:8px 14px; border-radius:14px; box-sizing:border-box; border:1px solid; transition:all .3s;
     }
-    .flood-ok    { background:rgba(0,249,249,.06);  border-color:rgba(0,249,249,.2); }
-    .flood-alert { background:rgba(255,50,50,.12);   border-color:rgba(255,80,80,.6); animation:flood-pulse 1.2s ease-in-out infinite; }
-    @keyframes flood-pulse { 0%,100%{box-shadow:0 0 0 rgba(255,50,50,0)} 50%{box-shadow:0 0 12px rgba(255,80,80,.4)} }
+    .flood-ok    {
+      background:rgba(0,0,0,.68); border-color:rgba(0,249,249,.25);
+      backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+    }
+    .flood-alert { background:rgba(60,0,0,.8); border-color:rgba(255,80,80,.7); animation:flood-pulse 1.2s ease-in-out infinite; }
+    @keyframes flood-pulse { 0%,100%{box-shadow:0 0 0 rgba(255,50,50,0)} 50%{box-shadow:0 0 14px rgba(255,80,80,.5)} }
     .flood-left  { display:flex; align-items:center; gap:7px; }
     .flood-icon  { --mdc-icon-size:20px; color:var(--accent); }
-    .flood-icon-alert { color:#ff4444; animation:pulse 1s infinite; }
-    .flood-label { font-size:11px; font-weight:500; letter-spacing:.5px; }
+    .flood-icon-alert { color:#ff5555; animation:pulse 1s infinite; }
+    .flood-label { font-size:12px; font-weight:600; letter-spacing:.4px; }
     .flood-right { display:flex; align-items:center; gap:6px; }
-    .flood-pill  { display:flex; align-items:center; gap:3px; padding:2px 7px; border-radius:8px; font-size:10px; --mdc-icon-size:14px; }
-    .pill-ok     { background:rgba(0,249,249,.1);  color:var(--accent); }
-    .pill-warn   { background:rgba(255,152,0,.18); color:#ff9800; }
+    .flood-pill  { display:flex; align-items:center; gap:3px; padding:3px 8px; border-radius:8px; font-size:10px; font-weight:600; --mdc-icon-size:14px; }
+    .pill-ok     { background:rgba(0,249,249,.15); color:var(--accent); border:1px solid rgba(0,249,249,.2); }
+    .pill-warn   { background:rgba(255,152,0,.25); color:#ffb040; border:1px solid rgba(255,152,0,.3); }
 
     /* ── Chimie ── */
     .chem-list { display:flex; flex-direction:column; gap:10px; width:100%; padding:4px 6px; }
@@ -1407,7 +1454,7 @@ customElements.define('spa-card', SpaCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:        'spa-card',
-  name:        'Spa Master V33.10 — LayZSpa',
+  name:        'Spa Master V33.11 — LayZSpa',
   description: 'Supervision spa — températures, statut LayZSpa, chimie, maintenance, caméra, équipements.',
   preview:     true
 });
