@@ -351,7 +351,6 @@ class SpaCard extends LitElement {
       <div class="home-view">
 
         ${this._renderHeatingControl()}
-        ${this._renderSchedule()}
         ${this._renderLayzspaStatus()}
 
         <div class="flex-row-center">
@@ -833,22 +832,164 @@ class SpaCard extends LitElement {
   }
 
   // ═══════════════════════════════════════════════
-  //  CAMÉRA
+  //  CAMÉRA + PROGRAMMATION
   // ═══════════════════════════════════════════════
   _renderCamera() {
-    const c=this.config;
-    const w=c.cam_w_px||300, h=c.cam_h_px||200, rad=c.cam_radius||20;
-    const px=c.cam_x||0, py=c.cam_y||0;
+    const c   = this.config;
+    const w   = c.cam_w_px  || 280;
+    const h   = c.cam_h_px  || 160;
+    const rad = c.cam_radius || 16;
+    const px  = c.cam_x || 0;
+    const py  = c.cam_y || 0;
+
+    const schedId   = c.entity_lz_schedule;
+    const hasSched  = schedId && this.hass?.states[schedId];
+
+    const calc      = this._calcHeatingTime();
+    const curTemp   = parseFloat(this._waterTemp() ?? 0);
+    const tgtTemp   = parseFloat(this._targetTemp() ?? 34);
+    const isHeating = this._state(c.entity_lz_heater) === 'on';
+    const isReady   = this._state(c.entity_lz_ready)  === 'on';
+
+    // Temps formaté
+    let timeStr = '';
+    if (calc && calc !== 0) {
+      const hh  = Math.floor(calc.timeH);
+      const mm  = Math.round((calc.timeH - hh) * 60);
+      timeStr   = hh > 0 ? `${hh}h${mm > 0 ? mm.toString().padStart(2,'0') : ''}` : `${mm} min`;
+    }
+
+    // Heure programmée + calcul heure de démarrage
+    let readyStr = '--:--', startStr = '--:--';
+    if (hasSched) {
+      const raw   = this.hass.states[schedId].state;
+      const parts = raw.split(':');
+      const rh    = parseInt(parts[0] ?? 0);
+      const rm    = parseInt(parts[1] ?? 0);
+      readyStr    = `${String(rh).padStart(2,'0')}:${String(rm).padStart(2,'0')}`;
+      if (calc && calc !== 0) {
+        const nowD   = new Date();
+        const readyD = new Date(nowD);
+        readyD.setHours(rh, rm, 0, 0);
+        if (readyD < nowD) readyD.setDate(readyD.getDate() + 1);
+        const startD = new Date(readyD.getTime() - calc.timeH * 3600000);
+        startStr = `${String(startD.getHours()).padStart(2,'0')}:${String(startD.getMinutes()).padStart(2,'0')}`;
+      }
+    }
+
+    const changeTime = (dh, dm) => {
+      if (!hasSched) return;
+      const raw   = this.hass.states[schedId].state;
+      const parts = raw.split(':');
+      let nh = parseInt(parts[0] ?? 0) + dh;
+      let nm = parseInt(parts[1] ?? 0) + dm;
+      if (nm >= 60) { nm -= 60; nh += 1; }
+      if (nm < 0)   { nm += 60; nh -= 1; }
+      nh = ((nh % 24) + 24) % 24;
+      this.hass.callService('input_datetime', 'set_datetime', {
+        entity_id: schedId,
+        time: `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}:00`
+      });
+    };
+
+    const activateSched = () => {
+      this.hass.callService('persistent_notification', 'create', {
+        title: '🛁 Spa programmé',
+        message: `Prêt à ${readyStr} — chauffe à ${startStr}`,
+        notification_id: 'spa_schedule'
+      });
+    };
+
+    const toggleHeat = () => {
+      const id  = c.entity_target_temp;
+      const hvac= this.hass.states[id]?.state;
+      this.hass.callService('climate', 'set_hvac_mode', {
+        entity_id: id,
+        hvac_mode: hvac === 'heat' ? 'off' : 'heat'
+      });
+    };
+
     return html`
-      <div class="cam-container" style="transform:translate(${px}px,${py}px);">
-        <div class="cam-crop" style="width:${w}px;height:${h}px;border-radius:${rad}px;">
-          ${this._exists(c.entity_camera) ? html`
-            <hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live"></hui-image>
-          ` : html`
-            <div class="cam-unavailable">
-              <ha-icon icon="mdi:camera-off"></ha-icon>
-              <span>Caméra indisponible</span>
+      <div class="cam-page">
+
+        <!-- Caméra -->
+        <div class="cam-container" style="transform:translate(${px}px,${py}px);margin-bottom:10px;">
+          <div class="cam-crop" style="width:${w}px;height:${h}px;border-radius:${rad}px;">
+            ${this._exists(c.entity_camera) ? html`
+              <hui-image .hass=${this.hass} .cameraImage=${c.entity_camera} cameraView="live">
+              </hui-image>` : html`
+              <div class="cam-unavailable">
+                <ha-icon icon="mdi:camera-off"></ha-icon>
+                <span>Caméra indisponible</span>
+              </div>`}
+          </div>
+        </div>
+
+        <!-- Bloc programmation principal -->
+        <div class="prog-card">
+
+          <!-- Titre + statut -->
+          <div class="prog-header">
+            <ha-icon icon="mdi:clock-time-four-outline" class="prog-hicon"></ha-icon>
+            <span class="prog-htitle">Programmation</span>
+            <span class="prog-status-pill ${isReady?'ps-ready':isHeating?'ps-heat':'ps-idle'}">
+              ${isReady ? '✓ Prêt' : isHeating ? '🔥 En chauffe' : '⏸ En veille'}
+            </span>
+          </div>
+
+          <!-- Infos température -->
+          <div class="prog-temps">
+            <div class="prog-temp-item">
+              <span class="prog-temp-lbl">EAU</span>
+              <span class="prog-temp-val">${curTemp}°</span>
+            </div>
+            <ha-icon icon="mdi:arrow-right" style="opacity:.3;--mdc-icon-size:16px;"></ha-icon>
+            <div class="prog-temp-item">
+              <span class="prog-temp-lbl">CIBLE</span>
+              <span class="prog-temp-val prog-temp-accent">${tgtTemp}°</span>
+            </div>
+            ${timeStr ? html`
+              <ha-icon icon="mdi:timer-outline" style="opacity:.3;--mdc-icon-size:14px;"></ha-icon>
+              <div class="prog-temp-item">
+                <span class="prog-temp-lbl">DURÉE</span>
+                <span class="prog-temp-val">${timeStr}</span>
+              </div>` : ''}
+          </div>
+
+          <!-- Sélecteur d'heure -->
+          ${hasSched ? html`
+            <div class="prog-time-section">
+              <div class="prog-time-label">Prêt à</div>
+              <div class="prog-time-row">
+                <button class="prog-adj-btn" @click=${()=>changeTime(-1,0)}>−1h</button>
+                <button class="prog-adj-btn" @click=${()=>changeTime(0,-15)}>−15'</button>
+                <div class="prog-time-display">${readyStr}</div>
+                <button class="prog-adj-btn" @click=${()=>changeTime(0,15)}>+15'</button>
+                <button class="prog-adj-btn" @click=${()=>changeTime(1,0)}>+1h</button>
+              </div>
+              <div class="prog-start-row">
+                <ha-icon icon="mdi:play-circle-outline" style="--mdc-icon-size:13px;opacity:.5;"></ha-icon>
+                <span>Démarrage calculé à <strong>${startStr}</strong></span>
+              </div>
+            </div>` : html`
+            <div class="prog-no-helper">
+              Ajoutez <code>entity_lz_schedule: input_datetime.spa_ready_at</code>
             </div>`}
+
+          <!-- Boutons d'action -->
+          <div class="prog-actions">
+            <button class="prog-action-btn ${isHeating?'pab-on':'pab-off'}"
+                    @click=${toggleHeat}>
+              <ha-icon icon="${isHeating?'mdi:radiator':'mdi:radiator-off'}"></ha-icon>
+              ${isHeating ? 'Arrêter' : 'Chauffer maintenant'}
+            </button>
+            ${hasSched ? html`
+              <button class="prog-action-btn pab-sched" @click=${activateSched}>
+                <ha-icon icon="mdi:alarm-check"></ha-icon>
+                Programmer ${readyStr}
+              </button>` : ''}
+          </div>
+
         </div>
       </div>`;
   }
@@ -1124,6 +1265,92 @@ class SpaCard extends LitElement {
     .maint-reset-btn:hover  { background:rgba(52,211,153,.3); }
     .maint-reset-btn:active { transform:scale(.93); }
 
+    /* ── Caméra + programmation ── */
+    .cam-page {
+      width:100%; height:100%;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:flex-start;
+      overflow-y:auto; padding:2px 0;
+    }
+    .cam-page::-webkit-scrollbar { display:none; }
+
+    .prog-card {
+      width:100%; background:rgba(255,255,255,.05);
+      border:1px solid rgba(107,142,255,.25);
+      border-radius:18px; padding:12px 14px;
+      box-sizing:border-box;
+    }
+    .prog-header {
+      display:flex; align-items:center; gap:7px; margin-bottom:10px;
+    }
+    .prog-hicon  { --mdc-icon-size:18px; color:#6b8eff; }
+    .prog-htitle { flex:1; font-size:13px; font-weight:600; letter-spacing:.3px; }
+    .prog-status-pill {
+      font-size:10px; font-weight:600; padding:3px 9px;
+      border-radius:8px; letter-spacing:.3px;
+    }
+    .ps-ready { background:rgba(52,211,153,.18); color:#34d399; }
+    .ps-heat  { background:rgba(251,146,60,.18);  color:#fb923c; }
+    .ps-idle  { background:rgba(255,255,255,.08); color:rgba(255,255,255,.4); }
+
+    .prog-temps {
+      display:flex; align-items:center; gap:8px;
+      background:rgba(255,255,255,.04); border-radius:12px;
+      padding:8px 12px; margin-bottom:10px;
+    }
+    .prog-temp-item { display:flex; flex-direction:column; align-items:center; gap:2px; }
+    .prog-temp-lbl  { font-size:7px; opacity:.35; letter-spacing:1px; }
+    .prog-temp-val  { font-size:20px; font-weight:200; }
+    .prog-temp-accent { color:var(--accent); }
+
+    .prog-time-section { margin-bottom:10px; }
+    .prog-time-label {
+      font-size:9px; text-transform:uppercase; letter-spacing:1px;
+      opacity:.4; margin-bottom:6px;
+    }
+    .prog-time-row {
+      display:flex; align-items:center; gap:5px; justify-content:center;
+      margin-bottom:7px;
+    }
+    .prog-adj-btn {
+      background:rgba(107,142,255,.12); border:1px solid rgba(107,142,255,.3);
+      color:#6b8eff; border-radius:8px; padding:5px 9px;
+      font-size:11px; font-weight:600; cursor:pointer;
+      transition:.15s; font-family:inherit;
+    }
+    .prog-adj-btn:hover  { background:rgba(107,142,255,.25); }
+    .prog-adj-btn:active { transform:scale(.93); }
+    .prog-time-display {
+      font-size:28px; font-weight:200; color:#6b8eff;
+      min-width:72px; text-align:center; letter-spacing:1px;
+    }
+    .prog-start-row {
+      display:flex; align-items:center; gap:5px;
+      font-size:11px; opacity:.55; justify-content:center;
+      --mdc-icon-size:13px;
+    }
+    .prog-start-row strong { color:rgba(255,255,255,.8); }
+
+    .prog-no-helper {
+      font-size:10px; opacity:.4; text-align:center;
+      padding:8px; background:rgba(255,255,255,.04);
+      border-radius:10px; margin-bottom:10px;
+    }
+    .prog-no-helper code { color:#6b8eff; }
+
+    .prog-actions { display:flex; gap:7px; }
+    .prog-action-btn {
+      flex:1; display:flex; align-items:center; justify-content:center;
+      gap:6px; padding:9px 10px; border-radius:12px; border:1px solid;
+      cursor:pointer; font-size:11px; font-weight:600; letter-spacing:.3px;
+      transition:all .2s; font-family:inherit; --mdc-icon-size:16px;
+    }
+    .pab-on    { background:rgba(251,146,60,.15); border-color:rgba(251,146,60,.5); color:#fb923c; }
+    .pab-off   { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.18); color:rgba(255,255,255,.5); }
+    .pab-sched { background:rgba(107,142,255,.15); border-color:rgba(107,142,255,.45); color:#6b8eff; }
+    .prog-action-btn:hover  { filter:brightness(1.2); }
+    .prog-action-btn:active { transform:scale(.96); }
+
     /* ── Nav ── */
     .nav { display:flex; justify-content:space-around; padding-top:16px; border-top:1px solid rgba(255,255,255,.1); }
     .nav ha-icon { opacity:.3; cursor:pointer; --mdc-icon-size:24px; transition:opacity .2s,color .2s; }
@@ -1142,7 +1369,7 @@ customElements.define('spa-card', SpaCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:        'spa-card',
-  name:        'Spa Master V33.4 — LayZSpa',
+  name:        'Spa Master V33.5 — LayZSpa',
   description: 'Supervision spa — températures, statut LayZSpa, chimie, maintenance, caméra, équipements.',
   preview:     true
 });
