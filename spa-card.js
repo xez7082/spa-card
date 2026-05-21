@@ -85,7 +85,9 @@ class SpaCardEditor extends LitElement {
         { name:'entity_lz_rssi',      label:'Signal WiFi RSSI (sensor…rssi)',           selector:{ entity:{ domain:'sensor' } } },
         { name:'lz_volume',           label:'Volume eau (litres, défaut 500)',           selector:{ number:{ mode:'box', min:100, max:5000 } } },
         { name:'lz_power_w',          label:'Puissance chauffe (W, défaut 1942)',        selector:{ number:{ mode:'box', min:500, max:5000 } } },
-        { name:'lz_heat_loss',        label:'Pertes thermiques (%, défaut 30)',          selector:{ number:{ mode:'slider', min:0, max:60 } } }
+        { name:'lz_heat_loss',        label:'Pertes thermiques (%, défaut 30)',          selector:{ number:{ mode:'slider', min:0, max:60 } } },
+        { name:'entity_lz_reset_filter',  label:'Bouton reset filtre (button.layzspa_reset_filter_change_timer)',  selector:{ entity:{ domain:'button' } } },
+        { name:'entity_lz_reset_chlore',  label:'Bouton reset chlore (button.layzspa_reset_chlorine_timer)',       selector:{ entity:{ domain:'button' } } }
       ])}
       ${this._acc('a-hum','background:rgba(52,211,153,.15);color:#10b981;','~','Humidité & Énergie',[
         { name:'entity_ext_hum',   label:'Humidité extérieure',    selector:{ entity:{ domain:'sensor' } } },
@@ -248,6 +250,8 @@ class SpaCard extends LitElement {
       lz_volume:      500,
       lz_power_w:     1942,
       lz_heat_loss:   30,
+      entity_lz_reset_filter: 'button.layzspa_reset_filter_change_timer',
+      entity_lz_reset_chlore: 'button.layzspa_reset_chlorine_timer',
       lz_filter_max:     60,
       entity_lz_chlorine:'sensor.layzspa_chlorine_age',
       lz_chlorine_max:   14,
@@ -344,6 +348,7 @@ class SpaCard extends LitElement {
     return html`
       <div class="home-view">
 
+        ${this._renderHeatingControl()}
         ${this._renderLayzspaStatus()}
 
         <div class="flex-row-center">
@@ -394,6 +399,44 @@ class SpaCard extends LitElement {
         ${this._renderFooterRow()}
         ${this._renderMaintenance()}
         ${this._renderFlood()}
+      </div>`;
+  }
+
+  // ─── Contrôle chauffe : démarrer / arrêter / programmer ────────
+  _renderHeatingControl() {
+    const c   = this.config;
+    const id  = c.entity_target_temp;
+    if (!id || !id.startsWith('climate.')) return html``;
+    if (!this.hass?.states[id]) return html``;
+
+    const hvac    = this.hass.states[id].state;          // 'heat', 'off', 'fan_only'
+    const isOn    = hvac === 'heat';
+    const curTemp = parseFloat(this._waterTemp() ?? 0);
+    const tgtTemp = parseFloat(this._targetTemp() ?? 34);
+    const atTemp  = curTemp >= tgtTemp - 0.5;
+
+    const toggle = () => {
+      this.hass.callService('climate', 'set_hvac_mode', {
+        entity_id: id,
+        hvac_mode: isOn ? 'off' : 'heat'
+      });
+    };
+
+    return html`
+      <div class="heat-ctrl">
+        <button class="heat-btn ${isOn ? 'heat-on' : 'heat-off'}" @click=${toggle}>
+          <ha-icon icon="${isOn ? 'mdi:radiator' : 'mdi:radiator-off'}"></ha-icon>
+          <span>${isOn ? (atTemp ? 'Maintien' : 'Chauffe ON') : 'Chauffe OFF'}</span>
+        </button>
+        <div class="heat-temps">
+          <div class="heat-t-btn" @click=${()=>this._changeTemp(-1)}>
+            <ha-icon icon="mdi:minus"></ha-icon>
+          </div>
+          <div class="heat-target">${tgtTemp}°</div>
+          <div class="heat-t-btn" @click=${()=>this._changeTemp(1)}>
+            <ha-icon icon="mdi:plus"></ha-icon>
+          </div>
+        </div>
       </div>`;
   }
 
@@ -512,7 +555,7 @@ class SpaCard extends LitElement {
       </div>`;
   }
 
-  // ─── Alertes maintenance filtre / chlore ─────────────────────
+  // ─── Alertes maintenance filtre / chlore + boutons reset ────────
   _renderMaintenance() {
     const c = this.config;
     const filterAge  = this._exists(c.entity_lz_filter)   ? parseFloat(this._state(c.entity_lz_filter))   : null;
@@ -520,14 +563,19 @@ class SpaCard extends LitElement {
     const filterMax  = Number(c.lz_filter_max  ?? 60);
     const chloreMax  = Number(c.lz_chlorine_max ?? 14);
 
-    // N'afficher que si au moins une entité configurée
+    const hasResetF = !!c.entity_lz_reset_filter;
+    const hasResetC = !!c.entity_lz_reset_chlore;
+
     if (filterAge === null && chloreAge === null) return html``;
 
-    const filterWarn  = filterAge  !== null && filterAge  > filterMax;
-    const chloreWarn  = chloreAge  !== null && chloreAge  > chloreMax;
+    const filterWarn = filterAge !== null && filterAge > filterMax;
+    const chloreWarn = chloreAge !== null && chloreAge > chloreMax;
+    const filterPct  = filterAge !== null ? Math.min(100, filterAge / filterMax * 100) : 0;
+    const chlorePct  = chloreAge !== null ? Math.min(100, chloreAge / chloreMax * 100) : 0;
 
-    const filterPct   = filterAge  !== null ? Math.min(100, filterAge  / filterMax * 100) : 0;
-    const chlorePct   = chloreAge  !== null ? Math.min(100, chloreAge  / chloreMax * 100) : 0;
+    const pressReset = (entityId) => {
+      this.hass.callService('button', 'press', { entity_id: entityId });
+    };
 
     return html`
       <div class="maint-row">
@@ -537,6 +585,11 @@ class SpaCard extends LitElement {
               <ha-icon icon="mdi:air-filter"></ha-icon>
               <span>Filtre</span>
               ${filterWarn ? html`<span class="maint-badge">À changer</span>` : ''}
+              ${hasResetF ? html`
+                <button class="maint-reset-btn" title="Filtre changé — remettre à zéro"
+                  @click=${() => pressReset(c.entity_lz_reset_filter)}>
+                  ✓
+                </button>` : ''}
             </div>
             <div class="maint-bar">
               <div class="maint-fill ${filterWarn?'maint-fill-warn':''}"
@@ -550,6 +603,11 @@ class SpaCard extends LitElement {
               <ha-icon icon="mdi:flask-outline"></ha-icon>
               <span>Chlore</span>
               ${chloreWarn ? html`<span class="maint-badge">À renouveler</span>` : ''}
+              ${hasResetC ? html`
+                <button class="maint-reset-btn" title="Chlore renouvelé — remettre à zéro"
+                  @click=${() => pressReset(c.entity_lz_reset_chlore)}>
+                  ✓
+                </button>` : ''}
             </div>
             <div class="maint-bar">
               <div class="maint-fill ${chloreWarn?'maint-fill-warn':''}"
@@ -688,11 +746,17 @@ class SpaCard extends LitElement {
         ${sws.map(s => {
           const isOn = this._state(s.id)==='on';
           const icon = ICONS[s.id] ?? (isOn?'mdi:power':'mdi:power-off');
+          const domain = s.id.split('.')[0];
+          const isBtn  = domain === 'button';
+          const onClick = isBtn
+            ? () => this.hass.callService('button','press',{entity_id:s.id})
+            : () => this.hass.callService('homeassistant','toggle',{entity_id:s.id});
+          const btnIcon = isBtn ? 'mdi:gesture-tap-button' : icon;
           return html`
-            <div class="sw-card ${isOn?'active':''}" role="button"
-                 aria-label="${s.n||'Bouton'} — ${isOn?'allumé':'éteint'}"
-                 @click=${()=>this.hass.callService('homeassistant','toggle',{entity_id:s.id})}>
-              <ha-icon icon="${icon}"></ha-icon>
+            <div class="sw-card ${isOn&&!isBtn?'active':''}" role="button"
+                 aria-label="${s.n||'Bouton'}"
+                 @click=${onClick}>
+              <ha-icon icon="${btnIcon}"></ha-icon>
               <span>${s.n||'Bouton'}</span>
             </div>`;
         })}
@@ -917,6 +981,46 @@ class SpaCard extends LitElement {
     .cam-crop hui-image { width:100%; height:100%; object-fit:cover; }
     .cam-unavailable { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; opacity:.4; font-size:11px; }
 
+    /* ── Contrôle chauffe ── */
+    .heat-ctrl {
+      display:flex; align-items:center; gap:8px; width:100%;
+      margin-bottom:6px;
+    }
+    .heat-btn {
+      flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
+      padding:8px 12px; border-radius:14px; border:1px solid; cursor:pointer;
+      font-size:11px; font-weight:600; letter-spacing:.4px;
+      transition:all .25s; font-family:var(--paper-font-body1_-_font-family,sans-serif);
+      --mdc-icon-size:16px;
+    }
+    .heat-on  { background:rgba(251,146,60,.15); border-color:rgba(251,146,60,.5); color:#fb923c; }
+    .heat-off { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.15); color:rgba(255,255,255,.45); }
+    .heat-btn:active { transform:scale(.96); }
+    .heat-temps {
+      display:flex; align-items:center; gap:6px;
+      background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+      border-radius:14px; padding:5px 10px;
+    }
+    .heat-target { font-size:18px; font-weight:200; color:var(--accent); min-width:38px; text-align:center; }
+    .heat-t-btn {
+      width:26px; height:26px; border-radius:50%;
+      background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12);
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; --mdc-icon-size:14px; transition:.15s;
+    }
+    .heat-t-btn:hover  { background:rgba(0,249,249,.15); border-color:var(--accent); }
+    .heat-t-btn:active { transform:scale(.9); }
+
+    /* Bouton ✓ reset maintenance */
+    .maint-reset-btn {
+      margin-left:auto; background:rgba(52,211,153,.15);
+      border:1px solid rgba(52,211,153,.4); color:#34d399;
+      border-radius:6px; padding:1px 6px; font-size:10px; font-weight:700;
+      cursor:pointer; transition:.15s; line-height:1.4;
+    }
+    .maint-reset-btn:hover  { background:rgba(52,211,153,.3); }
+    .maint-reset-btn:active { transform:scale(.93); }
+
     /* ── Nav ── */
     .nav { display:flex; justify-content:space-around; padding-top:16px; border-top:1px solid rgba(255,255,255,.1); }
     .nav ha-icon { opacity:.3; cursor:pointer; --mdc-icon-size:24px; transition:opacity .2s,color .2s; }
@@ -935,7 +1039,7 @@ customElements.define('spa-card', SpaCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:        'spa-card',
-  name:        'Spa Master V33.2 — LayZSpa',
+  name:        'Spa Master V33.3 — LayZSpa',
   description: 'Supervision spa — températures, statut LayZSpa, chimie, maintenance, caméra, équipements.',
   preview:     true
 });
