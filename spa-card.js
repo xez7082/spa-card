@@ -87,7 +87,8 @@ class SpaCardEditor extends LitElement {
         { name:'lz_power_w',          label:'Puissance chauffe (W, défaut 1942)',        selector:{ number:{ mode:'box', min:500, max:5000 } } },
         { name:'lz_heat_loss',        label:'Pertes thermiques (%, défaut 30)',          selector:{ number:{ mode:'slider', min:0, max:60 } } },
         { name:'entity_lz_reset_filter',  label:'Bouton reset filtre (button.layzspa_reset_filter_change_timer)',  selector:{ entity:{ domain:'button' } } },
-        { name:'entity_lz_reset_chlore',  label:'Bouton reset chlore (button.layzspa_reset_chlorine_timer)',       selector:{ entity:{ domain:'button' } } }
+        { name:'entity_lz_reset_chlore',  label:'Bouton reset chlore (button.layzspa_reset_chlorine_timer)',       selector:{ entity:{ domain:'button' } } },
+        { name:'entity_lz_schedule',      label:'Programmation — helper heure (input_datetime.spa_ready_at)',    selector:{ entity:{ domain:'input_datetime' } } }
       ])}
       ${this._acc('a-hum','background:rgba(52,211,153,.15);color:#10b981;','~','Humidité & Énergie',[
         { name:'entity_ext_hum',   label:'Humidité extérieure',    selector:{ entity:{ domain:'sensor' } } },
@@ -251,6 +252,7 @@ class SpaCard extends LitElement {
       lz_power_w:     1942,
       lz_heat_loss:   30,
       entity_lz_reset_filter: 'button.layzspa_reset_filter_change_timer',
+      entity_lz_schedule:     'input_datetime.spa_ready_at',
       entity_lz_reset_chlore: 'button.layzspa_reset_chlorine_timer',
       lz_filter_max:     60,
       entity_lz_chlorine:'sensor.layzspa_chlorine_age',
@@ -349,6 +351,7 @@ class SpaCard extends LitElement {
       <div class="home-view">
 
         ${this._renderHeatingControl()}
+        ${this._renderSchedule()}
         ${this._renderLayzspaStatus()}
 
         <div class="flex-row-center">
@@ -399,6 +402,72 @@ class SpaCard extends LitElement {
         ${this._renderFooterRow()}
         ${this._renderMaintenance()}
         ${this._renderFlood()}
+      </div>`;
+  }
+
+  // ─── Programmation horaire ───────────────────────────────────
+  _renderSchedule() {
+    const c = this.config;
+    const schedId = c.entity_lz_schedule;
+    if (!schedId || !this.hass?.states[schedId]) return html``;
+
+    const raw    = this.hass.states[schedId].state; // "HH:MM:SS" ou "HH:MM"
+    const parts  = raw.split(':');
+    const h      = parseInt(parts[0] ?? 0);
+    const m      = parseInt(parts[1] ?? 0);
+
+    // Calcul heure de démarrage
+    const calc   = this._calcHeatingTime();
+    let startStr = '';
+    let readyStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    if (calc && calc !== 0) {
+      const nowD    = new Date();
+      const readyD  = new Date(nowD);
+      readyD.setHours(h, m, 0, 0);
+      if (readyD < nowD) readyD.setDate(readyD.getDate() + 1); // demain
+      const startD  = new Date(readyD.getTime() - calc.timeH * 3600000);
+      startStr = `${String(startD.getHours()).padStart(2,'0')}:${String(startD.getMinutes()).padStart(2,'0')}`;
+    }
+
+    // Changer l'heure cible
+    const changeTime = (dh, dm) => {
+      let nh = h + dh;
+      let nm = m + dm;
+      if (nm >= 60) { nm -= 60; nh += 1; }
+      if (nm < 0)   { nm += 60; nh -= 1; }
+      nh = ((nh % 24) + 24) % 24;
+      const timeStr = `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}:00`;
+      this.hass.callService('input_datetime', 'set_datetime', {
+        entity_id: schedId,
+        time: timeStr
+      });
+    };
+
+    // Activer / désactiver la programmation via un switch dédié (optionnel)
+    const activate = () => {
+      // Notifie visuellement — l'automation HA se charge du déclenchement réel
+      this.hass.callService('persistent_notification', 'create', {
+        title: '🛁 Spa programmé',
+        message: `Prêt à ${readyStr} — chauffe démarrera à ${startStr || '…'}`,
+        notification_id: 'spa_schedule'
+      });
+    };
+
+    return html`
+      <div class="sched-bar">
+        <ha-icon class="sched-icon" icon="mdi:clock-outline"></ha-icon>
+        <div class="sched-col">
+          <div class="sched-title">Prêt à</div>
+          ${startStr ? html`<div class="sched-start">Démarrage à ${startStr}</div>` : ''}
+        </div>
+        <div class="sched-time-ctrl">
+          <div class="sched-btn" @click=${()=>changeTime(-1,0)}>◂ h</div>
+          <div class="sched-btn" @click=${()=>changeTime(0,-15)}>◂ 15'</div>
+          <div class="sched-val">${readyStr}</div>
+          <div class="sched-btn" @click=${()=>changeTime(0,15)}>15' ▸</div>
+          <div class="sched-btn" @click=${()=>changeTime(1,0)}>h ▸</div>
+        </div>
+        <button class="sched-set-btn" @click=${activate} title="Confirmer la programmation">✓</button>
       </div>`;
   }
 
@@ -1011,6 +1080,40 @@ class SpaCard extends LitElement {
     .heat-t-btn:hover  { background:rgba(0,249,249,.15); border-color:var(--accent); }
     .heat-t-btn:active { transform:scale(.9); }
 
+    /* ── Programmation ── */
+    .sched-bar {
+      display:flex; align-items:center; gap:7px; width:100%;
+      background:rgba(107,142,255,.08); border:1px solid rgba(107,142,255,.25);
+      border-radius:14px; padding:7px 11px; box-sizing:border-box;
+      margin-bottom:5px;
+    }
+    .sched-icon { --mdc-icon-size:16px; color:#6b8eff; flex-shrink:0; }
+    .sched-col  { display:flex; flex-direction:column; gap:1px; flex:0 0 auto; }
+    .sched-title{ font-size:9px; text-transform:uppercase; letter-spacing:.6px; opacity:.45; }
+    .sched-start{ font-size:9px; color:#6b8eff; opacity:.8; }
+    .sched-time-ctrl {
+      flex:1; display:flex; align-items:center; justify-content:center; gap:4px;
+    }
+    .sched-btn {
+      font-size:9px; color:rgba(255,255,255,.4);
+      background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1);
+      border-radius:6px; padding:2px 5px; cursor:pointer; transition:.15s;
+      white-space:nowrap;
+    }
+    .sched-btn:hover  { background:rgba(107,142,255,.2); color:#6b8eff; border-color:rgba(107,142,255,.4); }
+    .sched-btn:active { transform:scale(.93); }
+    .sched-val {
+      font-size:16px; font-weight:300; color:#6b8eff;
+      min-width:44px; text-align:center; letter-spacing:.5px;
+    }
+    .sched-set-btn {
+      background:rgba(107,142,255,.18); border:1px solid rgba(107,142,255,.4);
+      color:#6b8eff; border-radius:8px; padding:3px 8px;
+      font-size:12px; font-weight:700; cursor:pointer; transition:.15s; flex-shrink:0;
+    }
+    .sched-set-btn:hover  { background:rgba(107,142,255,.32); }
+    .sched-set-btn:active { transform:scale(.93); }
+
     /* Bouton ✓ reset maintenance */
     .maint-reset-btn {
       margin-left:auto; background:rgba(52,211,153,.15);
@@ -1039,7 +1142,7 @@ customElements.define('spa-card', SpaCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:        'spa-card',
-  name:        'Spa Master V33.3 — LayZSpa',
+  name:        'Spa Master V33.4 — LayZSpa',
   description: 'Supervision spa — températures, statut LayZSpa, chimie, maintenance, caméra, équipements.',
   preview:     true
 });
