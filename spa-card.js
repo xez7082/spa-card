@@ -1310,13 +1310,13 @@ class SpaCard extends LitElement {
     /* Droite — programmation */
     .prog-right {
       flex:1; min-width:110px; display:flex; flex-direction:column;
-      gap:8px; overflow:hidden;
+      gap:10px; overflow:hidden;
     }
 
     /* Badge statut */
     .prog-status-row { display:flex; }
     .prog-status-pill {
-      font-size:11px; font-weight:700; padding:5px 11px;
+      font-size:13px; font-weight:700; padding:6px 13px;
       border-radius:10px; letter-spacing:.3px;
     }
     .ps-ready { background:rgba(52,211,153,.18); color:#34d399; }
@@ -1327,28 +1327,28 @@ class SpaCard extends LitElement {
     .prog-temps-mini {
       display:flex; align-items:center; gap:6px;
       background:rgba(255,255,255,.05); border-radius:12px;
-      padding:8px 10px; flex-wrap:wrap;
+      padding:10px 12px; flex-wrap:wrap;
     }
-    .ptm-val    { font-size:22px; font-weight:200; }
+    .ptm-val    { font-size:28px; font-weight:200; }
     .ptm-accent { color:var(--accent); }
-    .ptm-arr    { font-size:13px; opacity:.3; }
+    .ptm-arr    { font-size:16px; opacity:.3; }
     .ptm-dur    {
-      font-size:12px; font-weight:500; opacity:.6;
+      font-size:14px; font-weight:500; opacity:.6;
       margin-left:auto; color:var(--accent);
     }
 
     /* Sélecteur heure */
     .prog-time-mini { display:flex; flex-direction:column; gap:5px; }
     .ptm-label {
-      font-size:10px; text-transform:uppercase; letter-spacing:1px; opacity:.4; font-weight:500;
+      font-size:12px; text-transform:uppercase; letter-spacing:1px; opacity:.4; font-weight:500;
     }
     .ptm-row {
       display:flex; align-items:center; gap:4px; flex-wrap:wrap;
     }
     .prog-adj-btn {
       background:rgba(107,142,255,.14); border:1px solid rgba(107,142,255,.35);
-      color:#6b8eff; border-radius:8px; padding:5px 8px;
-      font-size:11px; font-weight:700; cursor:pointer;
+      color:#6b8eff; border-radius:8px; padding:7px 10px;
+      font-size:13px; font-weight:700; cursor:pointer;
       transition:.15s; font-family:inherit; flex:1;
     }
     .prog-adj-btn:hover  { background:rgba(107,142,255,.28); }
@@ -1356,24 +1356,24 @@ class SpaCard extends LitElement {
 
     /* Heure affichée */
     .prog-time-display {
-      font-size:28px; font-weight:200; color:#6b8eff;
+      font-size:36px; font-weight:200; color:#6b8eff;
       min-width:0; flex:2; text-align:center; letter-spacing:.5px;
     }
 
     /* Ligne démarrage */
     .prog-start-mini {
-      font-size:11px; opacity:.55; text-align:center;
-      background:rgba(255,255,255,.04); border-radius:8px; padding:5px 6px;
+      font-size:13px; opacity:.6; text-align:center;
+      background:rgba(255,255,255,.04); border-radius:8px; padding:6px 8px;
     }
-    .prog-start-mini strong { color:rgba(255,255,255,.8); font-size:13px; }
+    .prog-start-mini strong { color:rgba(255,255,255,.85); font-size:16px; }
 
     /* Boutons action */
     .prog-actions-mini { display:flex; flex-direction:column; gap:6px; margin-top:auto; }
     .prog-action-btn {
       display:flex; align-items:center; justify-content:center;
-      gap:6px; padding:9px 8px; border-radius:12px; border:1px solid;
-      cursor:pointer; font-size:12px; font-weight:700; letter-spacing:.2px;
-      transition:all .2s; font-family:inherit; --mdc-icon-size:16px;
+      gap:6px; padding:11px 8px; border-radius:12px; border:1px solid;
+      cursor:pointer; font-size:14px; font-weight:700; letter-spacing:.2px;
+      transition:all .2s; font-family:inherit; --mdc-icon-size:18px;
       width:100%;
     }
     .pab-on    { background:rgba(251,146,60,.15); border-color:rgba(251,146,60,.5); color:#fb923c; }
@@ -1400,7 +1400,7 @@ customElements.define('spa-card', SpaCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:        'spa-card',
-  name:        'Spa Master V33.8 — LayZSpa',
+  name:        'Spa Master V33.9 — LayZSpa',
   description: 'Supervision spa — températures, statut LayZSpa, chimie, maintenance, caméra, équipements.',
   preview:     true
 });
