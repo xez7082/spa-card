@@ -82,7 +82,10 @@ class SpaCardEditor extends LitElement {
         { name:'entity_lz_chlorine',  label:'Âge chlore — jours (sensor…chlorine_age)',selector:{ entity:{ domain:'sensor' } } },
         { name:'lz_chlorine_max',     label:'Alerter chlore après (jours)',             selector:{ number:{ mode:'box', min:1, max:365 } } },
         { name:'entity_lz_energy',    label:'Énergie totale kWh (sensor…energy)',       selector:{ entity:{ domain:'sensor' } } },
-        { name:'entity_lz_rssi',      label:'Signal WiFi RSSI (sensor…rssi)',           selector:{ entity:{ domain:'sensor' } } }
+        { name:'entity_lz_rssi',      label:'Signal WiFi RSSI (sensor…rssi)',           selector:{ entity:{ domain:'sensor' } } },
+        { name:'lz_volume',           label:'Volume eau (litres, défaut 500)',           selector:{ number:{ mode:'box', min:100, max:5000 } } },
+        { name:'lz_power_w',          label:'Puissance chauffe (W, défaut 1942)',        selector:{ number:{ mode:'box', min:500, max:5000 } } },
+        { name:'lz_heat_loss',        label:'Pertes thermiques (%, défaut 30)',          selector:{ number:{ mode:'slider', min:0, max:60 } } }
       ])}
       ${this._acc('a-hum','background:rgba(52,211,153,.15);color:#10b981;','~','Humidité & Énergie',[
         { name:'entity_ext_hum',   label:'Humidité extérieure',    selector:{ entity:{ domain:'sensor' } } },
@@ -242,6 +245,9 @@ class SpaCard extends LitElement {
       entity_lz_ttr:     'sensor.layzspa_time_to_ready',
       entity_lz_conn:    'binary_sensor.layzspa_connection',
       entity_lz_filter:  'sensor.layzspa_filter_age',
+      lz_volume:      500,
+      lz_power_w:     1942,
+      lz_heat_loss:   30,
       lz_filter_max:     60,
       entity_lz_chlorine:'sensor.layzspa_chlorine_age',
       lz_chlorine_max:   14,
@@ -391,6 +397,39 @@ class SpaCard extends LitElement {
       </div>`;
   }
 
+  // ─── Calcul du temps de chauffe réel basé sur 500 L et puissance mesurée ───
+  _calcHeatingTime() {
+    const c = this.config;
+    const volume     = Number(c.lz_volume   ?? 500);   // litres
+    const lossRatio  = Number(c.lz_heat_loss ?? 30) / 100; // % → fraction
+    const efficiency = 1 - lossRatio;                  // ex. 0.70
+
+    // Puissance effective : config > sensor temps réel > défaut 1942 W
+    let powerW = Number(c.lz_power_w ?? 0);
+    if (!powerW && this._exists(c.main_cons_entity)) {
+      const unit = this._attr(c.main_cons_entity, 'unit_of_measurement') ?? '';
+      const raw  = parseFloat(this._state(c.main_cons_entity));
+      // Convertir kW → W si besoin
+      powerW = unit.toLowerCase().includes('kw') ? raw * 1000 : raw;
+    }
+    if (!powerW || isNaN(powerW)) powerW = 1942;
+
+    // Températures
+    const curTemp = parseFloat(this._waterTemp() ?? NaN);
+    const tgtTemp = parseFloat(this._targetTemp() ?? NaN);
+    if (isNaN(curTemp) || isNaN(tgtTemp)) return null;
+
+    const deltaT = tgtTemp - curTemp;
+    if (deltaT <= 0.5) return 0; // déjà à température
+
+    // Q (Wh) = volume × 1.163 Wh/L/°C × ΔT
+    const whNeeded      = volume * 1.163 * deltaT;
+    const effectivePower = powerW * efficiency;
+    const timeH          = whNeeded / effectivePower;
+
+    return { timeH, deltaT, curTemp, tgtTemp, powerW, efficiency };
+  }
+
   // ─── Bandeau statut LayZSpa (prêt / en chauffe / déconnecté) ───
   _renderLayzspaStatus() {
     const c = this.config;
@@ -400,22 +439,40 @@ class SpaCard extends LitElement {
     const connected = !this._exists(c.entity_lz_conn) || this._state(c.entity_lz_conn) === 'on';
     const ready     = this._state(c.entity_lz_ready) === 'on';
     const heating   = this._state(c.entity_lz_heater) === 'on';
-    const ttr       = this._exists(c.entity_lz_ttr)
-      ? parseFloat(this._state(c.entity_lz_ttr)) : null;
 
-    // État prioritaire
-    let icon, label, cls;
+    // ── Calcul du temps réel basé sur physique ──
+    const calc = this._calcHeatingTime();
+
+    let icon, label, cls, timeStr = '';
     if (!connected) {
-      icon='mdi:wifi-off';      label='Déconnecté';     cls='lz-disconnected';
-    } else if (ready) {
-      icon='mdi:hot-tub';       label='Prêt !';          cls='lz-ready';
+      icon='mdi:wifi-off';    label='Déconnecté';  cls='lz-disconnected';
+    } else if (ready || (calc !== null && calc === 0)) {
+      icon='mdi:hot-tub';     label='Prêt !';       cls='lz-ready';
     } else if (heating) {
-      const hStr = ttr !== null
-        ? `En chauffe — ${ttr<1?(Math.round(ttr*60)+' min'):(ttr.toFixed(1)+' h')} restantes`
-        : 'En chauffe…';
-      icon='mdi:radiator';      label=hStr;              cls='lz-heating';
+      if (calc !== null && calc !== 0) {
+        const h   = Math.floor(calc.timeH);
+        const min = Math.round((calc.timeH - h) * 60);
+        timeStr   = h > 0
+          ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''}  restantes`
+          : `${min} min restantes`;
+        label = `En chauffe — ${timeStr}`;
+      } else {
+        label = 'En chauffe…';
+      }
+      icon='mdi:radiator'; cls='lz-heating';
     } else {
-      icon='mdi:power-sleep';   label='En veille';        cls='lz-standby';
+      // En veille mais on indique quand même le temps nécessaire
+      if (calc !== null && calc !== 0) {
+        const h   = Math.floor(calc.timeH);
+        const min = Math.round((calc.timeH - h) * 60);
+        timeStr   = h > 0
+          ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''} pour ${calc.tgtTemp}°`
+          : `${min} min pour ${calc.tgtTemp}°`;
+        label = `En veille — ${timeStr}`;
+      } else {
+        label = 'En veille';
+      }
+      icon='mdi:power-sleep'; cls='lz-standby';
     }
 
     // Signal WiFi
@@ -878,7 +935,7 @@ customElements.define('spa-card', SpaCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:        'spa-card',
-  name:        'Spa Master V33.1 — LayZSpa',
+  name:        'Spa Master V33.2 — LayZSpa',
   description: 'Supervision spa — températures, statut LayZSpa, chimie, maintenance, caméra, équipements.',
   preview:     true
 });
