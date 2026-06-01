@@ -18,23 +18,26 @@ class SpaCard extends HTMLElement {
   }
 
   // 3. Méthode de rendu
-  render() {
-    this.innerHTML = `
-      <ha-card header="Spa Control">
-        <div style="padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <button class="btn">Spa</button>
-          <button class="btn">Chimies</button>
-          <button class="btn">Interrupteurs</button>
-          <button class="btn">Programmation</button>
-        </div>
-      </ha-card>
-      <style>
-        .btn { padding: 20px; cursor: pointer; border: 1px solid #ccc; border-radius: 8px; background: #f0f0f0; font-weight: bold; }
-        .btn:hover { background: #e0e0e0; }
-      </style>
-    `;
-    this.content = true;
-  }
+render() {
+  return html`
+    <ha-card .header="${this.config.card_title}">
+      ${this._tab === "home" ? this._renderHome() : ""}
+      
+      ${this._tab === "cam" ? this._renderCam() : ""}
+      
+      ${this._tab === "chem" ? this._renderChem() : ""}
+      
+      ${this._tab === "switches" ? this._renderSwitches() : ""}
+
+      <div class="nav-bar">
+        <ha-icon-button icon="mdi:home" @click=${() => this._tab = "home"}></ha-icon-button>
+        <ha-icon-button icon="mdi:camera" @click=${() => this._tab = "cam"}></ha-icon-button>
+        <ha-icon-button icon="mdi:water-check" @click=${() => this._tab = "chem"}></ha-icon-button>
+        <ha-icon-button icon="mdi:cog" @click=${() => this._tab = "switches"}></ha-icon-button>
+      </div>
+    </ha-card>
+  `;
+}
 
   // 4. Important : Permet d'appeler l'éditeur visuel (spa-editor)
   static getConfigElement() {
