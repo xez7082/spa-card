@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Premium Spa monitoring card for Home Assistant",
   "main": "spa-card.js",
+  "type": "module",
   "keywords": [
     "home-assistant",
     "lovelace",
@@ -14,14 +15,15 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/xez7082/spa-card"
+    "url": "git+https://github.com/xez7082/spa-card.git"
   },
   "bugs": {
     "url": "https://github.com/xez7082/spa-card/issues"
   },
-  "homepage": "https://github.com/xez7082/spa-card",
+  "homepage": "https://github.com/xez7082/spa-card#readme",
   "files": [
     "spa-card.js",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ]
 }
