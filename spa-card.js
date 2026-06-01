@@ -5,7 +5,7 @@ import {
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 // ═══════════════════════════════════════════════════════════════════
-//  ÉDITEUR  —  V33  (LayZSpa intégré - Style Pool Monitor Brome)
+//  ÉDITEUR  —  V33  (LayZSpa intégré)
 // ═══════════════════════════════════════════════════════════════════
 class SpaCardEditor extends LitElement {
 
@@ -57,7 +57,7 @@ class SpaCardEditor extends LitElement {
       ${this._acc('a-disp','background:rgba(107,142,255,.18);color:#6b8eff;','GEN','Apparence générale',[
         { name:'card_title',       label:'Titre du spa',                selector:{ text:{} } },
         { name:'background_image', label:'Image de fond (URL)',          selector:{ text:{} } },
-        { name:'card_height',      label:'Hauteur totale (ex : 580px)', selector:{ text:{} } },
+        { name:'card_height',      label:'Hauteur totale (max 550px)',  selector:{ text:{} } },
         { name:'blur_amount',      label:'Intensité du flou (0–25 px)', selector:{ number:{ mode:'slider', min:0, max:25 } } }
       ])}`;
   }
@@ -79,15 +79,15 @@ class SpaCardEditor extends LitElement {
         { name:'entity_lz_conn',      label:'Connexion WiFi (binary_sensor…connection)',selector:{ entity:{ domain:'binary_sensor' } } },
         { name:'entity_lz_filter',    label:'Âge filtre — jours (sensor…filter_age)',   selector:{ entity:{ domain:'sensor' } } },
         { name:'lz_filter_max',       label:'Alerter filtre après (jours)',             selector:{ number:{ mode:'box', min:1, max:365 } } },
-        { name:'entity_lz_chlorine',  label:'Âge brome — jours (sensor…chlorine_age)', selector:{ entity:{ domain:'sensor' } } },
-        { name:'lz_chlorine_max',     label:'Alerter brome après (jours)',             selector:{ number:{ mode:'box', min:1, max:365 } } },
+        { name:'entity_lz_chlorine',  label:'Âge chlore — jours (sensor…chlorine_age)',selector:{ entity:{ domain:'sensor' } } },
+        { name:'lz_chlorine_max',     label:'Alerter chlore après (jours)',             selector:{ number:{ mode:'box', min:1, max:365 } } },
         { name:'entity_lz_energy',    label:'Énergie totale kWh (sensor…energy)',       selector:{ entity:{ domain:'sensor' } } },
         { name:'entity_lz_rssi',      label:'Signal WiFi RSSI (sensor…rssi)',           selector:{ entity:{ domain:'sensor' } } },
         { name:'lz_volume',           label:'Volume eau (litres, défaut 500)',           selector:{ number:{ mode:'box', min:100, max:5000 } } },
         { name:'lz_power_w',          label:'Puissance chauffe (W, défaut 1942)',        selector:{ number:{ mode:'box', min:500, max:5000 } } },
         { name:'lz_heat_loss',        label:'Pertes thermiques (%, défaut 30)',          selector:{ number:{ mode:'slider', min:0, max:60 } } },
         { name:'entity_lz_reset_filter',  label:'Bouton reset filtre (button.layzspa_reset_filter_change_timer)',  selector:{ entity:{ domain:'button' } } },
-        { name:'entity_lz_reset_chlore',  label:'Bouton reset brome (button.layzspa_reset_chlorine_timer)',       selector:{ entity:{ domain:'button' } } },
+        { name:'entity_lz_reset_chlore',  label:'Bouton reset chlore (button.layzspa_reset_chlorine_timer)',       selector:{ entity:{ domain:'button' } } },
         { name:'entity_lz_schedule',      label:'Programmation — helper heure (input_datetime.spa_ready_at)',    selector:{ entity:{ domain:'input_datetime' } } }
       ])}
       ${this._acc('a-hum','background:rgba(52,211,153,.15);color:#10b981;','~','Humidité & Énergie',[
@@ -104,25 +104,25 @@ class SpaCardEditor extends LitElement {
 
   _renderChem() {
     return html`
-      ${this._acc('a-ph',  'background:rgba(167,139,250,.15);color:#8b5cf6;','pH', 'Suivi du pH',[
-        { name:'entity_ph', label:'Entité pH (Idéal : 7.2 - 7.6)',  selector:{ entity:{ domain:'sensor' } } },
+      ${this._acc('a-ph',  'background:rgba(167,139,250,.15);color:#8b5cf6;','pH', 'pH',[
+        { name:'entity_ph', label:'Entité pH',  selector:{ entity:{ domain:'sensor' } } },
         { name:'ph_min',    label:'pH Minimum', selector:{ number:{ step:0.1, mode:'box' } } },
         { name:'ph_max',    label:'pH Maximum', selector:{ number:{ step:0.1, mode:'box' } } }
       ])}
-      ${this._acc('a-brome', 'background:rgba(239,68,68,.15);color:#ef4444;','Br','Brome Total (ppm)',[
-        { name:'entity_brome', label:'Entité Brome (Idéal : 3.0 - 5.0)', selector:{ entity:{ domain:'sensor' } } },
-        { name:'brome_min',    label:'Brome Minimum', selector:{ number:{ step:0.1, mode:'box' } } },
-        { name:'brome_max',    label:'Brome Maximum', selector:{ number:{ step:0.1, mode:'box' } } }
-      ])}
-      ${this._acc('a-orp', 'background:rgba(245,158,11,.15);color:#f59e0b;','ORP','Pouvoir Désinfectant / Choc (ORP mV)',[
-        { name:'entity_orp', label:'Entité ORP (Idéal : 650 - 750)',  selector:{ entity:{ domain:'sensor' } } },
+      ${this._acc('a-orp', 'background:rgba(167,139,250,.15);color:#8b5cf6;','ORP','ORP (mV)',[
+        { name:'entity_orp', label:'Entité ORP',  selector:{ entity:{ domain:'sensor' } } },
         { name:'orp_min',    label:'ORP Minimum', selector:{ number:{ mode:'box' } } },
         { name:'orp_max',    label:'ORP Maximum', selector:{ number:{ mode:'box' } } }
       ])}
-      ${this._acc('a-tac','background:rgba(16,185,129,.15);color:#10b981;','TAC','Alcalinité / Stabilisant (ppm)',[
-        { name:'entity_tds', label:'Entité TAC / Solides Dissous',  selector:{ entity:{ domain:'sensor' } } },
-        { name:'tds_min',    label:'TAC Minimum', selector:{ number:{ mode:'box' } } },
-        { name:'tds_max',    label:'TAC Maximum', selector:{ number:{ mode:'box' } } }
+      ${this._acc('a-tds', 'background:rgba(167,139,250,.15);color:#8b5cf6;','TDS','TDS (ppm)',[
+        { name:'entity_tds', label:'Entité TDS',  selector:{ entity:{ domain:'sensor' } } },
+        { name:'tds_min',    label:'TDS Minimum', selector:{ number:{ mode:'box' } } },
+        { name:'tds_max',    label:'TDS Maximum', selector:{ number:{ mode:'box' } } }
+      ])}
+      ${this._acc('a-salt','background:rgba(167,139,250,.15);color:#8b5cf6;','SEL','Sel (ppm)',[
+        { name:'entity_salt', label:'Entité sel',  selector:{ entity:{ domain:'sensor' } } },
+        { name:'salt_min',    label:'Sel Minimum', selector:{ number:{ mode:'box' } } },
+        { name:'salt_max',    label:'Sel Maximum', selector:{ number:{ mode:'box' } } }
       ])}`;
   }
 
@@ -130,8 +130,8 @@ class SpaCardEditor extends LitElement {
     return html`
       ${this._acc('a-cdim','background:rgba(56,189,248,.15);color:#0ea5e9;','CAM','Caméra & dimensions',[
         { name:'entity_camera', label:'Entité caméra',         selector:{ entity:{ domain:'camera' } } },
-        { name:'cam_w_px',      label:'Largeur caméra (px) — vide = 50% auto', selector:{ number:{ mode:'box', min:40, max:800 } } },
-        { name:'cam_h_px',      label:'Hauteur caméra (px) — vide = hauteur auto', selector:{ number:{ mode:'box', min:40, max:800 } } },
+        { name:'cam_w_px',      label:'Largeur caméra (px)', selector:{ number:{ mode:'box', min:40, max:800 } } },
+        { name:'cam_h_px',      label:'Hauteur caméra (px)', selector:{ number:{ mode:'box', min:40, max:800 } } },
         { name:'cam_radius',    label:'Arrondi des coins (px)', selector:{ number:{ mode:'slider', min:0, max:50 } } }
       ])}
       ${this._acc('a-cpos','background:rgba(56,189,248,.15);color:#0ea5e9;','XY','Position',[
@@ -188,8 +188,7 @@ class SpaCardEditor extends LitElement {
     .tab {
       flex:1; display:flex; flex-direction:column; align-items:center;
       gap:4px; padding:5px 2px 7px; cursor:pointer;
-      border:none;
-      background:transparent; border-radius:9px; transition:background .18s;
+      border:none; background:transparent; border-radius:9px; transition:background .18s;
       font-family:var(--paper-font-body1_-_font-family,sans-serif);
     }
     .tab:hover { background:rgba(0,0,0,.04); }
@@ -210,13 +209,11 @@ class SpaCardEditor extends LitElement {
     .ach {
       display:flex; align-items:center; gap:10px; padding:11px 13px;
       cursor:pointer; background:var(--secondary-background-color,rgba(0,0,0,.03));
-      transition:background .15s;
-      user-select:none;
+      transition:background .15s; user-select:none;
     }
     .ach:hover { background:rgba(0,0,0,.06); }
     .aibox {
-      width:32px;
-      height:32px; border-radius:9px;
+      width:32px; height:32px; border-radius:9px;
       display:flex; align-items:center; justify-content:center;
       font-size:11px; font-weight:700; flex-shrink:0; letter-spacing:-.3px;
     }
@@ -233,7 +230,7 @@ customElements.define('spa-card-editor', SpaCardEditor);
 
 
 // ═══════════════════════════════════════════════════════════════════
-//  CARTE  —  V33  (LayZSpa intégré - Style Pool Monitor Brome)
+//  CARTE  —  V33  (LayZSpa intégré)
 // ═══════════════════════════════════════════════════════════════════
 class SpaCard extends LitElement {
 
@@ -241,7 +238,7 @@ class SpaCard extends LitElement {
 
   static getStubConfig() {
     return {
-      card_title:'MY LAYZSPA', blur_amount:15, card_height:'640px',
+      card_title:'MY LAYZSPA', blur_amount:15, card_height:'550px',
       entity_water_temp:  'sensor.layzspa_temp_c',
       entity_target_temp: 'climate.layzspa_temperature_control',
       target_temp_min: 20, target_temp_max: 40,
@@ -250,34 +247,23 @@ class SpaCard extends LitElement {
       entity_lz_ttr:     'sensor.layzspa_time_to_ready',
       entity_lz_conn:    'binary_sensor.layzspa_connection',
       entity_lz_filter:  'sensor.layzspa_filter_age',
-      lz_volume:      500,
-      lz_power_w:     1942,
-      lz_heat_loss:   30,
+      lz_volume:      500, lz_power_w: 1942, lz_heat_loss: 30,
       entity_lz_reset_filter: 'button.layzspa_reset_filter_change_timer',
       entity_lz_schedule:     'input_datetime.spa_ready_at',
       entity_lz_reset_chlore: 'button.layzspa_reset_chlorine_timer',
-      lz_filter_max:     60,
-      entity_lz_chlorine:'sensor.layzspa_chlorine_age',
-      lz_chlorine_max:   14,
-      entity_lz_energy:  'sensor.layzspa_energy',
-      entity_lz_rssi:    'sensor.layzspa_rssi',
+      lz_filter_max:     60, entity_lz_chlorine:'sensor.layzspa_chlorine_age', lz_chlorine_max: 14,
+      entity_lz_energy:  'sensor.layzspa_energy', entity_lz_rssi: 'sensor.layzspa_rssi',
       main_cons_entity:  'sensor.layzspa_power',
       entity_water_leak: 'binary_sensor.innondation_spa_water_leak',
       entity_tamper:     'binary_sensor.innondation_spa_tamper',
       entity_flood_bat:  'sensor.innondation_spa_battery',
-      
-      // Configuration par défaut Chimie / Brome
-      ph_min: 7.2, ph_max: 7.6,
-      brome_min: 3.0, brome_max: 5.0,
-      orp_min: 650, orp_max: 750,
-      tds_min: 80, tds_max: 150, // Servira de TAC ici
-      
+      ph_min:7.2, ph_max:7.6, orp_min:650, orp_max:800, tds_min:500, tds_max:1500, salt_min:2500, salt_max:3500,
       switch_1:'switch.layzspa_pump',           name_switch_1:'Pompe',
       switch_2:'switch.layzspa_jets',           name_switch_2:'Jets',
       switch_3:'switch.layzspa_airbubbles',     name_switch_3:'Bulles',
-      switch_4:'switch.layzspa_heat_regulation', name_switch_4:'Chauffe',
-      switch_5:'switch.layzspa_power_switch',   name_switch_5:'Alimentation',
-      switch_6:'switch.layzspa_lock',           name_switch_6:'Verrouillage'
+      switch_4:'switch.layzspa_heat_regulation',name_switch_4:'Chauffe',
+      switch_5:'switch.layzspa_power_switch',   name_switch_5:'Alim',
+      switch_6:'switch.layzspa_lock',           name_switch_6:'Verrou'
     };
   }
 
@@ -287,7 +273,7 @@ class SpaCard extends LitElement {
 
   constructor() { super(); this._tab = 'home'; this._camExpanded = false; }
   setConfig(config) { this.config = config; }
-  getCardSize() { return Math.ceil((parseInt(this.config?.card_height)||640)/50); }
+  getCardSize() { return Math.ceil((parseInt(this.config?.card_height)||550)/50); }
 
   _exists(id) {
     if (!id || !this.hass?.states[id]) return false;
@@ -338,9 +324,29 @@ class SpaCard extends LitElement {
     return this._state(id);
   }
 
-  // ═══════════════════════════════════════════════
-  //  ACCUEIL
-  // ═══════════════════════════════════════════════
+  _calcHeatingTime() {
+    const c = this.config;
+    const volume = Number(c.lz_volume ?? 500);
+    const lossRatio = Number(c.lz_heat_loss ?? 30) / 100;
+    const efficiency = 1 - lossRatio;
+    let powerW = Number(c.lz_power_w ?? 0);
+    if (!powerW && this._exists(c.main_cons_entity)) {
+      const unit = this._attr(c.main_cons_entity, 'unit_of_measurement') ?? '';
+      const raw = parseFloat(this._state(c.main_cons_entity));
+      powerW = unit.toLowerCase().includes('kw') ? raw * 1000 : raw;
+    }
+    if (!powerW || isNaN(powerW)) powerW = 1942;
+    const curTemp = parseFloat(this._waterTemp() ?? NaN);
+    const tgtTemp = parseFloat(this._targetTemp() ?? NaN);
+    if (isNaN(curTemp) || isNaN(tgtTemp)) return null;
+    const deltaT = tgtTemp - curTemp;
+    if (deltaT <= 0.5) return 0;
+    const whNeeded = volume * 1.163 * deltaT;
+    const effectivePower = powerW * efficiency;
+    const timeH = whNeeded / effectivePower;
+    return { timeH, deltaT, curTemp, tgtTemp, powerW, efficiency };
+  }
+
   _renderHome() {
     const c = this.config;
     const wTemp  = this._waterTemp();
@@ -349,7 +355,6 @@ class SpaCard extends LitElement {
       <div class="home-view">
         ${this._renderHeatingControl()}
         ${this._renderLayzspaStatus()}
-
         <div class="flex-row-center">
           <div class="side-col">
             ${this._exists(c.entity_ext_temp) ? html`
@@ -360,28 +365,23 @@ class SpaCard extends LitElement {
             ${this._exists(c.entity_ext_hum) ? html`
               <div class="hum-pill">${this._state(c.entity_ext_hum)}% HR</div>` : ''}
           </div>
-
           <div class="gauge-container">
             ${this._exists(c.entity_target_temp) ? html`
-              <div class="temp-btn" role="button" aria-label="Augmenter" @click=${()=>this._changeTemp(0.5)}>
+              <div class="temp-btn" role="button" @click=${()=>this._changeTemp(0.5)}>
                 <ha-icon icon="mdi:chevron-up"></ha-icon>
               </div>` : ''}
             <div class="center-gauge">
               <div class="outer-ring"></div>
               <div class="inner-circle">
-                ${wTemp ? html`
-                  <span class="water-label">EAU</span>
-                  <span class="water-val">${wTemp}°</span>` : ''}
-                ${tTemp ? html`
-                  <div class="target-box">CIBLE ${tTemp}°</div>` : ''}
+                ${wTemp ? html`<span class="water-label">EAU</span><span class="water-val">${wTemp}°</span>` : ''}
+                ${tTemp ? html`<div class="target-box">CIBLE ${tTemp}°</div>` : ''}
               </div>
             </div>
             ${this._exists(c.entity_target_temp) ? html`
-              <div class="temp-btn" role="button" aria-label="Diminuer" @click=${()=>this._changeTemp(-0.5)}>
+              <div class="temp-btn" role="button" @click=${()=>this._changeTemp(-0.5)}>
                 <ha-icon icon="mdi:chevron-down"></ha-icon>
               </div>` : ''}
           </div>
-
           <div class="side-col">
             ${this._exists(c.entity_spa_air_temp) ? html`
               <div class="side-info">
@@ -392,171 +392,68 @@ class SpaCard extends LitElement {
               <div class="hum-pill">${this._state(c.entity_spa_hum)}% HR</div>` : ''}
           </div>
         </div>
-
         ${this._renderFooterRow()}
         ${this._renderMaintenance()}
         ${this._renderFlood()}
       </div>`;
   }
 
-  _renderSchedule() {
-    const c = this.config;
-    const schedId = c.entity_lz_schedule;
-    if (!schedId || !this.hass?.states[schedId]) return html``;
-
-    const raw    = this.hass.states[schedId].state;
-    const parts  = raw.split(':');
-    const h      = parseInt(parts[0] ?? 0);
-    const m      = parseInt(parts[1] ?? 0);
-    const calc   = this._calcHeatingTime();
-    let startStr = '';
-    let readyStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-    if (calc && calc !== 0) {
-      const nowD    = new Date();
-      const readyD  = new Date(nowD);
-      readyD.setHours(h, m, 0, 0);
-      if (readyD < nowD) readyD.setDate(readyD.getDate() + 1);
-      const startD  = new Date(readyD.getTime() - calc.timeH * 3600000);
-      startStr = `${String(startD.getHours()).padStart(2,'0')}:${String(startD.getMinutes()).padStart(2,'0')}`;
-    }
-
-    const changeTime = (dh, dm) => {
-      let nh = h + dh;
-      let nm = m + dm;
-      if (nm >= 60) { nm -= 60; nh += 1; }
-      if (nm < 0)   { nm += 60; nh -= 1; }
-      nh = ((nh % 24) + 24) % 24;
-      const timeStr = `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}:00`;
-      this.hass.callService('input_datetime', 'set_datetime', { entity_id: schedId, time: timeStr });
-    };
-
-    const activate = () => {
-      this.hass.callService('persistent_notification', 'create', {
-        title: '🛁 Spa programmé',
-        message: `Prêt à ${readyStr} — chauffe démarrera à ${startStr || '…'}`,
-        notification_id: 'spa_schedule'
-      });
-    };
-
-    return html`
-      <div class="sched-bar">
-        <ha-icon class="sched-icon" icon="mdi:clock-outline"></ha-icon>
-        <div class="sched-col">
-          <div class="sched-title">Prêt à</div>
-          ${startStr ? html`<div class="sched-start">Démarrage à ${startStr}</div>` : ''}
-        </div>
-        <div class="sched-time-ctrl">
-          <div class="sched-btn" @click=${()=>changeTime(-1,0)}>◂ h</div>
-          <div class="sched-btn" @click=${()=>changeTime(0,-15)}>◂ 15'</div>
-          <div class="sched-val">${readyStr}</div>
-          <div class="sched-btn" @click=${()=>changeTime(0,15)}>15' ▸</div>
-          <div class="sched-btn" @click=${()=>changeTime(1,0)}>h ▸</div>
-        </div>
-        <button class="sched-set-btn" @click=${activate} title="Confirmer la programmation">✓</button>
-      </div>`;
-  }
-
   _renderHeatingControl() {
-    const c   = this.config;
-    const id  = c.entity_target_temp;
-    if (!id || !id.startsWith('climate.')) return html``;
-    if (!this.hass?.states[id]) return html``;
-    const hvac    = this.hass.states[id].state;
-    const isOn    = hvac === 'heat';
+    const id = this.config.entity_target_temp;
+    if (!id || !id.startsWith('climate.') || !this.hass?.states[id]) return html``;
+    const hvac = this.hass.states[id].state;
+    const isOn = hvac === 'heat';
     const curTemp = parseFloat(this._waterTemp() ?? 0);
     const tgtTemp = parseFloat(this._targetTemp() ?? 34);
     const atTemp  = curTemp >= tgtTemp - 0.5;
-
-    const toggle = () => {
-      this.hass.callService('climate', 'set_hvac_mode', {
-        entity_id: id,
-        hvac_mode: isOn ? 'off' : 'heat'
-      });
-    };
-
     return html`
       <div class="heat-ctrl">
-        <button class="heat-btn ${isOn ? 'heat-on' : 'heat-off'}" @click=${toggle}>
+        <button class="heat-btn ${isOn ? 'heat-on' : 'heat-off'}" @click=${() => this.hass.callService('climate', 'set_hvac_mode', { entity_id: id, hvac_mode: isOn ? 'off' : 'heat' })}>
           <ha-icon icon="${isOn ? 'mdi:radiator' : 'mdi:radiator-off'}"></ha-icon>
           <span>${isOn ? (atTemp ? 'Maintien' : 'Chauffe ON') : 'Chauffe OFF'}</span>
         </button>
         <div class="heat-temps">
-          <div class="heat-t-btn" @click=${()=>this._changeTemp(-1)}>
-            <ha-icon icon="mdi:minus"></ha-icon>
-          </div>
+          <div class="heat-t-btn" @click=${()=>this._changeTemp(-1)}><ha-icon icon="mdi:minus"></ha-icon></div>
           <div class="heat-target">${tgtTemp}°</div>
-          <div class="heat-t-btn" @click=${()=>this._changeTemp(1)}>
-            <ha-icon icon="mdi:plus"></ha-icon>
-          </div>
+          <div class="heat-t-btn" @click=${()=>this._changeTemp(1)}><ha-icon icon="mdi:plus"></ha-icon></div>
         </div>
       </div>`;
   }
 
-  _calcHeatingTime() {
-    const c = this.config;
-    const volume     = Number(c.lz_volume   ?? 500);
-    const lossRatio  = Number(c.lz_heat_loss ?? 30) / 100;
-    const efficiency = 1 - lossRatio;
-
-    let powerW = Number(c.lz_power_w ?? 0);
-    if (!powerW && this._exists(c.main_cons_entity)) {
-      const unit = this._attr(c.main_cons_entity, 'unit_of_measurement') ?? '';
-      const raw  = parseFloat(this._state(c.main_cons_entity));
-      powerW = unit.toLowerCase().includes('kw') ? raw * 1000 : raw;
-    }
-    if (!powerW || isNaN(powerW)) powerW = 1942;
-    const curTemp = parseFloat(this._waterTemp() ?? NaN);
-    const tgtTemp = parseFloat(this._targetTemp() ?? NaN);
-    if (isNaN(curTemp) || isNaN(tgtTemp)) return null;
-
-    const deltaT = tgtTemp - curTemp;
-    if (deltaT <= 0.5) return 0;
-
-    const whNeeded      = volume * 1.163 * deltaT;
-    const effectivePower = powerW * efficiency;
-    const timeH          = whNeeded / effectivePower;
-    return { timeH, deltaT, curTemp, tgtTemp, powerW, efficiency };
-  }
-
   _renderLayzspaStatus() {
     const c = this.config;
-    const hasStatus = this._exists(c.entity_lz_ready) || this._exists(c.entity_lz_conn);
-    if (!hasStatus) return html``;
-
+    if (!this._exists(c.entity_lz_ready) && !this._exists(c.entity_lz_conn)) return html``;
     const connected = !this._exists(c.entity_lz_conn) || this._state(c.entity_lz_conn) === 'on';
     const ready     = this._state(c.entity_lz_ready) === 'on';
     const heating   = this._state(c.entity_lz_heater) === 'on';
     const calc = this._calcHeatingTime();
     let icon, label, cls, timeStr = '';
     if (!connected) {
-      icon='mdi:wifi-off';    label='Déconnecté';  cls='lz-disconnected';
+      icon='mdi:wifi-off'; label='Déconnecté'; cls='lz-disconnected';
     } else if (ready || (calc !== null && calc === 0)) {
-      icon='mdi:hot-tub'; label='Prêt !';       cls='lz-ready';
+      icon='mdi:hot-tub'; label='Prêt !'; cls='lz-ready';
     } else if (heating) {
       if (calc !== null && calc !== 0) {
-        const h   = Math.floor(calc.timeH);
-        const min = Math.round((calc.timeH - h) * 60);
-        timeStr   = h > 0 ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''} restantes` : `${min} min restantes`;
-        label = `En chauffe — ${timeStr}`;
+        const h = Math.floor(calc.timeH), min = Math.round((calc.timeH - h) * 60);
+        timeStr = h > 0 ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''} rest.` : `${min} min rest.`;
+        label = `Chauffe — ${timeStr}`;
       } else { label = 'En chauffe…'; }
       icon='mdi:radiator'; cls='lz-heating';
     } else {
       if (calc !== null && calc !== 0) {
-        const h   = Math.floor(calc.timeH);
-        const min = Math.round((calc.timeH - h) * 60);
-        timeStr   = h > 0 ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''} pour ${calc.tgtTemp}°` : `${min} min pour ${calc.tgtTemp}°`;
-        label = `En veille — ${timeStr}`;
+        const h = Math.floor(calc.timeH), min = Math.round((calc.timeH - h) * 60);
+        timeStr = h > 0 ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''} pour ${calc.tgtTemp}°` : `${min} min pour ${calc.tgtTemp}°`;
+        label = `Veille — ${timeStr}`;
       } else { label = 'En veille'; }
       icon='mdi:power-sleep'; cls='lz-standby';
     }
-
     const rssi = this._exists(c.entity_lz_rssi) ? parseInt(this._state(c.entity_lz_rssi)) : null;
     const rssiIcon = rssi===null ? '' : rssi>=-60 ? 'mdi:wifi-strength-4' : rssi>=-70 ? 'mdi:wifi-strength-3' : rssi>=-80 ? 'mdi:wifi-strength-2' : 'mdi:wifi-strength-1';
     return html`
       <div class="lz-status ${cls}">
         <ha-icon class="lz-icon" icon="${icon}"></ha-icon>
         <span class="lz-label">${label}</span>
-        ${rssiIcon ? html`<ha-icon class="lz-wifi" icon="${rssiIcon}" title="${rssi} dBm"></ha-icon>` : ''}
+        ${rssiIcon ? html`<ha-icon class="lz-wifi" icon="${rssiIcon}"></ha-icon>` : ''}
       </div>`;
   }
 
@@ -567,16 +464,8 @@ class SpaCard extends LitElement {
     if (!hasCons && !hasEnergy) return html``;
     return html`
       <div class="footer-row">
-        ${hasCons ? html`
-          <div class="footer-pill">
-            <ha-icon icon="mdi:lightning-bolt" class="anim-pulse"></ha-icon>
-            <span>${this._state(c.main_cons_entity)} ${this._attr(c.main_cons_entity,'unit_of_measurement')??''}</span>
-          </div>` : ''}
-        ${hasEnergy ? html`
-          <div class="footer-pill">
-            <ha-icon icon="mdi:flash"></ha-icon>
-            <span>${parseFloat(this._state(c.entity_lz_energy)).toFixed(2)} kWh</span>
-          </div>` : ''}
+        ${hasCons ? html`<div class="footer-pill"><ha-icon icon="mdi:lightning-bolt" class="anim-pulse"></ha-icon><span>${this._state(c.main_cons_entity)} ${this._attr(c.main_cons_entity,'unit_of_measurement')??''}</span></div>` : ''}
+        ${hasEnergy ? html`<div class="footer-pill"><ha-icon icon="mdi:flash"></ha-icon><span>${parseFloat(this._state(c.entity_lz_energy)).toFixed(1)} kWh</span></div>` : ''}
       </div>`;
   }
 
@@ -584,391 +473,263 @@ class SpaCard extends LitElement {
     const c = this.config;
     const filterAge = this._exists(c.entity_lz_filter) ? parseFloat(this._state(c.entity_lz_filter)) : null;
     const chloreAge = this._exists(c.entity_lz_chlorine) ? parseFloat(this._state(c.entity_lz_chlorine)) : null;
-    const filterMax = Number(c.lz_filter_max ?? 60);
-    const chloreMax = Number(c.lz_chlorine_max ?? 14);
-    const hasResetF = !!c.entity_lz_reset_filter;
-    const hasResetC = !!c.entity_lz_reset_chlore;
     if (filterAge === null && chloreAge === null) return html``;
-    const filterWarn = filterAge !== null && filterAge > filterMax;
-    const chloreWarn = chloreAge !== null && chloreAge > chloreMax;
-    const filterPct = filterAge !== null ? Math.min(100, filterAge / filterMax * 100) : 0;
-    const chlorePct = chloreAge !== null ? Math.min(100, chloreAge / chloreMax * 100) : 0;
-    const pressReset = (entityId) => { this.hass.callService('button', 'press', { entity_id: entityId }); };
     return html`
       <div class="maint-row">
-        ${filterAge !== null ? html`
-          <div class="maint-item ${filterWarn ? 'maint-warn' : ''}">
-            <div class="maint-head">
-              <ha-icon icon="mdi:air-filter"></ha-icon>
-              <span>Filtre</span>
-              ${filterWarn ? html`<span class="maint-badge">À changer</span>` : ''}
-              ${hasResetF ? html`<button class="maint-reset-btn" @click=${() => pressReset(c.entity_lz_reset_filter)}>✓</button>` : ''}
-            </div>
-            <div class="maint-bar"><div class="maint-fill ${filterWarn?'maint-fill-warn':''}" style="width:${filterPct}%"></div></div>
-            <div class="maint-val">${Math.round(filterAge)} j / ${filterMax} j</div>
-          </div>` : ''}
-        ${chloreAge !== null ? html`
-          <div class="maint-item ${chloreWarn ? 'maint-warn' : ''}">
-            <div class="maint-head">
-              <ha-icon icon="mdi:flask-outline"></ha-icon>
-              <span>Brome</span>
-              ${chloreWarn ? html`<span class="maint-badge">À renouveler</span>` : ''}
-              ${hasResetC ? html`<button class="maint-reset-btn" @click=${() => pressReset(c.entity_lz_reset_chlore)}>✓</button>` : ''}
-            </div>
-            <div class="maint-bar"><div class="maint-fill ${chloreWarn?'maint-fill-warn':''}" style="width:${chlorePct}%"></div></div>
-            <div class="maint-val">${Math.round(chloreAge)} j / ${chloreMax} j</div>
-          </div>` : ''}
+        ${filterAge !== null ? html`<div class="maint-item"><div class="maint-head"><ha-icon icon="mdi:air-filter"></ha-icon><span>Filtre: ${Math.round(filterAge)}j</span></div></div>` : ''}
+        ${chloreAge !== null ? html`<div class="maint-item"><div class="maint-head"><ha-icon icon="mdi:flask-outline"></ha-icon><span>Chlore: ${Math.round(chloreAge)}j</span></div></div>` : ''}
       </div>`;
   }
 
   _renderFlood() {
     const c = this.config;
-    const hasAny = this._exists(c.entity_water_leak)||this._exists(c.entity_tamper)||this._exists(c.entity_flood_bat);
-    if (!hasAny) return html``;
+    if (!this._exists(c.entity_water_leak)) return html``;
     const leak = this._state(c.entity_water_leak) === 'on';
-    const tamper = this._state(c.entity_tamper) === 'on';
-    const bat = this._exists(c.entity_flood_bat) ? parseFloat(this._state(c.entity_flood_bat)) : null;
-    const alerting = leak || tamper;
-    const batLow = bat !== null && bat < 20;
-    const batIcon = bat===null ? 'mdi:battery-unknown' : bat>=90 ? 'mdi:battery' : bat>=70 ? 'mdi:battery-80' : bat>=50 ? 'mdi:battery-60' : bat>=30 ? 'mdi:battery-40' : bat>=15 ? 'mdi:battery-20' : 'mdi:battery-alert';
     return html`
-      <div class="flood-bar ${alerting?'flood-alert':'flood-ok'}">
-        <div class="flood-left">
-          <ha-icon icon="${leak?'mdi:water-alert':'mdi:water-check'}" class="flood-icon ${leak?'flood-icon-alert':''}"></ha-icon>
-          <span class="flood-label">${leak?'FUITE DÉTECTÉE !':'Pas de fuite'}</span>
-        </div>
-        <div class="flood-right">
-          ${this._exists(c.entity_tamper) ? html`<ha-icon icon="${tamper?'mdi:shield-alert':'mdi:shield-check'}" class="flood-pill ${tamper?'pill-warn':'pill-ok'}"></ha-icon>` : ''}
-          ${bat !== null ? html`<div class="flood-pill ${batLow?'pill-warn':'pill-ok'}"><ha-icon icon="${batIcon}"></ha-icon><span>${Math.round(bat)}%</span></div>` : ''}
-        </div>
+      <div class="flood-bar ${leak?'flood-alert':'flood-ok'}">
+        <ha-icon icon="${leak?'mdi:water-alert':'mdi:water-check'}"></ha-icon>
+        <span>${leak?'FUITE DÉTECTÉE !':'Pas de fuite'}</span>
       </div>`;
   }
 
-  // ═══════════════════════════════════════════════════════════════════
-  //  CHIMIE  —  STYLE POOL MONITOR SPECIFIQUE BROME (500 LITRES)
-  // ═══════════════════════════════════════════════════════════════════
+  // ─── CHIMIE OPTIMISÉE (CONCENTRÉE & COMPACTE) ───
   _renderChem() {
     const c = this.config;
+    const n = v => (v!==undefined&&v!==null&&v!=='') ? Number(v) : undefined;
+    const DISPLAY = { ph: {lo:6.5, hi:8.5, dec:1}, orp: {lo:200,hi:900, dec:0}, tds: {lo:0, hi:2000, dec:0}, salt: {lo:1000, hi:4500, dec:0} };
     
-    // Extraction sécurisée des états numériques
-    const getVal = (id) => (id && this._exists(id)) ? parseFloat(this._state(id)) : null;
-    
-    const phVal    = getVal(c.entity_ph);
-    const bromeVal = getVal(c.entity_brome);
-    const orpVal   = getVal(c.entity_orp);
-    const tacVal   = getVal(c.entity_tds); // On mappe le champ TDS de la config sur le TAC / Stabilisants
-
-    // Seuil et cibles idéales pour le Brome sur 500L
-    const phMin = Number(c.ph_min ?? 7.2), phMax = Number(c.ph_max ?? 7.6);
-    const brMin = Number(c.brome_min ?? 3.0), brMax = Number(c.brome_max ?? 5.0);
-    const orpMin = Number(c.orp_min ?? 650), orpMax = Number(c.orp_max ?? 750);
-    const tacMin = Number(c.tds_min ?? 80), tacMax = Number(c.tds_max ?? 150);
-
-    // Système d'évaluation des statuts (Pool Monitor Card)
-    const getStatus = (val, min, max) => {
-      if (val === null) return { lbl: 'Sans donnée', cls: 'neutral', icon: 'mdi:help-circle-outline' };
-      if (val < min) return { lbl: 'Trop Bas', cls: 'danger', icon: 'mdi:arrow-down-bold-circle' };
-      if (val > max) return { lbl: 'Trop Haut', cls: 'danger', icon: 'mdi:arrow-up-bold-circle' };
-      return { lbl: 'Idéal', cls: 'success', icon: 'mdi:check-circle' };
-    };
-
-    const phStat  = getStatus(phVal, phMin, phMax);
-    const brStat  = getStatus(bromeVal, brMin, brMax);
-    const orpStat = getStatus(orpVal, orpMin, orpMax);
-    const tacStat = getStatus(tacVal, tacMin, tacMax);
-
-    // Calcul de recommandation de Brome dynamique pour vos 500 litres !
-    // Règle : Augmenter de 1 ppm de brome dans 500 L nécessite ~0.75g de brome pur (ou suivre consignes brome choc / régénerateur)
-    let bromeRecommendation = null;
-    if (bromeVal !== null && bromeVal < brMin) {
-      const deltaBr = brMin - bromeVal;
-      const grammesRecommandes = Math.round(deltaBr * 0.75 * 10) / 10;
-      bromeRecommendation = `Dosage recommandé : Ajouter env. ${grammesRecommandes}g de brome régénérateur (choc) pour remonter le niveau à ${brMin} ppm.`;
-    } else if (bromeVal !== null && bromeVal > brMax) {
-      bromeRecommendation = `Alerte : Niveau de brome élevé. Retirez le flotteur diffuseur et aérez le spa (bulles ON).`;
-    } else if (phVal !== null && phVal > phMax) {
-      bromeRecommendation = `Conseil pH : Le brome adore un pH stable. Ajoutez du pH Moins pour redescendre vers 7.4.`;
-    }
+    const sensors = [
+      { key:'ph',   id:c.entity_ph,   name:'pH',   icon:'mdi:ph',        min:n(c.ph_min)||7.2,   max:n(c.ph_max)||7.6 },
+      { key:'orp',  id:c.entity_orp,  name:'ORP',  icon:'mdi:bolt',      min:n(c.orp_min)||650,  max:n(c.orp_max)||800 },
+      { key:'tds',  id:c.entity_tds,  name:'TDS',  icon:'mdi:opacity',   min:n(c.tds_min)||500,  max:n(c.tds_max)||1500 },
+      { key:'salt', id:c.entity_salt, name:'SEL',  icon:'mdi:shaker',    min:n(c.salt_min)||2500,max:n(c.salt_max)||3500 }
+    ];
 
     return html`
-      <div class="pool-monitor-grid">
-        
-        <div class="pm-card pm-${phStat.cls}">
-          <div class="pm-header">
-            <span class="pm-title"><ha-icon icon="mdi:ph"></ha-icon> pH de l'eau</span>
-            <span class="pm-badge">${phStat.lbl}</span>
-          </div>
-          <div class="pm-value-row">
-            <span class="pm-value">${phVal !== null ? phVal.toFixed(1) : '--'}</span>
-            <span class="pm-target">Cible: ${phMin}-${phMax}</span>
-          </div>
-          <div class="pm-progress-bar">
-            <div class="pm-progress-fill" style="width: ${phVal ? Math.min(100, Math.max(5, (phVal - 6) / 3 * 100)) : 0}%"></div>
-          </div>
-        </div>
+      <div class="chem-view">
+        ${sensors.map(s => {
+          if (!this._exists(s.id)) return '';
+          const val = Number(this._state(s.id));
+          const disp = DISPLAY[s.key];
+          const pct = Math.min(100, Math.max(0, ((val - disp.lo) / (disp.hi - disp.lo)) * 100));
+          const minPct = ((s.min - disp.lo) / (disp.hi - disp.lo)) * 100;
+          const maxPct = ((s.max - disp.lo) / (disp.hi - disp.lo)) * 100;
+          const isOk = val >= s.min && val <= s.max;
 
-        <div class="pm-card pm-${brStat.cls}">
-          <div class="pm-header">
-            <span class="pm-title"><ha-icon icon="mdi:test-tube"></ha-icon> Brome Total</span>
-            <span class="pm-badge">${brStat.lbl}</span>
-          </div>
-          <div class="pm-value-row">
-            <span class="pm-value">${bromeVal !== null ? bromeVal.toFixed(1) : '--'} <span class="pm-unit">ppm</span></span>
-            <span class="pm-target">Idéal: ${brMin}-${brMax} mg/l</span>
-          </div>
-          <div class="pm-progress-bar">
-            <div class="pm-progress-fill" style="width: ${bromeVal ? Math.min(100, (bromeVal / 8 * 100)) : 0}%"></div>
-          </div>
-        </div>
-
-        <div class="pm-card pm-${orpStat.cls}">
-          <div class="pm-header">
-            <span class="pm-title"><ha-icon icon="mdi:shield-check-outline"></ha-icon> Potentiel ORP</span>
-            <span class="pm-badge">${orpStat.lbl}</span>
-          </div>
-          <div class="pm-value-row">
-            <span class="pm-value">${orpVal !== null ? Math.round(orpVal) : '--'} <span class="pm-unit">mV</span></span>
-            <span class="pm-target">Seuil: >${orpMin} mV</span>
-          </div>
-          <div class="pm-progress-bar">
-            <div class="pm-progress-fill" style="width: ${orpVal ? Math.min(100, (orpVal / 1000 * 100)) : 0}%"></div>
-          </div>
-        </div>
-
-        <div class="pm-card pm-${tacStat.cls}">
-          <div class="pm-header">
-            <span class="pm-title"><ha-icon icon="mdi:waves"></ha-icon> Alcalinité TAC</span>
-            <span class="pm-badge">${tacStat.lbl}</span>
-          </div>
-          <div class="pm-value-row">
-            <span class="pm-value">${tacVal !== null ? Math.round(tacVal) : '--'} <span class="pm-unit">ppm</span></span>
-            <span class="pm-target">Plage: ${tacMin}-${tacMax}</span>
-          </div>
-          <div class="pm-progress-bar">
-            <div class="pm-progress-fill" style="width: ${tacVal ? Math.min(100, (tacVal / 250 * 100)) : 0}%"></div>
-          </div>
-        </div>
-
-        <div class="brome-panel-advice">
-          <div class="brome-advice-title">
-            <ha-icon icon="mdi:creation"></ha-icon> Assistant Traitement Spa (500L)
-          </div>
-          <p class="brome-advice-text">
-            ${bromeRecommendation ? bromeRecommendation : "Votre eau de 500L est parfaitement équilibrée au brome. Pensez à vérifier l'état du filtre."}
-          </p>
-          <div class="brome-specs">
-            <span><ha-icon icon="mdi:water-boiler"></ha-icon> Volume : 500 Litres</span>
-            <span><ha-icon icon="mdi:flask-empty-minus-outline"></ha-icon> Traitement : Brome (Moins agressif à haute T°)</span>
-          </div>
-        </div>
-
-      </div>
-    `;
+          return html`
+            <div class="chem-card ${isOk?'ok':'warn'}">
+              <div class="chem-header">
+                <div class="chem-title-box">
+                  <ha-icon icon="${s.icon}"></ha-icon>
+                  <span class="chem-name">${s.name}</span>
+                </div>
+                <span class="chem-value">${val.toFixed(disp.dec)}</span>
+              </div>
+              <div class="chem-gauge-bg">
+                <div class="chem-zone-target" style="left:${minPct}%; width:${maxPct - minPct}%"></div>
+                <div class="chem-cursor" style="left:${pct}%"></div>
+              </div>
+            </div>`;
+        })}
+      </div>`;
   }
 
+  // ─── CAMÉRA CORRIGÉE (CORRECTION CLIC & TAILLE FLUIDE) ───
   _renderCam() {
     const c = this.config;
-    if (!this._exists(c.entity_camera)) return html``;
-    const w = c.cam_w_px ? `${c.cam_w_px}px` : '50%';
-    const h = c.cam_h_px ? `${c.cam_h_px}px` : 'auto';
+    if (!this._exists(c.entity_camera)) return html`<div class="cam-view"><div class="no-cam">Aucune caméra configurée</div></div>`;
+    
+    const w = c.cam_w_px ? `${c.cam_w_px}px` : '100%';
+    const h = c.cam_h_px ? `${c.cam_h_px}px` : '200px';
     const r = c.cam_radius ? `${c.cam_radius}px` : '12px';
     const x = c.cam_x ? `${c.cam_x}px` : '0px';
     const y = c.cam_y ? `${c.cam_y}px` : '0px';
 
-    const sty = `width:${w}; height:${h}; border-radius:${r}; transform:translate(${x},${y});`;
     return html`
-      <div class="cam-container ${this._camExpanded ? 'expanded' : ''}" style="${sty}"
-           @click=${() => { this._camExpanded = !this._camExpanded; }}>
-        <ha-camera-stream .hass=${this.hass} .entityId=${c.entity_camera} controls></ha-camera-stream>
+      <div class="cam-view">
+        <div class="cam-container ${this._camExpanded ? 'expanded' : ''}" 
+             style="width:${this._camExpanded?'100%':w}; height:${this._camExpanded?'100%':h}; border-radius:${r}; transform: translate(${x}, ${y});"
+             @click=${() => this._camExpanded = !this._camExpanded}>
+          <ha-camera-stream
+            .hass=${this.hass}
+            .stateObj=${this.hass.states[c.entity_camera]}
+            allow-zoom
+            controls>
+          </ha-camera-stream>
+        </div>
       </div>`;
   }
 
-  _renderSw() {
-    const items = [];
-    for (let i=1; i<=10; i++) {
-      const swId = this.config[`switch_${i}`];
-      if (this._exists(swId)) {
-        const name = this.config[`name_switch_${i}`] || `Bouton ${i}`;
-        const active = this._state(swId) === 'on';
-        items.push({ id:swId, name, active });
+  _renderSwitches() {
+    const c = this.config;
+    const switches = [];
+    for(let i=1; i<=10; i++) {
+      const eid = c[`switch_${i}`];
+      if (this._exists(eid)) {
+        switches.push({ id:eid, name:c[`name_switch_${i}`]||`Bouton ${i}` });
       }
     }
-    if (items.length === 0) return html``;
+    if(switches.length===0) return html`<div class="sw-view"><div class="no-cam">Aucun bouton actif</div></div>`;
     return html`
-      <div class="sw-grid">
-        ${items.map(item => html`
-          <button class="prog-action-btn ${item.active ? 'pab-on' : 'pab-off'}"
-                  @click=${() => this.hass.callService('switch', 'toggle', { entity_id: item.id })}>
-            <ha-icon icon="${item.active ? 'mdi:power-plug' : 'mdi:power-plug-off'}"></ha-icon>
-            <span>${item.name}</span>
-          </button>`)}
+      <div class="sw-view">
+        <div class="sw-grid">
+          ${switches.map(s => {
+            const active = this._state(s.id) === 'on';
+            return html`
+              <button class="sw-btn ${active?'on':'off'}" @click=${() => this.hass.callService('switch','toggle',{ entity_id:s.id })}>
+                <ha-icon icon="${active?'mdi:power-plug':'mdi:power-plug-off'}"></ha-icon>
+                <span>${s.name}</span>
+              </button>`;
+          })}
+        </div>
       </div>`;
   }
 
   render() {
-    if (!this.hass || !this.config) return html``;
-    const cHeight = this.config.card_height || '640px';
-    const blur = this.config.blur_amount !== undefined ? `${this.config.blur_amount}px` : '15px';
-    const bg = this.config.background_image ? `url(${this.config.background_image})` : 'none';
-
-    const content = {
-      home: this._renderHome(),
-      chem: this._renderChem(),
-      cam:  this._renderCam(),
-      sw:   this._renderSw()
-    };
+    if (!this.config || !this.hass) return html``;
+    const title = this.config.card_title || 'SPA';
+    const blur  = this.config.blur_amount ?? 15;
+    const bg    = this.config.background_image ? `url(${this.config.background_image})` : 'rgba(255,255,255,0.03)';
 
     return html`
-      <ha-card class="spa-card-root" style="height:${cHeight};">
-        <div class="bg-blur" style="background-image:${bg}; filter:blur(${blur});"></div>
-        <div class="card-header-title">${this.config.card_title || 'MON SPA 500L'}</div>
-        
-        <div class="main-content-scroll">
-          ${content[this._tab]}
+      <ha-card style="--blur-amt:${blur}px; --bg-img:${bg};">
+        <div class="glass-container">
+          <div class="header">
+            <h1 class="title">${title}</h1>
+            <div class="nav-tabs">
+              <button class="nav-btn ${this._tab==='home'?'active':''}" @click=${()=>this._tab='home'}><ha-icon icon="mdi:home-analytics"></ha-icon></button>
+              <button class="nav-btn ${this._tab==='chem'?'active':''}" @click=${()=>this._tab='chem'}><ha-icon icon="mdi:beaker-check"></ha-icon></button>
+              <button class="nav-btn ${this._tab==='cam'?'active':''}"  @click=${()=>this._tab='cam'}><ha-icon icon="mdi:camera"></ha-icon></button>
+              <button class="nav-btn ${this._tab==='sw'?'active':''}"   @click=${()=>this._tab='sw'}><ha-icon icon="mdi:toggle-switch"></ha-icon></button>
+            </div>
+          </div>
+          <div class="main-content">
+            ${this._tab==='home' ? this._renderHome() : ''}
+            ${this._tab==='chem' ? this._renderChem() : ''}
+            ${this._tab==='cam'  ? this._renderCam() : ''}
+            ${this._tab==='sw'   ? this._renderSwitches() : ''}
+          </div>
         </div>
-
-        <div class="nav">
-          <ha-icon icon="mdi:home-outline" class="${this._tab==='home'?'on':''}" @click=${()=>this._tab='home'}></ha-icon>
-          <ha-icon icon="mdi:flask-outline" class="${this._tab==='chem'?'on':''}" @click=${()=>this._tab='chem'}></ha-icon>
-          ${this._exists(this.config.entity_camera) ? html`<ha-icon icon="mdi:camera-outline" class="${this._tab==='cam'?'on':''}" @click=${()=>this._tab='cam'}></ha-icon>`:''}
-          <ha-icon icon="mdi:toggle-switch-outline" class="${this._tab==='sw'?'on':''}" @click=${()=>this._tab='sw'}></ha-icon>
-        </div>
-      </ha-card>
-    `;
+      </ha-card>`;
   }
 
   static styles = css`
-    :host { display:block; }
-    .spa-card-root {
-      position:relative; display:flex; flex-direction:column; overflow:hidden;
-      border-radius:24px; border:1px solid rgba(255,255,255,.12);
-      background:#0d1117; color:#fff; font-family:sans-serif; box-sizing:border-box;
+    :host {
+      display: block;
+      max-height: 550px !important;
+      overflow: hidden;
     }
-    .bg-blur {
-      position:absolute; top:0; left:0; right:0; bottom:0;
-      background-size:cover; background-position:center; opacity:.35; z-index:0;
+    ha-card {
+      background: var(--bg-img) center/cover no-repeat;
+      position: relative;
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.12);
+      overflow: hidden;
+      height: 550px;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-    .card-header-title {
-      position:relative; z-index:1; padding:20px 24px 10px;
-      font-size:18px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
-      background:linear-gradient(to bottom, rgba(13,17,23,.8), rgba(13,17,23,0));
+    .glass-container {
+      width: 100%; height: 100%;
+      box-sizing: border-radius;
+      backdrop-filter: blur(var(--blur-amt));
+      background: rgba(15, 22, 42, 0.45);
+      display: flex; flex-direction: column;
     }
-    .main-content-scroll { position:relative; z-index:1; flex:1; overflow-y:auto; padding:0 20px 20px; }
-    
-    /* Pool Monitor Styles (Chemistry Update) */
-    .pool-monitor-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
-    .pm-card {
-      background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px;
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08);
     }
-    .pm-header { display: flex; justify-content: space-between; align-items: center; }
-    .pm-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; opacity: 0.9; }
-    .pm-badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 700; text-transform: uppercase; }
-    .pm-value-row { display: flex; justify-content: space-between; align-items: baseline; }
-    .pm-value { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
-    .pm-unit { font-size: 14px; font-weight: 400; opacity: 0.6; }
-    .pm-target { font-size: 12px; opacity: 0.5; }
-    .pm-progress-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
-    .pm-progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
-    
-    /* Status Colors */
-    .pm-success .pm-badge { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-    .pm-success .pm-progress-fill { background: #10b981; }
-    .pm-danger .pm-badge { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-    .pm-danger .pm-progress-fill { background: #ef4444; }
-    .pm-neutral .pm-badge { background: rgba(156, 163, 175, 0.2); color: #9ca3af; }
-    .pm-neutral .pm-progress-fill { background: #9ca3af; }
+    .title { font-size: 16px; font-weight: 700; margin: 0; letter-spacing: 0.5px; opacity: 0.9; }
+    .nav-tabs { display: flex; gap: 4px; background: rgba(0,0,0,0.2); padding: 3px; border-radius: 10px; }
+    .nav-btn {
+      background: transparent; border: none; color: rgba(255,255,255,0.4);
+      padding: 6px 10px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+    }
+    .nav-btn.active { background: rgba(255,255,255,0.15); color: #fff; }
+    .main-content { flex: 1; overflow-y: auto; padding: 12px; }
 
-    /* Brome Panel Advice */
-    .brome-panel-advice {
-      background: rgba(59, 130, 246, 0.12); border: 1px dashed rgba(59, 130, 246, 0.4);
-      border-radius: 16px; padding: 14px; margin-top: 6px; display: flex; flex-direction: column; gap: 6px;
-    }
-    .brome-advice-title { font-size: 13px; font-weight: 700; color: #60a5fa; display: flex; align-items: center; gap: 6px; }
-    .brome-advice-text { font-size: 12px; margin: 0; line-height: 1.4; color: #e5e7eb; }
-    .brome-specs { display: flex; gap: 14px; font-size: 11px; opacity: 0.5; margin-top: 2px; }
-
-    /* Layout Elements du Dashboard */
-    .flex-row-center { display:flex; align-items:center; justify-content:space-between; margin:16px 0; }
-    .side-col { display:flex; flex-direction:column; align-items:center; gap:8px; width:65px; }
-    .side-info { text-align:center; }
-    .val-big { font-size:20px; font-weight:700; }
-    .label-tiny { font-size:9px; opacity:.4; margin-top:2px; letter-spacing:.3px; }
-    .hum-pill { font-size:10px; background:rgba(255,255,255,.07); padding:4px 8px; border-radius:20px; opacity:.7; }
+    /* ACCUEIL COMPACT */
+    .home-view { display: flex; flex-direction: column; gap: 10px; }
+    .flex-row-center { display: flex; align-items: center; justify-content: space-around; margin: 5px 0; }
+    .side-col { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 80px; }
+    .side-info { text-align: center; }
+    .val-big { font-size: 20px; font-weight: 700; color: #fff; }
+    .label-tiny { font-size: 9px; opacity: 0.5; font-weight: 600; margin-top: 2px; }
+    .hum-pill { font-size: 10px; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 20px; }
     
-    /* Jauge principale */
-    .gauge-container { display:flex; flex-direction:column; align-items:center; gap:8px; }
-    .temp-btn {
-      width:36px; height:36px; background:rgba(255,255,255,.07); border-radius:50%;
-      display:flex; align-items:center; justify-content:center; cursor:pointer;
-    }
-    .temp-btn:active { background:rgba(255,255,255,.2); }
+    .gauge-container { display: flex; flex-direction: column; align-items: center; gap: 4px; }
     .center-gauge {
-      position:relative; width:130px; height:130px;
-      display:flex; align-items:center; justify-content:center;
+      position: relative; width: 110px; height: 110px;
+      display: flex; align-items: center; justify-content: center;
     }
     .outer-ring {
-      position:absolute; width:100%; height:100%;
-      border:4px solid rgba(255,255,255,.05); border-top-color:#10b981;
-      border-radius:50%; animation:spin 3s linear infinite; opacity:0.6;
+      position: absolute; width: 100%; height: 100%;
+      border-radius: 50%; border: 4px solid rgba(255,255,255,0.06);
+      border-top-color: #0ea5e9; transform: rotate(45deg);
     }
-    .inner-circle {
-      width:114px; height:114px; background:rgba(255,255,255,.03);
-      border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center;
-      border:1px solid rgba(255,255,255,.08); box-shadow:inset 0 0 20px rgba(0,0,0,.4);
+    .inner-circle { text-align: center; display: flex; flex-direction: column; align-items: center; }
+    .water-label { font-size: 9px; opacity: 0.6; font-weight: bold; }
+    .water-val { font-size: 26px; font-weight: 800; color: #fff; line-height: 1; margin: 2px 0; }
+    .target-box { font-size: 9px; background: rgba(14,165,233,0.2); padding: 1px 5px; border-radius: 4px; color: #38bdf8; }
+    .temp-btn { background: rgba(255,255,255,0.1); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+    .heat-ctrl { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.04); padding: 6px 12px; border-radius: 12px; }
+    .heat-btn { display: flex; align-items: center; gap: 8px; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    .heat-on { background: rgba(239,68,68,0.2); color: #f87171; }
+    .heat-off { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5); }
+    .heat-temps { display: flex; align-items: center; gap: 10px; }
+    .heat-target { font-size: 16px; font-weight: bold; }
+    .heat-t-btn { cursor: pointer; opacity: 0.7; }
+
+    .lz-status { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 10px; font-size: 12px; font-weight: 500; }
+    .lz-heating { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .lz-ready { background: rgba(16,185,129,0.15); color: #34d399; }
+    .lz-standby { background: rgba(255,255,255,0.05); color: #9ca3af; }
+    .lz-disconnected { background: rgba(239,68,68,0.15); color: #f87171; }
+    .lz-icon { --mdc-icon-size: 16px; }
+
+    .footer-row { display: flex; gap: 6px; }
+    .footer-pill { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(255,255,255,0.05); padding: 6px; border-radius: 10px; font-size: 11px; }
+
+    .maint-row { display: flex; gap: 6px; }
+    .maint-item { flex: 1; background: rgba(255,255,255,0.04); padding: 6px 10px; border-radius: 10px; font-size: 11px; }
+    .maint-head { display: flex; align-items: center; gap: 6px; }
+
+    .flood-bar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+    .flood-ok { background: rgba(16,185,129,0.1); color: #34d399; }
+    .flood-alert { background: rgba(239,68,68,0.2); color: #f87171; }
+
+    /* CHIMIE COMPACTE MODIFIÉE */
+    .chem-view { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 2px; }
+    .chem-card { background: rgba(255,255,255,0.04); padding: 8px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+    .chem-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .chem-title-box { display: flex; align-items: center; gap: 4px; opacity: 0.7; }
+    .chem-title-box ha-icon { --mdc-icon-size: 14px; }
+    .chem-name { font-size: 11px; font-weight: bold; }
+    .chem-value { font-size: 14px; font-weight: 800; }
+    .chem-gauge-bg { position: relative; height: 5px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: visible; margin-top: 4px; }
+    .chem-zone-target { position: absolute; height: 100%; background: rgba(52,211,153,0.3); border-radius: 2px; }
+    .chem-cursor { position: absolute; width: 7px; height: 7px; background: #fff; border-radius: 50%; top: -1px; transform: translateX(-50%); box-shadow: 0 0 4px rgba(0,0,0,0.5); }
+    .chem-card.warn .chem-value { color: #f87171; }
+    .chem-card.ok .chem-value { color: #34d399; }
+
+    /* CAMÉRA NETTOYÉE */
+    .cam-view { display: flex; justify-content: center; align-items: center; height: 100%; min-height: 250px; }
+    .cam-container { position: relative; background: #000; overflow: hidden; display: block; cursor: pointer; max-height: 100%; max-width: 100%; transition: all 0.3s ease; }
+    .cam-container ha-camera-stream { width: 100%; height: 100%; display: block; }
+    .cam-container.expanded { position: fixed; top: 0; left: 0; width: 100% !important; height: 100% !important; z-index: 999; border-radius: 0 !important; transform: none !important; }
+    .no-cam { opacity: 0.5; font-size: 12px; }
+
+    /* INTERRUPTEURS */
+    .sw-view { padding: 4px; }
+    .sw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .sw-btn {
+      display: flex; align-items: center; gap: 8px; padding: 10px; border: none;
+      border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.2s;
     }
-    .water-label { font-size:10px; opacity:.4; font-weight:700; }
-    .water-val { font-size:32px; font-weight:800; margin:2px 0; }
-    .target-box { font-size:9px; background:rgba(16,185,129,.2); color:#10b981; padding:3px 8px; border-radius:20px; font-weight:700; }
-
-    /* Autres elements */
-    .heat-ctrl { display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,.05); padding:10px 14px; border-radius:16px; margin-bottom:12px; }
-    .heat-btn { display:flex; align-items:center; gap:8px; border:none; padding:8px 14px; border-radius:12px; font-weight:700; cursor:pointer; }
-    .heat-on { background:#ef4444; color:#fff; }
-    .heat-off { background:rgba(255,255,255,.1); color:rgba(255,255,255,.5); }
-    .heat-temps { display:flex; align-items:center; gap:12px; }
-    .heat-t-btn { cursor:pointer; opacity:.6; }
-    .heat-target { font-size:16px; font-weight:700; }
-
-    .lz-status { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:16px; font-size:13px; font-weight:600; margin-bottom:12px; }
-    .lz-ready { background:rgba(16,185,129,.15); color:#10b981; }
-    .lz-heating { background:rgba(239,68,68,.15); color:#ef4444; }
-    .lz-standby { background:rgba(255,255,255,.05); color:rgba(255,255,255,.6); }
-    .lz-disconnected { background:rgba(156,163,175,.15); color:#9ca3af; }
-    .lz-label { flex:1; }
-
-    .footer-row { display:flex; gap:8px; margin-bottom:12px; }
-    .footer-pill { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(255,255,255,.04); padding:8px; border-radius:12px; font-size:12px; }
-
-    .maint-row { display:flex; gap:10px; margin-bottom:12px; }
-    .maint-item { flex:1; background:rgba(255,255,255,.04); border-radius:16px; padding:12px; display:flex; flex-direction:column; gap:6px; }
-    .maint-head { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; }
-    .maint-reset-btn { margin-left:auto; background:rgba(255,255,255,0.1); border:none; color:white; border-radius:4px; padding:2px 6px; cursor:pointer; }
-    .maint-bar { width:100%; height:4px; background:rgba(255,255,255,.1); border-radius:2px; overflow:hidden; }
-    .maint-fill { height:100%; background:#3b82f6; }
-    .maint-fill-warn { background:#f59e0b; }
-    .maint-val { font-size:11px; opacity:.5; }
-
-    .flood-bar { display:flex; justify-content:space-between; padding:10px 14px; border-radius:16px; font-size:12px; font-weight:600; }
-    .flood-ok { background:rgba(16,185,129,.08); color:#10b981; }
-    .flood-alert { background:rgba(239,68,68,.15); color:#ef4444; }
-    .flood-left { display:flex; align-items:center; gap:8px; }
-    .flood-right { display:flex; gap:6px; }
-
-    .sw-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .prog-action-btn {
-      display:flex; align-items:center; gap:10px; padding:12px; border-radius:14px;
-      border:1px solid transparent; font-size:12px; font-weight:700;
-      transition:all .2s; font-family:inherit; width:100%; cursor:pointer;
-    }
-    .pab-on    { background:rgba(251,146,60,.15); border-color:rgba(251,146,60,.5); color:#fb923c; }
-    .pab-off   { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.18); color:rgba(255,255,255,.5); }
-
-    .nav { display:flex; justify-content:space-around; padding-top:16px; border-top:1px solid rgba(255,255,255,.1); margin-top:auto; }
-    .nav ha-icon { opacity:.3; cursor:pointer; --mdc-icon-size:24px; transition:opacity .2s,color .2s; padding:10px; }
-    .nav ha-icon.on { opacity:1; color:#3b82f6; }
-
-    @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+    .sw-btn.on { background: rgba(251,146,60,0.2); color: #fb923c; }
+    .sw-btn.off { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5); }
   `;
 }
 customElements.define('spa-card', SpaCard);
