@@ -5,7 +5,7 @@ import {
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 // ═══════════════════════════════════════════════════════════════════
-//  ÉDITEUR  —  V35  (Compact 550px & Caméra + Prog)
+//  ÉDITEUR  —  V36  (Parfaitement calibré 550px)
 // ═══════════════════════════════════════════════════════════════════
 class SpaCardEditor extends LitElement {
   static get properties() {
@@ -172,7 +172,7 @@ customElements.define('spa-card-editor', SpaCardEditor);
 
 
 // ═══════════════════════════════════════════════════════════════════
-//  CARTE  —  V35  (Optimisée hauteur 550px avec Caméra & Chimie)
+//  CARTE  —  V36  (Calibrage strict 550px sans débordement)
 // ═══════════════════════════════════════════════════════════════════
 class SpaCard extends LitElement {
   static getConfigElement() { return document.createElement('spa-card-editor'); }
@@ -299,7 +299,7 @@ class SpaCard extends LitElement {
   }
 
   // ═══════════════════════════════════════════════
-  //  CHIMIE (Messages clairs intégrés)
+  //  CHIMIE ( messages et espacements recalibrés )
   // ═══════════════════════════════════════════════
   _renderChem() {
     const c = this.config; const n = v => (v!==undefined&&v!==null&&v!=='') ? Number(v) : undefined;
@@ -344,7 +344,7 @@ class SpaCard extends LitElement {
   }
 
   // ═══════════════════════════════════════════════
-  //  ONGLET CAMÉRA + PROGRAMMATION (Grand cadre optimisé 550px)
+  //  ONGLET CAMÉRA + PROGRAMMATION (Calibrage millimétré)
   // ═══════════════════════════════════════════════
   _renderCamTab() {
     const c = this.config;
@@ -355,7 +355,7 @@ class SpaCard extends LitElement {
             <div class="cam-wrapper">
               <hc-camera class="embedded-cam" .hass=${this.hass} .entityId=${c.entity_camera} controls></hc-camera>
             </div>` : html`
-            <div class="cam-placeholder"><ha-icon icon="mdi:camera-off"></ha-icon><span>Pas de flux vidéo</span></div>`}
+            <div class="cam-placeholder"><ha-icon icon="mdi:camera-off"></ha-icon><span>Flux vidéo indisponible</span></div>`}
         </div>
 
         ${this._renderSchedule()}
@@ -395,7 +395,7 @@ class SpaCard extends LitElement {
   _renderSwitches() {
     const c = this.config; const items = [];
     for (let i=1; i<=10; i++) { if (this._exists(c[`switch_${i}`])) items.push({ id:c[`switch_${i}`], name:c[`name_switch_${i}`]||`Bouton ${i}` }); }
-    if (!items.length) return html`<div style="padding:20px;text-align:center;opacity:.5;">Aucun bouton configuré</div>`;
+    if (!items.length) return html`<div class="sw-empty">Aucun bouton configuré</div>`;
     return html`<div class="sw-grid">${items.map(item => html`<button class="sw-btn ${this._state(item.id)==='on'?'sw-active':''}" @click=${()=>this.hass.callService('switch','toggle',{entity_id:item.id})}><ha-icon icon="mdi:power-plug"></ha-icon><span>${item.name}</span></button>`)}</div>`;
   }
 
@@ -429,89 +429,106 @@ class SpaCard extends LitElement {
     :host { display:block; position:relative; overflow:hidden; font-family:sans-serif; }
     ha-card { position:relative; width:100%; height:100%; background:transparent; border-radius:24px; overflow:hidden; border:1px solid rgba(255,255,255,.12); box-shadow:0 8px 32px rgba(0,0,0,.3); }
     .bg-img { position:absolute; top:-10px; left:-10px; right:-10px; bottom:-10px; background-size:cover; background-position:center; z-index:0; }
-    .glass-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(15,22,42,0.5); z-index:1; }
-    .main-container { position:relative; z-index:2; height:100%; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box; padding:14px; }
-    .header h1 { margin:0; font-size:15px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:1px; text-align:center; }
-    .content-body { flex:1; margin-top:8px; overflow-y:auto; overflow-x:hidden; }
+    .glass-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(15,22,42,0.55); z-index:1; }
     
-    /* ── Layout Caméra & Programmation (Fitte dans 550px) ── */
-    .cam-view-layout { display:flex; flex-direction:column; gap:10px; width:100%; }
-    .cam-frame-container { width:100%; background:rgba(0,0,0,.4); border-radius:12px; border:1px solid rgba(255,255,255,.1); overflow:hidden; }
-    .cam-wrapper { width:100%; height:140px; overflow:hidden; line-height:0; }
-    .embedded-cam { width:100%; height:140px; object-fit:cover; display:block; }
-    .cam-placeholder { height:140px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:rgba(255,255,255,0.4); gap:6px; font-size:12px; }
+    /* Structure Strict Box (Hauteur Fixe Évitant les débordements globaux) */
+    .main-container { position:relative; z-index:2; height:100%; display:flex; flex-direction:column; box-sizing:border-box; padding:12px; }
+    .header { height:22px; display:flex; align-items:center; justify-content:center; }
+    .header h1 { margin:0; font-size:14px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:1px; }
     
-    /* Cadre de Programmation Compact */
-    .big-sched-box { background:rgba(255,255,255,.04); border:1px solid rgba(107,142,255,.25); border-radius:12px; padding:10px; display:flex; flex-direction:column; gap:8px; }
+    /* Corps élastique, autonome face au overflow */
+    .content-body { flex:1; display:flex; flex-direction:column; justify-content:center; margin:8px 0; overflow-y:auto; overflow-x:hidden; }
+    .content-body::-webkit-scrollbar { display:none; }
+
+    /* ── VUE ACCUEIL (Proportionnelle et étirée) ── */
+    .home-view { display:flex; flex-direction:column; height:100%; justify-content:space-between; gap:6px; }
+    .flex-row-center { display:flex; align-items:center; justify-content:space-between; margin:4px 0; }
+    .side-col { width:25%; text-align:center; }
+    .val-big { font-size:16px; font-weight:700; color:#fff; }
+    .label-tiny { font-size:8px; opacity:.4; color:#fff; letter-spacing:0.5px; }
+    .hum-pill { display:inline-block; padding:2px 5px; background:rgba(255,255,255,.05); border-radius:10px; font-size:8px; color:rgba(255,255,255,.6); margin-top:4px; }
+    
+    /* Jauge Centrale de Température */
+    .gauge-container { display:flex; justify-content:center; flex:1; align-items:center; }
+    .center-gauge { width:100px; height:100px; position:relative; display:flex; align-items:center; justify-content:center; }
+    .outer-ring { position:absolute; width:100%; height:100%; border:2px dashed rgba(0,249,249,.15); border-radius:50%; animation: rotation 40s linear infinite; }
+    .inner-circle { width:86px; height:86px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.12); border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow: inset 0 0 15px rgba(0,0,0,.4); }
+    .water-label { font-size:8px; opacity:.5; color:#fff; font-weight:bold; }
+    .water-val { font-size:24px; font-weight:800; color:#fff; line-height:24px; margin:2px 0; }
+    .target-box { font-size:8px; background:rgba(107,142,255,.2); border:1px solid rgba(107,142,255,.3); padding:2px 5px; border-radius:4px; color:#fff; font-weight:600; }
+    
+    /* Chauffage et États */
+    .heat-ctrl { display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:6px 12px; }
+    .heat-btn { border:none; border-radius:8px; height:32px; padding:0 12px; display:flex; align-items:center; gap:6px; font-weight:700; font-size:11px; cursor:pointer; }
+    .heat-on { background:rgba(251,146,60,.16); border:1px solid rgba(251,146,60,.35); color:#fb923c; box-shadow: 0 0 10px rgba(251,146,60,0.1); }
+    .heat-off { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.4); }
+    .heat-temps { display:flex; align-items:center; gap:8px; }
+    .heat-t-btn { cursor:pointer; width:26px; height:26px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.05); border-radius:6px; color:#fff; border:1px solid rgba(255,255,255,.05); }
+    .heat-target { font-size:14px; font-weight:700; color:#fff; min-width:32px; text-align:center; }
+    
+    .lz-status { display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 12px; border-radius:10px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+    .lz-icon { --mdc-icon-size:15px; }
+    .lz-heating { background:rgba(239,68,68,.08); color:#f87171; border:1px solid rgba(239,68,68,.18); }
+    .lz-ready { background:rgba(16,185,129,.08); color:#34d399; border:1px solid rgba(16,185,129,.18); }
+    .lz-standby { background:rgba(255,255,255,.04); color:rgba(255,255,255,.5); border:1px solid rgba(255,255,255,.04); }
+    
+    .footer-row { display:flex; justify-content:center; }
+    .footer-pill { display:flex; align-items:center; gap:5px; padding:3px 10px; background:rgba(255,255,255,.03); border-radius:10px; font-size:9px; color:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.03); }
+    .maint-row { display:flex; }
+    .maint-item { flex:1; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:5px 10px; font-size:10px; color:#fff; }
+    .maint-badge { background:#f59e0b; color:#000; padding:1px 4px; border-radius:3px; font-weight:700; float:right; font-size:8px; text-transform:uppercase; }
+    .flood-bar { display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 12px; border-radius:10px; font-size:10px; font-weight:700; text-transform:uppercase; }
+    .flood-ok { background:rgba(16,185,129,.04); color:rgba(255,255,255,.5); border:1px solid rgba(16,185,129,.05); }
+    .flood-alert { background:rgba(239,68,68,.12); color:#f87171; border:1px solid rgba(239,68,68,.25); }
+
+    /* ── VUE CAMÉRA + PROGRAMMATION (Calibrage millimétré) ── */
+    .cam-view-layout { display:flex; flex-direction:column; gap:8px; height:100%; justify-content:space-between; }
+    .cam-frame-container { width:100%; background:rgba(0,0,0,.4); border-radius:14px; border:1px solid rgba(255,255,255,.08); overflow:hidden; }
+    .cam-wrapper { width:100%; height:160px; overflow:hidden; }
+    .embedded-cam { width:100%; height:160px; object-fit:cover; display:block; }
+    .cam-placeholder { height:160px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:rgba(255,255,255,0.35); gap:8px; font-size:11px; }
+    
+    .big-sched-box { background:rgba(255,255,255,.02); border:1px solid rgba(107,142,255,.22); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:10px; }
     .bs-header { display:flex; align-items:center; gap:6px; color:#6b8eff; }
     .bs-header ha-icon { --mdc-icon-size:18px; }
-    .bs-title { font-size:11px; font-weight:700; color:#fff; }
-    .bs-controls { display:flex; align-items:center; justify-content:space-between; gap:4px; }
-    .bs-btn-large { flex:1; height:36px; border-radius:8px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.06); color:#fff; font-size:11px; font-weight:bold; cursor:pointer; }
-    .bs-btn-large:active { transform:scale(0.96); }
-    .bs-display-val { padding:0 6px; font-size:20px; font-weight:800; color:#6b8eff; font-family:monospace; }
-    .bs-confirm-action { width:100%; height:34px; border:none; border-radius:8px; background:linear-gradient(135deg,#4f46e5,#3b82f6); color:#fff; font-size:11px; font-weight:700; cursor:pointer; }
+    .bs-title { font-size:10px; font-weight:700; color:#fff; letter-spacing:0.5px; }
+    .bs-controls { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+    .bs-btn-large { flex:1; height:38px; border-radius:8px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.05); color:#fff; font-size:11px; font-weight:bold; cursor:pointer; }
+    .bs-display-val { padding:0 8px; font-size:22px; font-weight:800; color:#6b8eff; font-family:monospace; }
+    .bs-confirm-action { width:100%; height:36px; border:none; border-radius:8px; background:linear-gradient(135deg,#4f46e5,#3b82f6); color:#fff; font-size:11px; font-weight:700; cursor:pointer; letter-spacing:0.5px; }
 
-    /* ── Chimie & Diagnostics Réduits ── */
-    .chem-list { display:flex; flex-direction:column; gap:8px; }
-    .cg-row { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:12px; padding:8px 10px; }
-    .cg-oor { border-color:rgba(239,68,68,.3); }
+    /* ── VUE CHIMIE (Espacements harmonisés) ── */
+    .chem-list { display:flex; flex-direction:column; gap:8px; height:100%; justify-content:center; }
+    .cg-row { background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.05); border-radius:14px; padding:10px 12px; }
+    .cg-oor { border-color:rgba(239,68,68,.25); }
     .cg-top { display:flex; justify-content:space-between; align-items:center; }
     .cg-left { display:flex; align-items:center; gap:6px; }
     .cg-icon { color:#00f9f9; --mdc-icon-size:16px; }
     .cg-icon-warn { color:#ef4444; }
     .cg-label { font-size:11px; color:#fff; }
-    .cg-lims { font-size:9px; opacity:0.4; color:#fff; }
-    .cg-track-wrap { position:relative; height:4px; margin:6px 0; }
-    .cg-track { height:100%; background:rgba(255,255,255,.1); border-radius:2px; position:relative; }
-    .cg-zone { position:absolute; height:100%; background:rgba(0,249,249,0.2); }
-    .cg-dot { width:8px; height:8px; background:#fff; border-radius:50%; position:absolute; top:-2px; transform:translateX(-50%); }
+    .cg-lims { font-size:9px; opacity:0.35; color:#fff; }
+    .cg-track-wrap { position:relative; height:4px; margin:8px 0; }
+    .cg-track { height:100%; background:rgba(255,255,255,.08); border-radius:2px; position:relative; }
+    .cg-zone { position:absolute; height:100%; background:rgba(0,249,249,0.18); }
+    .cg-dot { width:8px; height:8px; background:#fff; border-radius:50%; position:absolute; top:-2px; transform:translateX(-50%); box-shadow:0 0 4px rgba(0,0,0,.5); }
     .cg-dot-oor { background:#ef4444; }
-    .chem-action-msg { margin-top:4px; padding:4px; border-radius:6px; font-size:10px; font-weight:700; text-align:center; text-transform:uppercase; }
-    .c-m-p { background:rgba(245,158,11,.12); border:1px solid rgba(245,158,11,.3); color:#f59e0b; }
-    .c-m-m { background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.3); color:#f87171; }
-    .c-m-o { background:rgba(16,185,129,.08); color:#34d399; opacity:0.7; }
+    .chem-action-msg { margin-top:6px; padding:5px; border-radius:6px; font-size:9px; font-weight:700; text-align:center; text-transform:uppercase; letter-spacing:0.3px; }
+    .c-m-p { background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.25); color:#f59e0b; }
+    .c-m-m { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.25); color:#f87171; }
+    .c-m-o { background:rgba(16,185,129,.06); color:#34d399; opacity:0.6; }
 
-    /* ── Reste de l'interface d'origine compactée ── */
-    .home-view { display:flex; flex-direction:column; gap:8px; }
-    .flex-row-center { display:flex; align-items:center; justify-content:space-between; margin:4px 0; }
-    .side-col { width:25%; text-align:center; }
-    .val-big { font-size:15px; font-weight:700; color:#fff; }
-    .label-tiny { font-size:8px; opacity:.4; color:#fff; }
-    .hum-pill { display:inline-block; padding:1px 4px; background:rgba(255,255,255,.05); border-radius:10px; font-size:8px; color:rgba(255,255,255,.6); margin-top:2px; }
-    .gauge-container { display:flex; justify-content:center; }
-    .center-gauge { width:74px; height:74px; position:relative; display:flex; align-items:center; justify-content:center; }
-    .outer-ring { position:absolute; width:100%; height:100%; border:2px dashed rgba(255,255,255,.1); border-radius:50%; }
-    .inner-circle { width:64px; height:64px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.1); border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-    .water-label { font-size:8px; opacity:.4; color:#fff; }
-    .water-val { font-size:18px; font-weight:800; color:#fff; line-height:18px; }
-    .target-box { font-size:7px; background:rgba(255,255,255,.1); padding:1px 3px; border-radius:3px; color:#fff; }
-    .heat-ctrl { display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:6px 10px; }
-    .heat-btn { border:none; border-radius:6px; height:28px; padding:0 8px; display:flex; align-items:center; gap:4px; font-weight:600; font-size:11px; cursor:pointer; }
-    .heat-on { background:rgba(251,146,60,.15); border:1px solid rgba(251,146,60,.3); color:#fb923c; }
-    .heat-off { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.5); }
-    .heat-temps { display:flex; align-items:center; gap:6px; }
-    .heat-t-btn { cursor:pointer; width:22px; height:22px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.04); border-radius:4px; color:#fff; }
-    .heat-target { font-size:13px; font-weight:700; color:#fff; }
-    .lz-status { display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:8px; font-size:10px; font-weight:600; text-transform:uppercase; }
-    .lz-icon { --mdc-icon-size:14px; }
-    .lz-heating { background:rgba(239,68,68,.08); color:#f87171; border:1px solid rgba(239,68,68,.15); }
-    .lz-ready { background:rgba(16,185,129,.08); color:#34d399; border:1px solid rgba(16,185,129,.15); }
-    .lz-standby { background:rgba(255,255,255,.04); color:rgba(255,255,255,.5); }
-    .footer-row { display:flex; justify-content:center; }
-    .footer-pill { display:flex; align-items:center; gap:4px; padding:2px 8px; background:rgba(255,255,255,.03); border-radius:10px; font-size:9px; color:rgba(255,255,255,.6); }
-    .maint-row { display:flex; }
-    .maint-item { flex:1; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:4px 8px; font-size:10px; color:#fff; }
-    .maint-badge { background:#f59e0b; color:#000; padding:0 3px; border-radius:2px; font-weight:700; float:right; font-size:8px; }
-    .flood-bar { display:flex; align-items:center; gap:6px; padding:5px 10px; border-radius:10px; font-size:10px; font-weight:600; }
-    .flood-ok { background:rgba(16,185,129,.04); color:rgba(255,255,255,.6); }
-    .flood-alert { background:rgba(239,68,68,.1); color:#f87171; }
+    /* ── VUE BOUTONS SWITCHES ── */
     .sw-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; }
-    .sw-btn { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:10px; height:36px; display:flex; align-items:center; gap:6px; padding:0 10px; color:#fff; font-size:11px; cursor:pointer; }
+    .sw-btn { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:10px; height:38px; display:flex; align-items:center; gap:6px; padding:0 10px; color:#fff; font-size:11px; cursor:pointer; }
     .sw-active { background:rgba(251,146,60,.12); border-color:rgba(251,146,60,.3); color:#fb923c; }
-    .nav { display:flex; justify-content:space-around; padding-top:8px; border-top:1px solid rgba(255,255,255,.1); }
-    .nav ha-icon { opacity:.3; cursor:pointer; --mdc-icon-size:18px; color:#fff; }
-    .nav ha-icon.active { opacity:1; color:#00f9f9; }
+    .sw-empty { padding:20px; text-align:center; opacity:.4; font-size:11px; color:#fff; }
+
+    /* ── BARRE DE NAVIGATION (Basse et fine) ── */
+    .nav { height:28px; display:flex; justify-content:space-around; align-items:center; padding-top:8px; border-top:1px solid rgba(255,255,255,.1); }
+    .nav ha-icon { opacity:.3; cursor:pointer; --mdc-icon-size:18px; color:#fff; transition: opacity .2s, color .2s; }
+    .nav ha-icon.active { opacity:1; color:#00f9f9; filter: drop-shadow(0 0 6px rgba(0,249,249,0.4)); }
+
+    @keyframes rotation { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   `;
 }
 customElements.define('spa-card', SpaCard);
