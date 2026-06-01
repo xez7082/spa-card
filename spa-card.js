@@ -186,7 +186,7 @@ _renderChem() {
     const c = this.config;
     const n = v => (v !== undefined && v !== null && v !== '') ? Number(v) : undefined;
     
-    // Définition des échelles de rendu
+    // Configuration des affichages
     const DISPLAY = { 
       ph: { lo: 6.0, hi: 9.0, dec: 1 }, 
       orp: { lo: -200, hi: 1000, dec: 0 }, 
