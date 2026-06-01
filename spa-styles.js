@@ -1,173 +1,267 @@
-import { css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import {
+  LitElement,
+  html,
+  css
+} from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-export const sharedStyles = css`
+import { sharedStyles } from "./spa-styles.js";
 
-  :host {
-    display: block;
-    box-sizing: border-box;
+export class SpaCardEditor extends LitElement {
+
+  static get properties() {
+    return {
+      hass: {},
+      _config: {},
+      _tab: { type: String },
+      _open: { type: Object }
+    };
   }
 
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
+  constructor() {
+    super();
+
+    this._config = {};
+    this._tab = "gen";
+
+    this._open = new Set([
+      "a-disp",
+      "a-temps",
+      "a-layzspa",
+      "a-ph"
+    ]);
   }
 
-  .editor-wrap {
-    padding: 10px;
-    font-family: var(
-      --paper-font-body1_-_font-family,
-      Roboto,
-      sans-serif
-    );
-    color: var(--primary-text-color);
+  setConfig(config) {
+    this._config = {
+      ...config
+    };
   }
 
-  .acc {
-    border: 1px solid var(
-      --divider-color,
-      rgba(0, 0, 0, 0.12)
-    );
-    border-radius: 12px;
-    margin-bottom: 8px;
-    overflow: hidden;
-    background: var(
-      --card-background-color,
-      white
-    );
-  }
+  _val(ev) {
+    const value = ev.detail.value;
 
-  .ach {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 11px 13px;
-    cursor: pointer;
-    user-select: none;
-    background: var(
-      --secondary-background-color,
-      rgba(0, 0, 0, 0.03)
-    );
-  }
+    this._config = {
+      ...this._config,
+      ...value
+    };
 
-  .ach:hover {
-    filter: brightness(1.05);
-  }
-
-  .aibox {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-
-    border-radius: 9px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    font-weight: 700;
-    font-size: 11px;
-
-    background: var(--primary-color);
-    color: white;
-  }
-
-  .acbi {
-    padding: 12px;
-  }
-
-  .chem-advice-box {
-    margin: 10px;
-    padding: 12px;
-
-    border-radius: 10px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-
-    text-align: center;
-    font-weight: 500;
-
-    background: var(
-      --secondary-background-color
+    this.dispatchEvent(
+      new CustomEvent("config-changed", {
+        detail: {
+          config: this._config
+        },
+        bubbles: true,
+        composed: true
+      })
     );
   }
 
-  .prog-action-btn {
-    width: 100%;
+  _tog(id) {
+    const open = new Set(this._open);
 
-    padding: 10px;
+    if (open.has(id)) {
+      open.delete(id);
+    } else {
+      open.add(id);
+    }
 
-    border: 1px solid var(
-      --divider-color
-    );
-
-    border-radius: 8px;
-
-    background: var(
-      --secondary-background-color
-    );
-
-    color: var(
-      --primary-text-color
-    );
-
-    font-weight: 700;
-    cursor: pointer;
-
-    transition:
-      background 0.2s ease,
-      border-color 0.2s ease,
-      transform 0.15s ease;
+    this._open = open;
+    this.requestUpdate();
   }
 
-  .prog-action-btn:hover {
-    transform: translateY(-1px);
+  _acc(id, icon, title, schema) {
+    if (!this.hass) {
+      return html``;
+    }
+
+    const open = this._open.has(id);
+
+    return html`
+      <div class="acc">
+
+        <div
+          class="ach"
+          @click=${() => this._tog(id)}
+        >
+          <div class="aibox">${icon}</div>
+
+          <span class="title">
+            ${title}
+          </span>
+
+          <ha-icon
+            .icon=${open
+              ? "mdi:chevron-up"
+              : "mdi:chevron-down"}
+          ></ha-icon>
+
+        </div>
+
+        ${open
+          ? html`
+              <div class="acbi">
+
+                <ha-form
+                  .hass=${this.hass}
+                  .data=${this._config}
+                  .schema=${schema}
+                  @value-changed=${this._val}
+                >
+                </ha-form>
+
+              </div>
+            `
+          : ""}
+
+      </div>
+    `;
   }
 
-  .prog-action-btn:active {
-    transform: translateY(0);
+  render() {
+    if (!this.hass || !this._config) {
+      return html``;
+    }
+
+    return html`
+
+      <div class="editor-wrap">
+
+        <div class="tabs">
+
+          <button
+            class=${this._tab === "gen"
+              ? "active"
+              : ""}
+            @click=${() => (this._tab = "gen")}
+          >
+            Général
+          </button>
+
+          <button
+            class=${this._tab === "chem"
+              ? "active"
+              : ""}
+            @click=${() => (this._tab = "chem")}
+          >
+            Chimie
+          </button>
+
+        </div>
+
+        <div class="sections">
+
+          ${this._tab === "gen"
+            ? this._acc(
+                "a-disp",
+                "🛁",
+                "Apparence",
+                [
+                  {
+                    name: "card_title",
+                    label: "Titre",
+                    selector: {
+                      text: {}
+                    }
+                  },
+                  {
+                    name: "entity_water_temp",
+                    label: "Température eau",
+                    selector: {
+                      entity: {
+                        domain: "sensor"
+                      }
+                    }
+                  },
+                  {
+                    name: "entity_filter",
+                    label: "Filtration",
+                    selector: {
+                      entity: {}
+                    }
+                  }
+                ]
+              )
+            : this._acc(
+                "a-ph",
+                "🧪",
+                "Chimie",
+                [
+                  {
+                    name: "entity_ph",
+                    label: "Capteur pH",
+                    selector: {
+                      entity: {
+                        domain: "sensor"
+                      }
+                    }
+                  }
+                ]
+              )}
+
+        </div>
+
+      </div>
+    `;
   }
 
-  .pab-on {
-    background: rgba(
-      251,
-      146,
-      60,
-      0.15
-    );
+  static get styles() {
+    return [
+      sharedStyles,
+      css`
+        .tabs {
+          display: flex;
+          border-bottom: 1px solid var(--divider-color);
+          margin-bottom: 15px;
+        }
 
-    border-color: rgba(
-      251,
-      146,
-      60,
-      0.5
-    );
+        .tabs button {
+          padding: 10px 16px;
+          border: none;
+          background: none;
+          cursor: pointer;
+          color: var(--secondary-text-color);
+        }
 
-    color: #fb923c;
+        .tabs button.active {
+          border-bottom: 2px solid var(--primary-color);
+          color: var(--primary-color);
+          font-weight: 600;
+        }
+
+        .acc {
+          margin-bottom: 12px;
+          border: 1px solid var(--divider-color);
+          border-radius: 12px;
+          overflow: hidden;
+        }
+
+        .ach {
+          display: flex;
+          align-items: center;
+          padding: 12px;
+          cursor: pointer;
+        }
+
+        .aibox {
+          margin-right: 10px;
+        }
+
+        .title {
+          flex-grow: 1;
+          font-weight: 500;
+        }
+
+        .acbi {
+          padding: 12px;
+        }
+      `
+    ];
   }
+}
 
-  .nav {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-
-    padding-top: 16px;
-    margin-top: 16px;
-
-    border-top: 1px solid var(
-      --divider-color
-    );
-  }
-
-  .nav > * {
-    flex: 1;
-  }
-
-  ha-icon {
-    color: var(--secondary-text-color);
-  }
-
-`;
+if (!customElements.get("spa-card-editor")) {
+  customElements.define(
+    "spa-card-editor",
+    SpaCardEditor
+  );
+}
