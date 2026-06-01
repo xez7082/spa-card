@@ -1,4 +1,4 @@
-import { LitElement, html } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { sharedStyles } from "./spa-styles.js";
 
 export class SpaCardEditor extends LitElement {
@@ -10,7 +10,7 @@ export class SpaCardEditor extends LitElement {
     super();
     this._tab = 'gen';
     // Initialisation des sections ouvertes par défaut
-    this._open = new Set(['a-disp', 'a-temps', 'a-layzspa', 'a-ph', 'a-cdim']);
+    this._open = new Set(['a-disp', 'a-ph']);
   }
 
   setConfig(config) { this._config = { ...config }; }
@@ -32,21 +32,19 @@ export class SpaCardEditor extends LitElement {
   _acc(id, boxStyle, icon, title, schema) {
     const open = this._open.has(id);
     return html`
-      <div class="acc ${open ? 'open' : ''}">
+      <div class="acc">
         <div class="ach" @click=${() => this._tog(id)}>
           <div class="aibox" style="${boxStyle}">${icon}</div>
-          <span class="ach-title">${title}</span>
-          <ha-icon class="arr" icon="mdi:chevron-down"></ha-icon>
+          <span style="flex-grow:1; font-weight:bold;">${title}</span>
+          <ha-icon icon="${open ? 'mdi:chevron-up' : 'mdi:chevron-down'}"></ha-icon>
         </div>
-        <div class="acb" style="display: ${open ? 'block' : 'none'}">
+        ${open ? html`
           <div class="acbi">
             <ha-form .hass=${this.hass} .data=${this._config} .schema=${schema} @value-changed=${this._val}></ha-form>
-          </div>
-        </div>
+          </div>` : ''}
       </div>`;
   }
 
-  // --- Rendu des sections de configuration ---
   _renderGen() {
     return html`${this._acc('a-disp', 'background:rgba(107,142,255,.18);color:#6b8eff;', 'GEN', 'Apparence générale', [
       { name: 'card_title', label: 'Titre du spa', selector: { text: {} } },
@@ -64,12 +62,11 @@ export class SpaCardEditor extends LitElement {
   render() {
     if (!this.hass || !this._config) return html``;
     
-    // Onglets de l'éditeur
     return html`
       <div class="editor-wrap">
-        <div class="tabs">
-          <button @click=${() => this._tab = 'gen'}>Général</button>
-          <button @click=${() => this._tab = 'chem'}>Chimie</button>
+        <div class="tabs" style="display:flex; margin-bottom:15px; border-bottom:1px solid #ccc;">
+          <button @click=${() => this._tab = 'gen'} style="padding:10px; cursor:pointer;">Général</button>
+          <button @click=${() => this._tab = 'chem'} style="padding:10px; cursor:pointer;">Chimie</button>
         </div>
         <div class="sections">
           ${this._tab === 'gen' ? this._renderGen() : this._renderChem()}
@@ -78,8 +75,10 @@ export class SpaCardEditor extends LitElement {
     `;
   }
 
-  // Import des styles partagés
-  static styles = [sharedStyles];
+  static styles = [sharedStyles, css`
+    .tabs button { background:none; border:none; outline:none; }
+    .tabs button:hover { color: var(--primary-color); }
+  `];
 }
 
 customElements.define('spa-card-editor', SpaCardEditor);
