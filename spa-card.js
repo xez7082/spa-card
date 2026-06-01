@@ -350,7 +350,6 @@ class SpaCard extends LitElement {
     const c = this.config;
     return html`
       <div class="cam-view-layout">
-        <!-- Cadre Caméra Miniature Intégré -->
         <div class="cam-frame-container">
           ${this._exists(c.entity_camera) ? html`
             <div class="cam-wrapper">
@@ -359,7 +358,6 @@ class SpaCard extends LitElement {
             <div class="cam-placeholder"><ha-icon icon="mdi:camera-off"></ha-icon><span>Pas de flux vidéo</span></div>`}
         </div>
 
-        <!-- Grand cadre de Programmation compacté -->
         ${this._renderSchedule()}
       </div>`;
   }
