@@ -80,4 +80,3 @@ export const sharedStyles = css`
   .hidden { display: none; }
   .center { display: flex; align-items: center; justify-content: center; }
 `;
-`;
