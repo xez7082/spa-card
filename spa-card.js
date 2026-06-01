@@ -396,30 +396,31 @@ class SpaCard extends LitElement {
     return html`<div class="sw-grid">${items.map(item => html`<button class="sw-btn ${this._state(item.id)==='on'?'sw-active':''}" @click=${()=>this.hass.callService('switch','toggle',{entity_id:item.id})}><ha-icon icon="mdi:power-plug"></ha-icon><span>${item.name}</span></button>`)}</div>`;
   }
 
-  render() {
+render() {
     if (!this.hass || !this.config) return html``;
-    const title = this.config.card_title || 'SPA DASHBOARD';
-    const bg = this.config.background_image ? `url(${this.config.background_image})` : 'none';
+
     return html`
-      <ha-card style="height:${this.config.card_height || '550px'};">
-        <div class="bg-img" style="background-image:${bg}; filter: blur(${this.config.blur_amount??15}px);"></div>
-        <div class="glass-overlay"></div>
-        <div class="main-container">
-          <div class="header"><h1>${title}</h1></div>
-          <div class="content-body">
-            ${this._tab === 'home' ? this._renderHome() : ''}
-            ${this._tab === 'chem' ? this._renderChem() : ''}
-            ${this._tab === 'cam'  ? this._renderCamTab() : ''}
-            ${this._tab === 'sw'   ? this._renderSwitches() : ''}
+      <ha-card style="--card-h:${this.config.card_height || '640px'};">
+        <div class="card-content-wrap">
+          <div class="header">
+            <h1 class="title">${this.config.card_title || 'SPA'}</h1>
           </div>
+          
+          <div class="view-container">
+            ${this._tab === 'home' ? this._renderHome() : 
+              this._tab === 'chem' ? this._renderChem() : 
+              this._tab === 'sw'   ? this._renderSwitches() : 
+              this._renderHome()}
+          </div>
+
           <div class="nav">
-            <ha-icon icon="mdi:home-flat-cool" class="${this._tab==='home'?'active':''}" @click=${()=>this._tab='home'}></ha-icon>
-            <ha-icon icon="mdi:beaker-check-outline" class="${this._tab==='chem'?'active':''}" @click=${()=>this._tab='chem'}></ha-icon>
-            <ha-icon icon="mdi:cctv" class="${this._tab==='cam'?'active':''}" @click=${()=>()=>this._tab='cam'} @click=${()=>this._tab='cam'}></ha-icon>
-            <ha-icon icon="mdi:tune-vertical" class="${this._tab==='sw'?'active':''}" @click=${()=>this._tab='sw'}></ha-icon>
+            <ha-icon icon="mdi:home-outline" class="${this._tab==='home'?'active':''}" @click=${()=>this._tab='home'}></ha-icon>
+            <ha-icon icon="mdi:beaker-outline" class="${this._tab==='chem'?'active':''}" @click=${()=>this._tab='chem'}></ha-icon>
+            <ha-icon icon="mdi:toggle-switch-outline" class="${this._tab==='sw'?'active':''}" @click=${()=>this._tab='sw'}></ha-icon>
           </div>
         </div>
-      </ha-card>`;
+      </ha-card>
+    `;
   }
 
   static styles = css`
