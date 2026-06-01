@@ -4,327 +4,971 @@ import {
   css
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
+// ═══════════════════════════════════════════════════════════════════
+//  ÉDITEUR  —  V33  (LayZSpa intégré - Style Pool Monitor Brome)
+// ═══════════════════════════════════════════════════════════════════
 class SpaCardEditor extends LitElement {
-  static get properties() { return { hass: {}, _config: {}, _selectedTab: { type: String } }; }
-  constructor() { super(); this._selectedTab = 'gen'; }
-  setConfig(config) { this._config = config; }
-  _valueChanged(ev) {
-    if (!this._config || !this.hass) return;
-    const config = { ...this._config, ...ev.detail.value };
-    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config }, bubbles: true, composed: true }));
+
+  static get properties() {
+    return { hass: {}, _config: {}, _tab: { type: String }, _open: {} };
   }
+
+  constructor() {
+    super();
+    this._tab  = 'gen';
+    this._open = new Set(['a-disp', 'a-temps', 'a-layzspa', 'a-ph', 'a-cdim']);
+  }
+
+  setConfig(config) { this._config = { ...config }; }
+
+  _val(ev) {
+    if (!this._config || !this.hass) return;
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config: ev.detail.value },
+      bubbles: true, composed: true
+    }));
+  }
+
+  _tog(id) {
+    const o = new Set(this._open);
+    o.has(id) ? o.delete(id) : o.add(id);
+    this._open = o;
+  }
+
+  _acc(id, boxStyle, icon, title, schema) {
+    const open = this._open.has(id);
+    return html`
+      <div class="acc ${open ? 'open' : ''}">
+        <div class="ach" @click=${() => this._tog(id)}>
+          <div class="aibox" style="${boxStyle}">${icon}</div>
+          <span class="ach-title">${title}</span>
+          <ha-icon class="arr" icon="mdi:chevron-down"></ha-icon>
+        </div>
+        <div class="acb"><div class="acbi">
+          <ha-form .hass=${this.hass} .data=${this._config}
+            .schema=${schema} @value-changed=${this._val}>
+          </ha-form>
+        </div></div>
+      </div>`;
+  }
+
+  _renderGen() {
+    return html`
+      ${this._acc('a-disp','background:rgba(107,142,255,.18);color:#6b8eff;','GEN','Apparence générale',[
+        { name:'card_title',       label:'Titre du spa',                selector:{ text:{} } },
+        { name:'background_image', label:'Image de fond (URL)',          selector:{ text:{} } },
+        { name:'card_height',      label:'Hauteur totale (ex : 580px)', selector:{ text:{} } },
+        { name:'blur_amount',      label:'Intensité du flou (0–25 px)', selector:{ number:{ mode:'slider', min:0, max:25 } } }
+      ])}`;
+  }
+
+  _renderSens() {
+    return html`
+      ${this._acc('a-temps','background:rgba(52,211,153,.15);color:#10b981;','T°','Températures',[
+        { name:'entity_water_temp',   label:'Temp. eau (actuelle)',  selector:{ entity:{ domain:'sensor' } } },
+        { name:'entity_target_temp',  label:'Entité consigne',       selector:{ entity:{} } },
+        { name:'target_temp_min',     label:'Consigne min (°C)',      selector:{ number:{ mode:'box', step:0.5 } } },
+        { name:'target_temp_max',     label:'Consigne max (°C)',      selector:{ number:{ mode:'box', step:0.5 } } },
+        { name:'entity_ext_temp',     label:'Temp. extérieure',       selector:{ entity:{ domain:'sensor' } } },
+        { name:'entity_spa_air_temp', label:'Temp. air spa',          selector:{ entity:{ domain:'sensor' } } }
+      ])}
+      ${this._acc('a-layzspa','background:rgba(251,191,36,.15);color:#f59e0b;','SPA','LayZSpa — états & maintenance',[
+        { name:'entity_lz_ready',     label:'Prêt (binary_sensor.layzspa_ready)',        selector:{ entity:{ domain:'binary_sensor' } } },
+        { name:'entity_lz_heater',    label:'Chauffage actif (binary_sensor…heater)',   selector:{ entity:{ domain:'binary_sensor' } } },
+        { name:'entity_lz_ttr',       label:'Temps restant avant prêt (sensor…time_to_ready)', selector:{ entity:{ domain:'sensor' } } },
+        { name:'entity_lz_conn',      label:'Connexion WiFi (binary_sensor…connection)',selector:{ entity:{ domain:'binary_sensor' } } },
+        { name:'entity_lz_filter',    label:'Âge filtre — jours (sensor…filter_age)',   selector:{ entity:{ domain:'sensor' } } },
+        { name:'lz_filter_max',       label:'Alerter filtre après (jours)',             selector:{ number:{ mode:'box', min:1, max:365 } } },
+        { name:'entity_lz_chlorine',  label:'Âge brome — jours (sensor…chlorine_age)', selector:{ entity:{ domain:'sensor' } } },
+        { name:'lz_chlorine_max',     label:'Alerter brome après (jours)',             selector:{ number:{ mode:'box', min:1, max:365 } } },
+        { name:'entity_lz_energy',    label:'Énergie totale kWh (sensor…energy)',       selector:{ entity:{ domain:'sensor' } } },
+        { name:'entity_lz_rssi',      label:'Signal WiFi RSSI (sensor…rssi)',           selector:{ entity:{ domain:'sensor' } } },
+        { name:'lz_volume',           label:'Volume eau (litres, défaut 500)',           selector:{ number:{ mode:'box', min:100, max:5000 } } },
+        { name:'lz_power_w',          label:'Puissance chauffe (W, défaut 1942)',        selector:{ number:{ mode:'box', min:500, max:5000 } } },
+        { name:'lz_heat_loss',        label:'Pertes thermiques (%, défaut 30)',          selector:{ number:{ mode:'slider', min:0, max:60 } } },
+        { name:'entity_lz_reset_filter',  label:'Bouton reset filtre (button.layzspa_reset_filter_change_timer)',  selector:{ entity:{ domain:'button' } } },
+        { name:'entity_lz_reset_chlore',  label:'Bouton reset brome (button.layzspa_reset_chlorine_timer)',       selector:{ entity:{ domain:'button' } } },
+        { name:'entity_lz_schedule',      label:'Programmation — helper heure (input_datetime.spa_ready_at)',    selector:{ entity:{ domain:'input_datetime' } } }
+      ])}
+      ${this._acc('a-hum','background:rgba(52,211,153,.15);color:#10b981;','~','Humidité & Énergie',[
+        { name:'entity_ext_hum',   label:'Humidité extérieure',    selector:{ entity:{ domain:'sensor' } } },
+        { name:'entity_spa_hum',   label:'Humidité spa',            selector:{ entity:{ domain:'sensor' } } },
+        { name:'main_cons_entity', label:'Sonde conso (W ou kWh)', selector:{ entity:{} } }
+      ])}
+      ${this._acc('a-flood','background:rgba(56,189,248,.15);color:#0ea5e9;','💧',"Capteur d'inondation",[
+        { name:'entity_water_leak', label:'Détecteur fuite eau',   selector:{ entity:{ domain:'binary_sensor' } } },
+        { name:'entity_tamper',     label:'Alerte sabotage',       selector:{ entity:{ domain:'binary_sensor' } } },
+        { name:'entity_flood_bat',  label:'Batterie capteur (%)',  selector:{ entity:{ domain:'sensor' } } }
+      ])}`;
+  }
+
+  _renderChem() {
+    return html`
+      ${this._acc('a-ph',  'background:rgba(167,139,250,.15);color:#8b5cf6;','pH', 'Suivi du pH',[
+        { name:'entity_ph', label:'Entité pH (Idéal : 7.2 - 7.6)',  selector:{ entity:{ domain:'sensor' } } },
+        { name:'ph_min',    label:'pH Minimum', selector:{ number:{ step:0.1, mode:'box' } } },
+        { name:'ph_max',    label:'pH Maximum', selector:{ number:{ step:0.1, mode:'box' } } }
+      ])}
+      ${this._acc('a-brome', 'background:rgba(239,68,68,.15);color:#ef4444;','Br','Brome Total (ppm)',[
+        { name:'entity_brome', label:'Entité Brome (Idéal : 3.0 - 5.0)', selector:{ entity:{ domain:'sensor' } } },
+        { name:'brome_min',    label:'Brome Minimum', selector:{ number:{ step:0.1, mode:'box' } } },
+        { name:'brome_max',    label:'Brome Maximum', selector:{ number:{ step:0.1, mode:'box' } } }
+      ])}
+      ${this._acc('a-orp', 'background:rgba(245,158,11,.15);color:#f59e0b;','ORP','Pouvoir Désinfectant / Choc (ORP mV)',[
+        { name:'entity_orp', label:'Entité ORP (Idéal : 650 - 750)',  selector:{ entity:{ domain:'sensor' } } },
+        { name:'orp_min',    label:'ORP Minimum', selector:{ number:{ mode:'box' } } },
+        { name:'orp_max',    label:'ORP Maximum', selector:{ number:{ mode:'box' } } }
+      ])}
+      ${this._acc('a-tac','background:rgba(16,185,129,.15);color:#10b981;','TAC','Alcalinité / Stabilisant (ppm)',[
+        { name:'entity_tds', label:'Entité TAC / Solides Dissous',  selector:{ entity:{ domain:'sensor' } } },
+        { name:'tds_min',    label:'TAC Minimum', selector:{ number:{ mode:'box' } } },
+        { name:'tds_max',    label:'TAC Maximum', selector:{ number:{ mode:'box' } } }
+      ])}`;
+  }
+
+  _renderCam() {
+    return html`
+      ${this._acc('a-cdim','background:rgba(56,189,248,.15);color:#0ea5e9;','CAM','Caméra & dimensions',[
+        { name:'entity_camera', label:'Entité caméra',         selector:{ entity:{ domain:'camera' } } },
+        { name:'cam_w_px',      label:'Largeur caméra (px) — vide = 50% auto', selector:{ number:{ mode:'box', min:40, max:800 } } },
+        { name:'cam_h_px',      label:'Hauteur caméra (px) — vide = hauteur auto', selector:{ number:{ mode:'box', min:40, max:800 } } },
+        { name:'cam_radius',    label:'Arrondi des coins (px)', selector:{ number:{ mode:'slider', min:0, max:50 } } }
+      ])}
+      ${this._acc('a-cpos','background:rgba(56,189,248,.15);color:#0ea5e9;','XY','Position',[
+        { name:'cam_x', label:'Décalage horizontal X (px)', selector:{ number:{ mode:'box', min:-500, max:500 } } },
+        { name:'cam_y', label:'Décalage vertical Y (px)',   selector:{ number:{ mode:'box', min:-500, max:500 } } }
+      ])}`;
+  }
+
+  _renderSw() {
+    const schema = Array.from({ length:10 }, (_,i) => [
+      { name:`switch_${i+1}`,      label:`Entité bouton ${i+1}`, selector:{ entity:{} } },
+      { name:`name_switch_${i+1}`, label:`Nom bouton ${i+1}`,    selector:{ text:{} } }
+    ]).flat();
+    return html`
+      ${this._acc('a-sw','background:rgba(251,146,60,.15);color:#f97316;','SW','10 interrupteurs configurables',schema)}`;
+  }
+
   render() {
     if (!this.hass || !this._config) return html``;
-    const schemas = {
-      gen: [
-        { name: "card_title", label: "Titre du Spa", selector: { text: {} } },
-        { name: "background_image", label: "Image de fond", selector: { text: {} } },
-        { name: "card_height", label: "Hauteur Totale (ex: 580px)", selector: { text: {} } },
-        { name: "blur_amount", label: "Intensité du flou (px)", selector: { number: { mode: "slider", min: 0, max: 25 } } }
-      ],
-      sensors: [
-        { name: "entity_water_temp", label: "Temp Eau (Actuelle)", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_target_temp", label: "Entité Consigne", selector: { entity: {} } },
-        { name: "entity_ext_temp", label: "Temp Extérieure", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_ext_hum", label: "Humidité Extérieure", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_spa_air_temp", label: "Temp Air Spa", selector: { entity: { domain: "sensor" } } },
-        { name: "entity_spa_hum", label: "Humidité Air Spa", selector: { entity: { domain: "sensor" } } },
-        { name: "main_cons_entity", label: "Sonde Conso", selector: { entity: {} } }
-      ],
-      chimie: [
-        { name: "entity_ph", label: "Entité pH", selector: { entity: { domain: "sensor" } } },
-        { name: "ph_min", label: "pH Minimum", selector: { number: { step: 0.1, mode: "box" } } },
-        { name: "ph_max", label: "pH Maximum", selector: { number: { step: 0.1, mode: "box" } } },
-        { name: "entity_orp", label: "Entité ORP", selector: { entity: { domain: "sensor" } } },
-        { name: "orp_min", label: "ORP Minimum", selector: { number: { mode: "box" } } },
-        { name: "orp_max", label: "ORP Maximum", selector: { number: { mode: "box" } } },
-        { name: "entity_tds", label: "Entité TDS", selector: { entity: { domain: "sensor" } } },
-        { name: "tds_min", label: "TDS Minimum", selector: { number: { mode: "box" } } },
-        { name: "tds_max", label: "TDS Maximum", selector: { number: { mode: "box" } } },
-        { name: "entity_salt", label: "Entité Sel", selector: { entity: { domain: "sensor" } } },
-        { name: "salt_min", label: "Sel Minimum", selector: { number: { mode: "box" } } },
-        { name: "salt_max", label: "Sel Maximum", selector: { number: { mode: "box" } } }
-      ],
-      camera: [
-        { name: "entity_camera", label: "Entité Caméra", selector: { entity: { domain: "camera" } } },
-        { name: "cam_w_px", label: "Largeur Cadre (px)", selector: { number: { mode: "box", min: 10, max: 1000 } } },
-        { name: "cam_h_px", label: "Hauteur Cadre (px)", selector: { number: { mode: "box", min: 10, max: 1000 } } },
-        { name: "cam_radius", label: "Arrondi des coins (px)", selector: { number: { mode: "slider", min: 0, max: 50 } } },
-        { name: "cam_x", label: "Position Horiz. X (px)", selector: { number: { mode: "box", min: -500, max: 500 } } },
-        { name: "cam_y", label: "Position Vert. Y (px)", selector: { number: { mode: "box", min: -500, max: 500 } } }
-      ],
-      switches: Array.from({ length: 10 }, (_, i) => ([
-        { name: `switch_${i + 1}`, label: `Bouton ${i + 1}`, selector: { entity: {} } },
-        { name: `name_switch_${i + 1}`, label: `Nom ${i + 1}`, selector: { text: {} } }
-      ])).flat()
+    const TABS = [
+      { id:'gen',  s:'background:rgba(107,142,255,.18);color:#6b8eff;', i:'GEN', l:'Général'  },
+      { id:'sens', s:'background:rgba(52,211,153,.15);color:#10b981;',  i:'T°',  l:'Capteurs' },
+      { id:'chem', s:'background:rgba(167,139,250,.15);color:#8b5cf6;', i:'pH',  l:'Chimie'   },
+      { id:'cam',  s:'background:rgba(56,189,248,.15);color:#0ea5e9;',  i:'CAM', l:'Caméra'   },
+      { id:'sw',   s:'background:rgba(251,146,60,.15);color:#f97316;',  i:'SW',  l:'Switches' }
+    ];
+    const content = {
+      gen:  this._renderGen(),
+      sens: this._renderSens(),
+      chem: this._renderChem(),
+      cam:  this._renderCam(),
+      sw:   this._renderSw()
     };
     return html`
-      <div class="editor-tabs">
-        ${Object.keys(schemas).map(t => html`<button class="${this._selectedTab === t ? 'active' : ''}" @click=${() => this._selectedTab = t}>${t.toUpperCase()}</button>`)}
-      </div>
-      <ha-form .hass=${this.hass} .data=${this._config} .schema=${schemas[this._selectedTab]} @value-changed=${this._valueChanged}></ha-form>
-      <style>
-        .editor-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
-        .editor-tabs button { flex: 1; padding: 8px; cursor: pointer; background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; }
-        .editor-tabs button.active { background: #00f9f9; color: #000; }
-      </style>
-    `;
-  }
-}
-customElements.define("spa-card-editor", SpaCardEditor);
-
-class SpaCard extends LitElement {
-  static getConfigElement() { return document.createElement("spa-card-editor"); }
-  static get properties() { return { hass: {}, config: {}, _tab: { type: String } }; }
-  constructor() { super(); this._tab = 'home'; }
-  setConfig(config) { this.config = config; }
-
-  _exists(id) {
-    if (!id || !this.hass.states[id]) return false;
-    const s = this.hass.states[id].state;
-    return !['unavailable', 'unknown', 'none', '--'].includes(s.toLowerCase());
-  }
-
-  _changeTemp(offset) {
-    const id = this.config.entity_target_temp;
-    const val = Math.round((parseFloat(this.hass.states[id].state) + offset) * 2) / 2;
-    const domain = id.split('.')[0];
-    this.hass.callService(domain === 'climate' ? "climate" : "input_number", domain === 'climate' ? "set_temperature" : "set_value", domain === 'climate' ? { entity_id: id, temperature: val } : { entity_id: id, value: val });
-  }
-
-  _getChemistryAdvice(type, val, min, max) {
-    if (type === 'pH') {
-      if (val < min) {
-        const diff = (min - val).toFixed(1);
-        const gr = Math.round(diff * 50); // Base indicative: ~5g pour bouger de 0.1 pH dans 500L
-        return `pH trop bas (-${diff}). Ajoutez environ ${gr}g de pH Plus.`;
-      }
-      if (val > max) {
-        const diff = (val - max).toFixed(1);
-        const gr = Math.round(diff * 50);
-        return `pH trop haut (+${diff}). Ajoutez environ ${gr}g de pH Moins.`;
-      }
-      return "Le pH est parfait pour l'action du brome !";
-    }
-    
-    if (type === 'ORP') {
-      if (val < min) return "Désinfection insuffisante ! Ajoutez des pastilles de Brome (ou Brome Choc).";
-      if (val > max) return "Taux de brome très élevé. Ouvrez le couvercle pour ventiler et laissez baisser.";
-      return "Niveau de Brome optimal. Eau saine et désinfectée.";
-    }
-
-    if (type === 'TDS') {
-      if (val > max) return "TDS trop élevé (eau saturée en produits). Il est temps de vidanger vos 500L.";
-      return "Taux de solides dissous correct.";
-    }
-
-    if (type === 'SEL') {
-      if (val < min) return "Manque de sel pour l'éco-stérilisateur au brome. Ajoutez du sel.";
-      if (val > max) return "Trop de sel. Videz un peu d'eau (50L) et complétez à l'eau claire.";
-      return "Salinité idéale pour votre système.";
-    }
-    return "";
-  }
-
-  _renderTab() {
-    const c = this.config;
-    if (this._tab === 'home') {
-      return html`
-        <div class="home-view">
-          <div class="flex-row-center">
-            <div class="side-col">
-              ${this._exists(c.entity_ext_temp) ? html`<div class="side-info"><div class="val-big">${this.hass.states[c.entity_ext_temp].state}°</div><div class="label-tiny">EXTÉRIEUR</div></div>` : ''}
-              ${this._exists(c.entity_ext_hum) ? html`<div class="hum-pill">${this.hass.states[c.entity_ext_hum].state}% HR</div>` : ''}
-            </div>
-            <div class="gauge-container">
-                ${this._exists(c.entity_target_temp) ? html`<div class="temp-btn" @click=${() => this._changeTemp(0.5)}><ha-icon icon="mdi:chevron-up"></ha-icon></div>` : ''}
-                <div class="center-gauge">
-                    <div class="outer-ring"></div>
-                    <div class="inner-circle">
-                        ${this._exists(c.entity_water_temp) ? html`<span class="water-label">EAU</span><span class="water-val">${this.hass.states[c.entity_water_temp].state}°</span>` : ''}
-                        ${this._exists(c.entity_target_temp) ? html`<div class="target-box"><span class="target-val">CIBLE ${this.hass.states[c.entity_target_temp].state}°</span></div>` : ''}
-                    </div>
-                </div>
-                ${this._exists(c.entity_target_temp) ? html`<div class="temp-btn" @click=${() => this._changeTemp(-0.5)}><ha-icon icon="mdi:chevron-down"></ha-icon></div>` : ''}
-            </div>
-            <div class="side-col">
-              ${this._exists(c.entity_spa_air_temp) ? html`<div class="side-info"><div class="val-big">${this.hass.states[c.entity_spa_air_temp].state}°</div><div class="label-tiny">AIR SPA</div></div>` : ''}
-              ${this._exists(c.entity_spa_hum) ? html`<div class="hum-pill">${this.hass.states[c.entity_spa_hum].state}% HR</div>` : ''}
-            </div>
-          </div>
-          ${this._exists(c.main_cons_entity) ? html`
-            <div class="energy-footer">
-                <ha-icon icon="mdi:lightning-bolt" class="anim-pulse"></ha-icon>
-                <span>${this.hass.states[c.main_cons_entity].state} ${this.hass.states[c.main_cons_entity].attributes.unit_of_measurement || ''}</span>
-            </div>` : ''}
-        </div>`;
-    }
-
-    if (this._tab === 'chem') {
-        const sensors = [
-            {id:c.entity_ph, n:'pH', u:'', i:'mdi:flask', min:c.ph_min??7.2, max:c.ph_max??7.6, dMin:6.0, dMax:8.0},
-            {id:c.entity_orp, n:'ORP', u:'mV', i:'mdi:pill', min:c.orp_min??650, max:c.orp_max??750, dMin:500, dMax:900},
-            {id:c.entity_tds, n:'TDS', u:'ppm', i:'mdi:water', min:c.tds_min??0, max:c.tds_max??2000, dMin:0, dMax:4000},
-            {id:c.entity_salt, n:'SEL', u:'ppm', i:'mdi:shaker', min:c.salt_min??2000, max:c.salt_max??3000, dMin:1000, dMax:4000}
-        ].filter(s => this._exists(s.id));
-        
-        return html`
-          <div class="pool-monitor-style">
-            ${sensors.map(s => {
-                const val = parseFloat(this.hass.states[s.id].state);
-                const totalRange = s.dMax - s.dMin;
-                let pct = ((val - s.dMin) / totalRange) * 100;
-                pct = Math.max(0, Math.min(100, pct));
-                
-                let statusClass = 'ideal';
-                let statusLabel = 'Idéal';
-                if (val < s.min) { statusClass = 'low'; statusLabel = 'Trop Bas'; }
-                else if (val > s.max) { statusClass = 'high'; statusLabel = 'Trop Haut'; }
-
-                const advice = this._getChemistryAdvice(s.n, val, s.min, s.max);
-
-                return html`
-                    <div class="pool-row">
-                        <div class="pool-row-header">
-                            <span class="pool-name"><ha-icon icon="${s.i}"></ha-icon> ${s.n}</span>
-                            <span class="pool-status-text ${statusClass}">${statusLabel}</span>
-                            <span class="pool-value">${val}<small>${s.u}</small></span>
-                        </div>
-                        <div class="pool-gauge-container">
-                            <div class="pool-gauge-bar">
-                                <div class="pool-zone low-zone" style="width: ${((s.min - s.dMin)/totalRange)*100}%"></div>
-                                <div class="pool-zone ideal-zone" style="width: ${((s.max - s.min)/totalRange)*100}%"></div>
-                                <div class="pool-zone high-zone" style="width: ${((s.dMax - s.max)/totalRange)*100}%"></div>
-                                <div class="pool-marker" style="left: ${pct}%;"></div>
-                            </div>
-                            <div class="pool-gauge-labels">
-                                <span>${s.dMin}</span>
-                                <span class="mid-label">${s.min}</span>
-                                <span class="mid-label">${s.max}</span>
-                                <span>${s.dMax}</span>
-                            </div>
-                        </div>
-                        <div class="pool-advice ${statusClass}">${advice}</div>
-                    </div>`;
-            })}
-          </div>`;
-    }
-
-    if (this._tab === 'sw') {
-        const sws = Array.from({length:10},(_,i)=>({id:c[`switch_${i+1}`], n:c[`name_switch_${i+1}`]})).filter(s => this._exists(s.id));
-        return html`<div class="sw-grid">${sws.map(s => html`<div class="sw-card ${this.hass.states[s.id].state==='on'?'active':''}" @click=${()=>this.hass.callService("homeassistant","toggle",{entity_id:s.id})}><ha-icon icon="mdi:power"></ha-icon><span>${s.n||'Bouton'}</span></div>`)}</div>`;
-    }
-
-    if (this._tab === 'cam') {
-        const w = c.cam_w_px || 300;
-        const h = c.cam_h_px || 200;
-        const rad = c.cam_radius || 20;
-        const posX = c.cam_x || 0;
-        const posY = c.cam_y || 0;
-        return html`
-          <div class="cam-container" style="transform: translate(${posX}px, ${posY}px);">
-            <div class="cam-crop" style="width: ${w}px; height: ${h}px; border-radius: ${rad}px;">
-              ${this._exists(c.entity_camera) ? html`
-                <hui-image 
-                  .hass=${this.hass} 
-                  .cameraImage=${c.entity_camera} 
-                  cameraView="live">
-                </hui-image>` : ''}
-            </div>
-          </div>`;
-    }
-  }
-
-  render() {
-    const c = this.config;
-    const blur = c.blur_amount !== undefined ? c.blur_amount : 15;
-    const nav = [{id:'home', i:'mdi:home-variant'}];
-    if(this._exists(c.entity_camera)) nav.push({id:'cam', i:'mdi:camera'});
-    if([c.entity_ph, c.entity_orp, c.entity_tds, c.entity_salt].some(id => this._exists(id))) nav.push({id:'chem', i:'mdi:flask-round-bottom'});
-    if(Array.from({length:10},(_,i)=>c[`switch_${i+1}`]).some(id => this._exists(id))) nav.push({id:'sw', i:'mdi:tune-vertical'});
-
-    return html`
-      <ha-card style="height: ${c.card_height || '580px'};">
-        <div class="bg" style="background-image: url('${c.background_image || '/local/sparond2.png'}');">
-            <div class="overlay" style="backdrop-filter: blur(${blur}px); -webkit-backdrop-filter: blur(${blur}px);">
-                <div class="header">${c.card_title || 'MY SPA'}</div>
-                <div class="main-content">${this._renderTab()}</div>
-                ${nav.length > 1 ? html`<div class="nav">${nav.map(n => html`<ha-icon class="${this._tab===n.id?'active':''}" icon="${n.i}" @click=${()=>this._tab=n.id}></ha-icon>`)}</div>` : ''}
-            </div>
+      <div class="editor-wrap">
+        <div class="tabs">
+          ${TABS.map(t => html`
+            <button class="tab ${this._tab===t.id?'on':''}" @click=${()=>{ this._tab=t.id; }}>
+              <div class="tbox" style="${t.s}">${t.i}</div>
+              <span class="tlbl">${t.l}</span>
+            </button>`)}
         </div>
-      </ha-card>`;
+        <div class="sections">${content[this._tab]}</div>
+      </div>`;
   }
 
   static styles = css`
-    :host { --accent: #00f9f9; --glass: rgba(255,255,255,0.08); }
-    ha-card { border-radius: 30px; overflow: hidden; background: #000; color: #fff; border: none; }
-    .bg { background-size: cover; background-position: center; height: 100%; width: 100%; }
-    .overlay { height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.85) 100%); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
-    .header { text-align: center; opacity: 0.4; font-size: 10px; letter-spacing: 3px; margin-bottom: 5px; }
-    .main-content { flex: 1; display: flex; align-items: center; justify-content: center; overflow-y: auto; position: relative; width: 100%; }
-    
-    /* STYLE POOL MONITOR CARD */
-    .pool-monitor-style { width: 100%; display: flex; flex-direction: column; gap: 14px; padding: 5px 10px; box-sizing: border-box; }
-    .pool-row { background: var(--glass); padding: 12px 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); }
-    .pool-row-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-    .pool-name { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
-    .pool-name ha-icon { --mdc-icon-size: 18px; opacity: 0.7; }
-    .pool-status-text { font-size: 10px; font-weight: bold; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.5px; }
-    .pool-status-text.ideal { background: rgba(76, 175, 80, 0.2); color: #4caf50; }
-    .pool-status-text.low { background: rgba(33, 150, 243, 0.2); color: #2196f3; }
-    .pool-status-text.high { background: rgba(255, 152, 0, 0.2); color: #ff9800; }
-    .pool-value { font-size: 18px; font-weight: 300; color: #fff; }
-    .pool-value small { font-size: 11px; margin-left: 2px; opacity: 0.6; }
-    
-    .pool-gauge-container { position: relative; width: 100%; margin-top: 4px; }
-    .pool-gauge-bar { position: relative; height: 6px; width: 100%; border-radius: 3px; display: flex; background: rgba(255,255,255,0.1); }
-    .pool-zone { height: 100%; }
-    .pool-zone.low-zone { background: #2196f3; border-top-left-radius: 3px; border-bottom-left-radius: 3px; opacity: 0.6; }
-    .pool-zone.ideal-zone { background: #4caf50; }
-    .pool-zone.high-zone { background: #ff9800; border-top-right-radius: 3px; border-bottom-right-radius: 3px; opacity: 0.6; }
-    
-    .pool-marker { position: absolute; width: 12px; height: 12px; background: #fff; border-radius: 50%; top: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 6px rgba(0,0,0,0.8); border: 2px solid #222; z-index: 2; transition: left 0.5s ease-in-out; }
-    .pool-gauge-labels { display: flex; justify-content: space-between; font-size: 11px; opacity: 0.7; margin-top: 5px; padding: 0 2px; }
-    .mid-label { font-weight: 700; color: #fff; opacity: 0.9; }
-
-    /* CSS DES MESSAGES DE CONSEILS DYNAMIQUES */
-    .pool-advice { margin-top: 10px; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 400; line-height: 1.3; text-align: left; }
-    .pool-advice.ideal { background: rgba(76, 175, 80, 0.05); color: rgba(255,255,255,0.6); border-left: 3px solid #4caf50; }
-    .pool-advice.low { background: rgba(33, 150, 243, 0.1); color: #bbdefb; border-left: 3px solid #2196f3; }
-    .pool-advice.high { background: rgba(255, 152, 0, 0.1); color: #ffe0b2; border-left: 3px solid #ff9800; }
-
-    /* RESTE DU STYLE */
-    .home-view { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .flex-row-center { display: flex; align-items: center; justify-content: center; width: 100%; gap: 10px; }
-    .side-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 70px; }
-    .gauge-container { flex: 0 0 180px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-    .center-gauge { position: relative; width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; }
-    .outer-ring { position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 1px solid rgba(0,249,249,0.1); border-top: 2px solid var(--accent); animation: rotate 8s linear infinite; }
-    .inner-circle { width: 150px; height: 150px; background: rgba(255,255,255,0.03); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.05); }
-    .water-val { font-size: 50px; font-weight: 100; color: var(--accent); line-height: 1; }
-    .water-label { font-size: 8px; opacity: 0.3; letter-spacing: 2px; }
-    .target-box { margin-top: 5px; background: var(--glass); padding: 2px 8px; border-radius: 10px; font-size: 10px; opacity: 0.7; }
-    .temp-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--glass); display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }
-    .val-big { font-size: 24px; font-weight: 200; }
-    .label-tiny { font-size: 7px; opacity: 0.3; text-align: center; }
-    .hum-pill { font-size: 8px; color: var(--accent); background: var(--glass); padding: 2px 6px; border-radius: 5px; margin-top: 4px; }
-    .energy-footer { margin-top: 25px; background: var(--glass); padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-size: 12px; border: 1px solid rgba(255,255,255,0.05); }
-    .sw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 12px; width: 100%; }
-    .sw-card { background: var(--glass); padding: 15px 10px; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; cursor: pointer; }
-    .sw-card.active { border-color: var(--accent); background: rgba(0,249,249,0.1); }
-    .nav { display: flex; justify-content: space-around; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); width: 100%; }
-    .nav ha-icon { opacity: 0.3; cursor: pointer; --mdc-icon-size: 24px; }
-    .nav ha-icon.active { opacity: 1; color: var(--accent); }
-
-    .cam-container { display: flex; align-items: center; justify-content: center; }
-    .cam-crop { overflow: hidden; border: 2px solid rgba(255,255,255,0.2); background: #000; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    .cam-crop hui-image { width: 100%; height: 100%; --ha-camera-object-fit: fill; }
-
-    @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    .anim-pulse { animation: pulse 2s infinite; color: var(--accent); }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    :host { display: block; }
+    .tabs {
+      display:flex; gap:3px;
+      background:var(--secondary-background-color,rgba(0,0,0,.05));
+      border-radius:14px; padding:5px; margin-bottom:12px;
+    }
+    .tab {
+      flex:1; display:flex; flex-direction:column; align-items:center;
+      gap:4px; padding:5px 2px 7px; cursor:pointer;
+      border:none;
+      background:transparent; border-radius:9px; transition:background .18s;
+      font-family:var(--paper-font-body1_-_font-family,sans-serif);
+    }
+    .tab:hover { background:rgba(0,0,0,.04); }
+    .tab.on    { background:var(--card-background-color,#fff); box-shadow:0 1px 4px rgba(0,0,0,.1); }
+    .tbox {
+      width:32px; height:32px; border-radius:9px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:700; letter-spacing:-.3px;
+      transition:.18s;
+    }
+    .tlbl {
+      font-size:10px; color:var(--secondary-text-color,#888);
+      letter-spacing:.2px; transition:color .18s; white-space:nowrap;
+    }
+    .tab.on .tlbl { color:var(--primary-text-color,#212121); font-weight:500; }
+    .sections { display:flex; flex-direction:column; }
+    .acc { border:1px solid var(--divider-color,rgba(0,0,0,.12)); border-radius:12px; margin-bottom:8px; overflow:hidden; }
+    .ach {
+      display:flex; align-items:center; gap:10px; padding:11px 13px;
+      cursor:pointer; background:var(--secondary-background-color,rgba(0,0,0,.03));
+      transition:background .15s;
+      user-select:none;
+    }
+    .ach:hover { background:rgba(0,0,0,.06); }
+    .aibox {
+      width:32px;
+      height:32px; border-radius:9px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:700; flex-shrink:0; letter-spacing:-.3px;
+    }
+    .ach-title { flex:1; font-size:13px; font-weight:500; color:var(--primary-text-color,#212121); }
+    .arr { --mdc-icon-size:20px; color:var(--secondary-text-color,#aaa); transition:transform .28s cubic-bezier(.4,0,.2,1); }
+    .acc.open .arr { transform:rotate(180deg); }
+    .acb { display:grid; grid-template-rows:0fr; transition:grid-template-rows .3s cubic-bezier(.4,0,.2,1); }
+    .acc.open .acb { grid-template-rows:1fr; }
+    .acb > div { overflow:hidden; }
+    .acbi { padding:6px 6px 14px; }
   `;
 }
-customElements.define("spa-card", SpaCard);
-window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Master V34.0", preview: true });
+customElements.define('spa-card-editor', SpaCardEditor);
+
+
+// ═══════════════════════════════════════════════════════════════════
+//  CARTE  —  V33  (LayZSpa intégré - Style Pool Monitor Brome)
+// ═══════════════════════════════════════════════════════════════════
+class SpaCard extends LitElement {
+
+  static getConfigElement() { return document.createElement('spa-card-editor'); }
+
+  static getStubConfig() {
+    return {
+      card_title:'MY LAYZSPA', blur_amount:15, card_height:'640px',
+      entity_water_temp:  'sensor.layzspa_temp_c',
+      entity_target_temp: 'climate.layzspa_temperature_control',
+      target_temp_min: 20, target_temp_max: 40,
+      entity_lz_ready:   'binary_sensor.layzspa_ready',
+      entity_lz_heater:  'binary_sensor.layzspa_heater',
+      entity_lz_ttr:     'sensor.layzspa_time_to_ready',
+      entity_lz_conn:    'binary_sensor.layzspa_connection',
+      entity_lz_filter:  'sensor.layzspa_filter_age',
+      lz_volume:      500,
+      lz_power_w:     1942,
+      lz_heat_loss:   30,
+      entity_lz_reset_filter: 'button.layzspa_reset_filter_change_timer',
+      entity_lz_schedule:     'input_datetime.spa_ready_at',
+      entity_lz_reset_chlore: 'button.layzspa_reset_chlorine_timer',
+      lz_filter_max:     60,
+      entity_lz_chlorine:'sensor.layzspa_chlorine_age',
+      lz_chlorine_max:   14,
+      entity_lz_energy:  'sensor.layzspa_energy',
+      entity_lz_rssi:    'sensor.layzspa_rssi',
+      main_cons_entity:  'sensor.layzspa_power',
+      entity_water_leak: 'binary_sensor.innondation_spa_water_leak',
+      entity_tamper:     'binary_sensor.innondation_spa_tamper',
+      entity_flood_bat:  'sensor.innondation_spa_battery',
+      
+      // Configuration par défaut Chimie / Brome
+      ph_min: 7.2, ph_max: 7.6,
+      brome_min: 3.0, brome_max: 5.0,
+      orp_min: 650, orp_max: 750,
+      tds_min: 80, tds_max: 150, // Servira de TAC ici
+      
+      switch_1:'switch.layzspa_pump',           name_switch_1:'Pompe',
+      switch_2:'switch.layzspa_jets',           name_switch_2:'Jets',
+      switch_3:'switch.layzspa_airbubbles',     name_switch_3:'Bulles',
+      switch_4:'switch.layzspa_heat_regulation', name_switch_4:'Chauffe',
+      switch_5:'switch.layzspa_power_switch',   name_switch_5:'Alimentation',
+      switch_6:'switch.layzspa_lock',           name_switch_6:'Verrouillage'
+    };
+  }
+
+  static get properties() {
+    return { hass:{}, config:{}, _tab:{ type:String }, _camExpanded:{ type:Boolean } };
+  }
+
+  constructor() { super(); this._tab = 'home'; this._camExpanded = false; }
+  setConfig(config) { this.config = config; }
+  getCardSize() { return Math.ceil((parseInt(this.config?.card_height)||640)/50); }
+
+  _exists(id) {
+    if (!id || !this.hass?.states[id]) return false;
+    return !['unavailable','unknown','none','--',''].includes(
+      String(this.hass.states[id].state).toLowerCase()
+    );
+  }
+
+  _state(id) { return this._exists(id) ? this.hass.states[id].state : null; }
+  _attr(id, a) { return this.hass?.states[id]?.attributes?.[a] ?? null; }
+
+  _changeTemp(offset) {
+    const id = this.config.entity_target_temp;
+    if (!this._exists(id)) return;
+    const cur = this.config.entity_target_temp.startsWith('climate.')
+      ? parseFloat(this._attr(id, 'temperature') ?? this._state(id))
+      : parseFloat(this._state(id));
+    if (isNaN(cur)) return;
+    const mn = Number(this.config.target_temp_min ?? this._attr(id,'min') ?? 10);
+    const mx = Number(this.config.target_temp_max ?? this._attr(id,'max') ?? 45);
+    const val = Math.min(mx, Math.max(mn, Math.round((cur+offset)*2)/2));
+    const domain = id.split('.')[0];
+    if (domain==='climate') {
+      this.hass.callService('climate','set_temperature',{ entity_id:id, temperature:val });
+    } else {
+      this.hass.callService('input_number','set_value',{ entity_id:id, value:val });
+    }
+  }
+
+  _waterTemp() {
+    const wid = this.config.entity_water_temp;
+    const cid = this.config.entity_target_temp;
+    if (this._exists(wid)) return this._state(wid);
+    if (cid && this.hass?.states[cid]) {
+      const cur = this._attr(cid,'current_temperature');
+      if (cur !== null) return String(cur);
+    }
+    return null;
+  }
+
+  _targetTemp() {
+    const id = this.config.entity_target_temp;
+    if (!id || !this.hass?.states[id]) return null;
+    const domain = id.split('.')[0];
+    if (domain==='climate') {
+      return String(this._attr(id,'temperature') ?? this._state(id));
+    }
+    return this._state(id);
+  }
+
+  // ═══════════════════════════════════════════════
+  //  ACCUEIL
+  // ═══════════════════════════════════════════════
+  _renderHome() {
+    const c = this.config;
+    const wTemp  = this._waterTemp();
+    const tTemp  = this._targetTemp();
+    return html`
+      <div class="home-view">
+        ${this._renderHeatingControl()}
+        ${this._renderLayzspaStatus()}
+
+        <div class="flex-row-center">
+          <div class="side-col">
+            ${this._exists(c.entity_ext_temp) ? html`
+              <div class="side-info">
+                <div class="val-big">${this._state(c.entity_ext_temp)}°</div>
+                <div class="label-tiny">EXTÉRIEUR</div>
+              </div>` : ''}
+            ${this._exists(c.entity_ext_hum) ? html`
+              <div class="hum-pill">${this._state(c.entity_ext_hum)}% HR</div>` : ''}
+          </div>
+
+          <div class="gauge-container">
+            ${this._exists(c.entity_target_temp) ? html`
+              <div class="temp-btn" role="button" aria-label="Augmenter" @click=${()=>this._changeTemp(0.5)}>
+                <ha-icon icon="mdi:chevron-up"></ha-icon>
+              </div>` : ''}
+            <div class="center-gauge">
+              <div class="outer-ring"></div>
+              <div class="inner-circle">
+                ${wTemp ? html`
+                  <span class="water-label">EAU</span>
+                  <span class="water-val">${wTemp}°</span>` : ''}
+                ${tTemp ? html`
+                  <div class="target-box">CIBLE ${tTemp}°</div>` : ''}
+              </div>
+            </div>
+            ${this._exists(c.entity_target_temp) ? html`
+              <div class="temp-btn" role="button" aria-label="Diminuer" @click=${()=>this._changeTemp(-0.5)}>
+                <ha-icon icon="mdi:chevron-down"></ha-icon>
+              </div>` : ''}
+          </div>
+
+          <div class="side-col">
+            ${this._exists(c.entity_spa_air_temp) ? html`
+              <div class="side-info">
+                <div class="val-big">${this._state(c.entity_spa_air_temp)}°</div>
+                <div class="label-tiny">AIR SPA</div>
+              </div>` : ''}
+            ${this._exists(c.entity_spa_hum) ? html`
+              <div class="hum-pill">${this._state(c.entity_spa_hum)}% HR</div>` : ''}
+          </div>
+        </div>
+
+        ${this._renderFooterRow()}
+        ${this._renderMaintenance()}
+        ${this._renderFlood()}
+      </div>`;
+  }
+
+  _renderSchedule() {
+    const c = this.config;
+    const schedId = c.entity_lz_schedule;
+    if (!schedId || !this.hass?.states[schedId]) return html``;
+
+    const raw    = this.hass.states[schedId].state;
+    const parts  = raw.split(':');
+    const h      = parseInt(parts[0] ?? 0);
+    const m      = parseInt(parts[1] ?? 0);
+    const calc   = this._calcHeatingTime();
+    let startStr = '';
+    let readyStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    if (calc && calc !== 0) {
+      const nowD    = new Date();
+      const readyD  = new Date(nowD);
+      readyD.setHours(h, m, 0, 0);
+      if (readyD < nowD) readyD.setDate(readyD.getDate() + 1);
+      const startD  = new Date(readyD.getTime() - calc.timeH * 3600000);
+      startStr = `${String(startD.getHours()).padStart(2,'0')}:${String(startD.getMinutes()).padStart(2,'0')}`;
+    }
+
+    const changeTime = (dh, dm) => {
+      let nh = h + dh;
+      let nm = m + dm;
+      if (nm >= 60) { nm -= 60; nh += 1; }
+      if (nm < 0)   { nm += 60; nh -= 1; }
+      nh = ((nh % 24) + 24) % 24;
+      const timeStr = `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}:00`;
+      this.hass.callService('input_datetime', 'set_datetime', { entity_id: schedId, time: timeStr });
+    };
+
+    const activate = () => {
+      this.hass.callService('persistent_notification', 'create', {
+        title: '🛁 Spa programmé',
+        message: `Prêt à ${readyStr} — chauffe démarrera à ${startStr || '…'}`,
+        notification_id: 'spa_schedule'
+      });
+    };
+
+    return html`
+      <div class="sched-bar">
+        <ha-icon class="sched-icon" icon="mdi:clock-outline"></ha-icon>
+        <div class="sched-col">
+          <div class="sched-title">Prêt à</div>
+          ${startStr ? html`<div class="sched-start">Démarrage à ${startStr}</div>` : ''}
+        </div>
+        <div class="sched-time-ctrl">
+          <div class="sched-btn" @click=${()=>changeTime(-1,0)}>◂ h</div>
+          <div class="sched-btn" @click=${()=>changeTime(0,-15)}>◂ 15'</div>
+          <div class="sched-val">${readyStr}</div>
+          <div class="sched-btn" @click=${()=>changeTime(0,15)}>15' ▸</div>
+          <div class="sched-btn" @click=${()=>changeTime(1,0)}>h ▸</div>
+        </div>
+        <button class="sched-set-btn" @click=${activate} title="Confirmer la programmation">✓</button>
+      </div>`;
+  }
+
+  _renderHeatingControl() {
+    const c   = this.config;
+    const id  = c.entity_target_temp;
+    if (!id || !id.startsWith('climate.')) return html``;
+    if (!this.hass?.states[id]) return html``;
+    const hvac    = this.hass.states[id].state;
+    const isOn    = hvac === 'heat';
+    const curTemp = parseFloat(this._waterTemp() ?? 0);
+    const tgtTemp = parseFloat(this._targetTemp() ?? 34);
+    const atTemp  = curTemp >= tgtTemp - 0.5;
+
+    const toggle = () => {
+      this.hass.callService('climate', 'set_hvac_mode', {
+        entity_id: id,
+        hvac_mode: isOn ? 'off' : 'heat'
+      });
+    };
+
+    return html`
+      <div class="heat-ctrl">
+        <button class="heat-btn ${isOn ? 'heat-on' : 'heat-off'}" @click=${toggle}>
+          <ha-icon icon="${isOn ? 'mdi:radiator' : 'mdi:radiator-off'}"></ha-icon>
+          <span>${isOn ? (atTemp ? 'Maintien' : 'Chauffe ON') : 'Chauffe OFF'}</span>
+        </button>
+        <div class="heat-temps">
+          <div class="heat-t-btn" @click=${()=>this._changeTemp(-1)}>
+            <ha-icon icon="mdi:minus"></ha-icon>
+          </div>
+          <div class="heat-target">${tgtTemp}°</div>
+          <div class="heat-t-btn" @click=${()=>this._changeTemp(1)}>
+            <ha-icon icon="mdi:plus"></ha-icon>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  _calcHeatingTime() {
+    const c = this.config;
+    const volume     = Number(c.lz_volume   ?? 500);
+    const lossRatio  = Number(c.lz_heat_loss ?? 30) / 100;
+    const efficiency = 1 - lossRatio;
+
+    let powerW = Number(c.lz_power_w ?? 0);
+    if (!powerW && this._exists(c.main_cons_entity)) {
+      const unit = this._attr(c.main_cons_entity, 'unit_of_measurement') ?? '';
+      const raw  = parseFloat(this._state(c.main_cons_entity));
+      powerW = unit.toLowerCase().includes('kw') ? raw * 1000 : raw;
+    }
+    if (!powerW || isNaN(powerW)) powerW = 1942;
+    const curTemp = parseFloat(this._waterTemp() ?? NaN);
+    const tgtTemp = parseFloat(this._targetTemp() ?? NaN);
+    if (isNaN(curTemp) || isNaN(tgtTemp)) return null;
+
+    const deltaT = tgtTemp - curTemp;
+    if (deltaT <= 0.5) return 0;
+
+    const whNeeded      = volume * 1.163 * deltaT;
+    const effectivePower = powerW * efficiency;
+    const timeH          = whNeeded / effectivePower;
+    return { timeH, deltaT, curTemp, tgtTemp, powerW, efficiency };
+  }
+
+  _renderLayzspaStatus() {
+    const c = this.config;
+    const hasStatus = this._exists(c.entity_lz_ready) || this._exists(c.entity_lz_conn);
+    if (!hasStatus) return html``;
+
+    const connected = !this._exists(c.entity_lz_conn) || this._state(c.entity_lz_conn) === 'on';
+    const ready     = this._state(c.entity_lz_ready) === 'on';
+    const heating   = this._state(c.entity_lz_heater) === 'on';
+    const calc = this._calcHeatingTime();
+    let icon, label, cls, timeStr = '';
+    if (!connected) {
+      icon='mdi:wifi-off';    label='Déconnecté';  cls='lz-disconnected';
+    } else if (ready || (calc !== null && calc === 0)) {
+      icon='mdi:hot-tub'; label='Prêt !';       cls='lz-ready';
+    } else if (heating) {
+      if (calc !== null && calc !== 0) {
+        const h   = Math.floor(calc.timeH);
+        const min = Math.round((calc.timeH - h) * 60);
+        timeStr   = h > 0 ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''} restantes` : `${min} min restantes`;
+        label = `En chauffe — ${timeStr}`;
+      } else { label = 'En chauffe…'; }
+      icon='mdi:radiator'; cls='lz-heating';
+    } else {
+      if (calc !== null && calc !== 0) {
+        const h   = Math.floor(calc.timeH);
+        const min = Math.round((calc.timeH - h) * 60);
+        timeStr   = h > 0 ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''} pour ${calc.tgtTemp}°` : `${min} min pour ${calc.tgtTemp}°`;
+        label = `En veille — ${timeStr}`;
+      } else { label = 'En veille'; }
+      icon='mdi:power-sleep'; cls='lz-standby';
+    }
+
+    const rssi = this._exists(c.entity_lz_rssi) ? parseInt(this._state(c.entity_lz_rssi)) : null;
+    const rssiIcon = rssi===null ? '' : rssi>=-60 ? 'mdi:wifi-strength-4' : rssi>=-70 ? 'mdi:wifi-strength-3' : rssi>=-80 ? 'mdi:wifi-strength-2' : 'mdi:wifi-strength-1';
+    return html`
+      <div class="lz-status ${cls}">
+        <ha-icon class="lz-icon" icon="${icon}"></ha-icon>
+        <span class="lz-label">${label}</span>
+        ${rssiIcon ? html`<ha-icon class="lz-wifi" icon="${rssiIcon}" title="${rssi} dBm"></ha-icon>` : ''}
+      </div>`;
+  }
+
+  _renderFooterRow() {
+    const c = this.config;
+    const hasCons = this._exists(c.main_cons_entity);
+    const hasEnergy = this._exists(c.entity_lz_energy);
+    if (!hasCons && !hasEnergy) return html``;
+    return html`
+      <div class="footer-row">
+        ${hasCons ? html`
+          <div class="footer-pill">
+            <ha-icon icon="mdi:lightning-bolt" class="anim-pulse"></ha-icon>
+            <span>${this._state(c.main_cons_entity)} ${this._attr(c.main_cons_entity,'unit_of_measurement')??''}</span>
+          </div>` : ''}
+        ${hasEnergy ? html`
+          <div class="footer-pill">
+            <ha-icon icon="mdi:flash"></ha-icon>
+            <span>${parseFloat(this._state(c.entity_lz_energy)).toFixed(2)} kWh</span>
+          </div>` : ''}
+      </div>`;
+  }
+
+  _renderMaintenance() {
+    const c = this.config;
+    const filterAge = this._exists(c.entity_lz_filter) ? parseFloat(this._state(c.entity_lz_filter)) : null;
+    const chloreAge = this._exists(c.entity_lz_chlorine) ? parseFloat(this._state(c.entity_lz_chlorine)) : null;
+    const filterMax = Number(c.lz_filter_max ?? 60);
+    const chloreMax = Number(c.lz_chlorine_max ?? 14);
+    const hasResetF = !!c.entity_lz_reset_filter;
+    const hasResetC = !!c.entity_lz_reset_chlore;
+    if (filterAge === null && chloreAge === null) return html``;
+    const filterWarn = filterAge !== null && filterAge > filterMax;
+    const chloreWarn = chloreAge !== null && chloreAge > chloreMax;
+    const filterPct = filterAge !== null ? Math.min(100, filterAge / filterMax * 100) : 0;
+    const chlorePct = chloreAge !== null ? Math.min(100, chloreAge / chloreMax * 100) : 0;
+    const pressReset = (entityId) => { this.hass.callService('button', 'press', { entity_id: entityId }); };
+    return html`
+      <div class="maint-row">
+        ${filterAge !== null ? html`
+          <div class="maint-item ${filterWarn ? 'maint-warn' : ''}">
+            <div class="maint-head">
+              <ha-icon icon="mdi:air-filter"></ha-icon>
+              <span>Filtre</span>
+              ${filterWarn ? html`<span class="maint-badge">À changer</span>` : ''}
+              ${hasResetF ? html`<button class="maint-reset-btn" @click=${() => pressReset(c.entity_lz_reset_filter)}>✓</button>` : ''}
+            </div>
+            <div class="maint-bar"><div class="maint-fill ${filterWarn?'maint-fill-warn':''}" style="width:${filterPct}%"></div></div>
+            <div class="maint-val">${Math.round(filterAge)} j / ${filterMax} j</div>
+          </div>` : ''}
+        ${chloreAge !== null ? html`
+          <div class="maint-item ${chloreWarn ? 'maint-warn' : ''}">
+            <div class="maint-head">
+              <ha-icon icon="mdi:flask-outline"></ha-icon>
+              <span>Brome</span>
+              ${chloreWarn ? html`<span class="maint-badge">À renouveler</span>` : ''}
+              ${hasResetC ? html`<button class="maint-reset-btn" @click=${() => pressReset(c.entity_lz_reset_chlore)}>✓</button>` : ''}
+            </div>
+            <div class="maint-bar"><div class="maint-fill ${chloreWarn?'maint-fill-warn':''}" style="width:${chlorePct}%"></div></div>
+            <div class="maint-val">${Math.round(chloreAge)} j / ${chloreMax} j</div>
+          </div>` : ''}
+      </div>`;
+  }
+
+  _renderFlood() {
+    const c = this.config;
+    const hasAny = this._exists(c.entity_water_leak)||this._exists(c.entity_tamper)||this._exists(c.entity_flood_bat);
+    if (!hasAny) return html``;
+    const leak = this._state(c.entity_water_leak) === 'on';
+    const tamper = this._state(c.entity_tamper) === 'on';
+    const bat = this._exists(c.entity_flood_bat) ? parseFloat(this._state(c.entity_flood_bat)) : null;
+    const alerting = leak || tamper;
+    const batLow = bat !== null && bat < 20;
+    const batIcon = bat===null ? 'mdi:battery-unknown' : bat>=90 ? 'mdi:battery' : bat>=70 ? 'mdi:battery-80' : bat>=50 ? 'mdi:battery-60' : bat>=30 ? 'mdi:battery-40' : bat>=15 ? 'mdi:battery-20' : 'mdi:battery-alert';
+    return html`
+      <div class="flood-bar ${alerting?'flood-alert':'flood-ok'}">
+        <div class="flood-left">
+          <ha-icon icon="${leak?'mdi:water-alert':'mdi:water-check'}" class="flood-icon ${leak?'flood-icon-alert':''}"></ha-icon>
+          <span class="flood-label">${leak?'FUITE DÉTECTÉE !':'Pas de fuite'}</span>
+        </div>
+        <div class="flood-right">
+          ${this._exists(c.entity_tamper) ? html`<ha-icon icon="${tamper?'mdi:shield-alert':'mdi:shield-check'}" class="flood-pill ${tamper?'pill-warn':'pill-ok'}"></ha-icon>` : ''}
+          ${bat !== null ? html`<div class="flood-pill ${batLow?'pill-warn':'pill-ok'}"><ha-icon icon="${batIcon}"></ha-icon><span>${Math.round(bat)}%</span></div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  CHIMIE  —  STYLE POOL MONITOR SPECIFIQUE BROME (500 LITRES)
+  // ═══════════════════════════════════════════════════════════════════
+  _renderChem() {
+    const c = this.config;
+    
+    // Extraction sécurisée des états numériques
+    const getVal = (id) => (id && this._exists(id)) ? parseFloat(this._state(id)) : null;
+    
+    const phVal    = getVal(c.entity_ph);
+    const bromeVal = getVal(c.entity_brome);
+    const orpVal   = getVal(c.entity_orp);
+    const tacVal   = getVal(c.entity_tds); // On mappe le champ TDS de la config sur le TAC / Stabilisants
+
+    // Seuil et cibles idéales pour le Brome sur 500L
+    const phMin = Number(c.ph_min ?? 7.2), phMax = Number(c.ph_max ?? 7.6);
+    const brMin = Number(c.brome_min ?? 3.0), brMax = Number(c.brome_max ?? 5.0);
+    const orpMin = Number(c.orp_min ?? 650), orpMax = Number(c.orp_max ?? 750);
+    const tacMin = Number(c.tds_min ?? 80), tacMax = Number(c.tds_max ?? 150);
+
+    // Système d'évaluation des statuts (Pool Monitor Card)
+    const getStatus = (val, min, max) => {
+      if (val === null) return { lbl: 'Sans donnée', cls: 'neutral', icon: 'mdi:help-circle-outline' };
+      if (val < min) return { lbl: 'Trop Bas', cls: 'danger', icon: 'mdi:arrow-down-bold-circle' };
+      if (val > max) return { lbl: 'Trop Haut', cls: 'danger', icon: 'mdi:arrow-up-bold-circle' };
+      return { lbl: 'Idéal', cls: 'success', icon: 'mdi:check-circle' };
+    };
+
+    const phStat  = getStatus(phVal, phMin, phMax);
+    const brStat  = getStatus(bromeVal, brMin, brMax);
+    const orpStat = getStatus(orpVal, orpMin, orpMax);
+    const tacStat = getStatus(tacVal, tacMin, tacMax);
+
+    // Calcul de recommandation de Brome dynamique pour vos 500 litres !
+    // Règle : Augmenter de 1 ppm de brome dans 500 L nécessite ~0.75g de brome pur (ou suivre consignes brome choc / régénerateur)
+    let bromeRecommendation = null;
+    if (bromeVal !== null && bromeVal < brMin) {
+      const deltaBr = brMin - bromeVal;
+      const grammesRecommandes = Math.round(deltaBr * 0.75 * 10) / 10;
+      bromeRecommendation = `Dosage recommandé : Ajouter env. ${grammesRecommandes}g de brome régénérateur (choc) pour remonter le niveau à ${brMin} ppm.`;
+    } else if (bromeVal !== null && bromeVal > brMax) {
+      bromeRecommendation = `Alerte : Niveau de brome élevé. Retirez le flotteur diffuseur et aérez le spa (bulles ON).`;
+    } else if (phVal !== null && phVal > phMax) {
+      bromeRecommendation = `Conseil pH : Le brome adore un pH stable. Ajoutez du pH Moins pour redescendre vers 7.4.`;
+    }
+
+    return html`
+      <div class="pool-monitor-grid">
+        
+        <div class="pm-card pm-${phStat.cls}">
+          <div class="pm-header">
+            <span class="pm-title"><ha-icon icon="mdi:ph"></ha-icon> pH de l'eau</span>
+            <span class="pm-badge">${phStat.lbl}</span>
+          </div>
+          <div class="pm-value-row">
+            <span class="pm-value">${phVal !== null ? phVal.toFixed(1) : '--'}</span>
+            <span class="pm-target">Cible: ${phMin}-${phMax}</span>
+          </div>
+          <div class="pm-progress-bar">
+            <div class="pm-progress-fill" style="width: ${phVal ? Math.min(100, Math.max(5, (phVal - 6) / 3 * 100)) : 0}%"></div>
+          </div>
+        </div>
+
+        <div class="pm-card pm-${brStat.cls}">
+          <div class="pm-header">
+            <span class="pm-title"><ha-icon icon="mdi:test-tube"></ha-icon> Brome Total</span>
+            <span class="pm-badge">${brStat.lbl}</span>
+          </div>
+          <div class="pm-value-row">
+            <span class="pm-value">${bromeVal !== null ? bromeVal.toFixed(1) : '--'} <span class="pm-unit">ppm</span></span>
+            <span class="pm-target">Idéal: ${brMin}-${brMax} mg/l</span>
+          </div>
+          <div class="pm-progress-bar">
+            <div class="pm-progress-fill" style="width: ${bromeVal ? Math.min(100, (bromeVal / 8 * 100)) : 0}%"></div>
+          </div>
+        </div>
+
+        <div class="pm-card pm-${orpStat.cls}">
+          <div class="pm-header">
+            <span class="pm-title"><ha-icon icon="mdi:shield-check-outline"></ha-icon> Potentiel ORP</span>
+            <span class="pm-badge">${orpStat.lbl}</span>
+          </div>
+          <div class="pm-value-row">
+            <span class="pm-value">${orpVal !== null ? Math.round(orpVal) : '--'} <span class="pm-unit">mV</span></span>
+            <span class="pm-target">Seuil: >${orpMin} mV</span>
+          </div>
+          <div class="pm-progress-bar">
+            <div class="pm-progress-fill" style="width: ${orpVal ? Math.min(100, (orpVal / 1000 * 100)) : 0}%"></div>
+          </div>
+        </div>
+
+        <div class="pm-card pm-${tacStat.cls}">
+          <div class="pm-header">
+            <span class="pm-title"><ha-icon icon="mdi:waves"></ha-icon> Alcalinité TAC</span>
+            <span class="pm-badge">${tacStat.lbl}</span>
+          </div>
+          <div class="pm-value-row">
+            <span class="pm-value">${tacVal !== null ? Math.round(tacVal) : '--'} <span class="pm-unit">ppm</span></span>
+            <span class="pm-target">Plage: ${tacMin}-${tacMax}</span>
+          </div>
+          <div class="pm-progress-bar">
+            <div class="pm-progress-fill" style="width: ${tacVal ? Math.min(100, (tacVal / 250 * 100)) : 0}%"></div>
+          </div>
+        </div>
+
+        <div class="brome-panel-advice">
+          <div class="brome-advice-title">
+            <ha-icon icon="mdi:creation"></ha-icon> Assistant Traitement Spa (500L)
+          </div>
+          <p class="brome-advice-text">
+            ${bromeRecommendation ? bromeRecommendation : "Votre eau de 500L est parfaitement équilibrée au brome. Pensez à vérifier l'état du filtre."}
+          </p>
+          <div class="brome-specs">
+            <span><ha-icon icon="mdi:water-boiler"></ha-icon> Volume : 500 Litres</span>
+            <span><ha-icon icon="mdi:flask-empty-minus-outline"></ha-icon> Traitement : Brome (Moins agressif à haute T°)</span>
+          </div>
+        </div>
+
+      </div>
+    `;
+  }
+
+  _renderCam() {
+    const c = this.config;
+    if (!this._exists(c.entity_camera)) return html``;
+    const w = c.cam_w_px ? `${c.cam_w_px}px` : '50%';
+    const h = c.cam_h_px ? `${c.cam_h_px}px` : 'auto';
+    const r = c.cam_radius ? `${c.cam_radius}px` : '12px';
+    const x = c.cam_x ? `${c.cam_x}px` : '0px';
+    const y = c.cam_y ? `${c.cam_y}px` : '0px';
+
+    const sty = `width:${w}; height:${h}; border-radius:${r}; transform:translate(${x},${y});`;
+    return html`
+      <div class="cam-container ${this._camExpanded ? 'expanded' : ''}" style="${sty}"
+           @click=${() => { this._camExpanded = !this._camExpanded; }}>
+        <ha-camera-stream .hass=${this.hass} .entityId=${c.entity_camera} controls></ha-camera-stream>
+      </div>`;
+  }
+
+  _renderSw() {
+    const items = [];
+    for (let i=1; i<=10; i++) {
+      const swId = this.config[`switch_${i}`];
+      if (this._exists(swId)) {
+        const name = this.config[`name_switch_${i}`] || `Bouton ${i}`;
+        const active = this._state(swId) === 'on';
+        items.push({ id:swId, name, active });
+      }
+    }
+    if (items.length === 0) return html``;
+    return html`
+      <div class="sw-grid">
+        ${items.map(item => html`
+          <button class="prog-action-btn ${item.active ? 'pab-on' : 'pab-off'}"
+                  @click=${() => this.hass.callService('switch', 'toggle', { entity_id: item.id })}>
+            <ha-icon icon="${item.active ? 'mdi:power-plug' : 'mdi:power-plug-off'}"></ha-icon>
+            <span>${item.name}</span>
+          </button>`)}
+      </div>`;
+  }
+
+  render() {
+    if (!this.hass || !this.config) return html``;
+    const cHeight = this.config.card_height || '640px';
+    const blur = this.config.blur_amount !== undefined ? `${this.config.blur_amount}px` : '15px';
+    const bg = this.config.background_image ? `url(${this.config.background_image})` : 'none';
+
+    const content = {
+      home: this._renderHome(),
+      chem: this._renderChem(),
+      cam:  this._renderCam(),
+      sw:   this._renderSw()
+    };
+
+    return html`
+      <ha-card class="spa-card-root" style="height:${cHeight};">
+        <div class="bg-blur" style="background-image:${bg}; filter:blur(${blur});"></div>
+        <div class="card-header-title">${this.config.card_title || 'MON SPA 500L'}</div>
+        
+        <div class="main-content-scroll">
+          ${content[this._tab]}
+        </div>
+
+        <div class="nav">
+          <ha-icon icon="mdi:home-outline" class="${this._tab==='home'?'on':''}" @click=${()=>this._tab='home'}></ha-icon>
+          <ha-icon icon="mdi:flask-outline" class="${this._tab==='chem'?'on':''}" @click=${()=>this._tab='chem'}></ha-icon>
+          ${this._exists(this.config.entity_camera) ? html`<ha-icon icon="mdi:camera-outline" class="${this._tab==='cam'?'on':''}" @click=${()=>this._tab='cam'}></ha-icon>`:''}
+          <ha-icon icon="mdi:toggle-switch-outline" class="${this._tab==='sw'?'on':''}" @click=${()=>this._tab='sw'}></ha-icon>
+        </div>
+      </ha-card>
+    `;
+  }
+
+  static styles = css`
+    :host { display:block; }
+    .spa-card-root {
+      position:relative; display:flex; flex-direction:column; overflow:hidden;
+      border-radius:24px; border:1px solid rgba(255,255,255,.12);
+      background:#0d1117; color:#fff; font-family:sans-serif; box-sizing:border-box;
+    }
+    .bg-blur {
+      position:absolute; top:0; left:0; right:0; bottom:0;
+      background-size:cover; background-position:center; opacity:.35; z-index:0;
+    }
+    .card-header-title {
+      position:relative; z-index:1; padding:20px 24px 10px;
+      font-size:18px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+      background:linear-gradient(to bottom, rgba(13,17,23,.8), rgba(13,17,23,0));
+    }
+    .main-content-scroll { position:relative; z-index:1; flex:1; overflow-y:auto; padding:0 20px 20px; }
+    
+    /* Pool Monitor Styles (Chemistry Update) */
+    .pool-monitor-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+    .pm-card {
+      background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .pm-header { display: flex; justify-content: space-between; align-items: center; }
+    .pm-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; opacity: 0.9; }
+    .pm-badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 700; text-transform: uppercase; }
+    .pm-value-row { display: flex; justify-content: space-between; align-items: baseline; }
+    .pm-value { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+    .pm-unit { font-size: 14px; font-weight: 400; opacity: 0.6; }
+    .pm-target { font-size: 12px; opacity: 0.5; }
+    .pm-progress-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+    .pm-progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+    
+    /* Status Colors */
+    .pm-success .pm-badge { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+    .pm-success .pm-progress-fill { background: #10b981; }
+    .pm-danger .pm-badge { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .pm-danger .pm-progress-fill { background: #ef4444; }
+    .pm-neutral .pm-badge { background: rgba(156, 163, 175, 0.2); color: #9ca3af; }
+    .pm-neutral .pm-progress-fill { background: #9ca3af; }
+
+    /* Brome Panel Advice */
+    .brome-panel-advice {
+      background: rgba(59, 130, 246, 0.12); border: 1px dashed rgba(59, 130, 246, 0.4);
+      border-radius: 16px; padding: 14px; margin-top: 6px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .brome-advice-title { font-size: 13px; font-weight: 700; color: #60a5fa; display: flex; align-items: center; gap: 6px; }
+    .brome-advice-text { font-size: 12px; margin: 0; line-height: 1.4; color: #e5e7eb; }
+    .brome-specs { display: flex; gap: 14px; font-size: 11px; opacity: 0.5; margin-top: 2px; }
+
+    /* Layout Elements du Dashboard */
+    .flex-row-center { display:flex; align-items:center; justify-content:space-between; margin:16px 0; }
+    .side-col { display:flex; flex-direction:column; align-items:center; gap:8px; width:65px; }
+    .side-info { text-align:center; }
+    .val-big { font-size:20px; font-weight:700; }
+    .label-tiny { font-size:9px; opacity:.4; margin-top:2px; letter-spacing:.3px; }
+    .hum-pill { font-size:10px; background:rgba(255,255,255,.07); padding:4px 8px; border-radius:20px; opacity:.7; }
+    
+    /* Jauge principale */
+    .gauge-container { display:flex; flex-direction:column; align-items:center; gap:8px; }
+    .temp-btn {
+      width:36px; height:36px; background:rgba(255,255,255,.07); border-radius:50%;
+      display:flex; align-items:center; justify-content:center; cursor:pointer;
+    }
+    .temp-btn:active { background:rgba(255,255,255,.2); }
+    .center-gauge {
+      position:relative; width:130px; height:130px;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .outer-ring {
+      position:absolute; width:100%; height:100%;
+      border:4px solid rgba(255,255,255,.05); border-top-color:#10b981;
+      border-radius:50%; animation:spin 3s linear infinite; opacity:0.6;
+    }
+    .inner-circle {
+      width:114px; height:114px; background:rgba(255,255,255,.03);
+      border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      border:1px solid rgba(255,255,255,.08); box-shadow:inset 0 0 20px rgba(0,0,0,.4);
+    }
+    .water-label { font-size:10px; opacity:.4; font-weight:700; }
+    .water-val { font-size:32px; font-weight:800; margin:2px 0; }
+    .target-box { font-size:9px; background:rgba(16,185,129,.2); color:#10b981; padding:3px 8px; border-radius:20px; font-weight:700; }
+
+    /* Autres elements */
+    .heat-ctrl { display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,.05); padding:10px 14px; border-radius:16px; margin-bottom:12px; }
+    .heat-btn { display:flex; align-items:center; gap:8px; border:none; padding:8px 14px; border-radius:12px; font-weight:700; cursor:pointer; }
+    .heat-on { background:#ef4444; color:#fff; }
+    .heat-off { background:rgba(255,255,255,.1); color:rgba(255,255,255,.5); }
+    .heat-temps { display:flex; align-items:center; gap:12px; }
+    .heat-t-btn { cursor:pointer; opacity:.6; }
+    .heat-target { font-size:16px; font-weight:700; }
+
+    .lz-status { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:16px; font-size:13px; font-weight:600; margin-bottom:12px; }
+    .lz-ready { background:rgba(16,185,129,.15); color:#10b981; }
+    .lz-heating { background:rgba(239,68,68,.15); color:#ef4444; }
+    .lz-standby { background:rgba(255,255,255,.05); color:rgba(255,255,255,.6); }
+    .lz-disconnected { background:rgba(156,163,175,.15); color:#9ca3af; }
+    .lz-label { flex:1; }
+
+    .footer-row { display:flex; gap:8px; margin-bottom:12px; }
+    .footer-pill { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(255,255,255,.04); padding:8px; border-radius:12px; font-size:12px; }
+
+    .maint-row { display:flex; gap:10px; margin-bottom:12px; }
+    .maint-item { flex:1; background:rgba(255,255,255,.04); border-radius:16px; padding:12px; display:flex; flex-direction:column; gap:6px; }
+    .maint-head { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; }
+    .maint-reset-btn { margin-left:auto; background:rgba(255,255,255,0.1); border:none; color:white; border-radius:4px; padding:2px 6px; cursor:pointer; }
+    .maint-bar { width:100%; height:4px; background:rgba(255,255,255,.1); border-radius:2px; overflow:hidden; }
+    .maint-fill { height:100%; background:#3b82f6; }
+    .maint-fill-warn { background:#f59e0b; }
+    .maint-val { font-size:11px; opacity:.5; }
+
+    .flood-bar { display:flex; justify-content:space-between; padding:10px 14px; border-radius:16px; font-size:12px; font-weight:600; }
+    .flood-ok { background:rgba(16,185,129,.08); color:#10b981; }
+    .flood-alert { background:rgba(239,68,68,.15); color:#ef4444; }
+    .flood-left { display:flex; align-items:center; gap:8px; }
+    .flood-right { display:flex; gap:6px; }
+
+    .sw-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .prog-action-btn {
+      display:flex; align-items:center; gap:10px; padding:12px; border-radius:14px;
+      border:1px solid transparent; font-size:12px; font-weight:700;
+      transition:all .2s; font-family:inherit; width:100%; cursor:pointer;
+    }
+    .pab-on    { background:rgba(251,146,60,.15); border-color:rgba(251,146,60,.5); color:#fb923c; }
+    .pab-off   { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.18); color:rgba(255,255,255,.5); }
+
+    .nav { display:flex; justify-content:space-around; padding-top:16px; border-top:1px solid rgba(255,255,255,.1); margin-top:auto; }
+    .nav ha-icon { opacity:.3; cursor:pointer; --mdc-icon-size:24px; transition:opacity .2s,color .2s; padding:10px; }
+    .nav ha-icon.on { opacity:1; color:#3b82f6; }
+
+    @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+  `;
+}
+customElements.define('spa-card', SpaCard);
