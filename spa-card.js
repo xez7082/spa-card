@@ -1,33 +1,33 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 // ═══════════════════════════════════════════════════════════════════
-// 1. ÉDITEUR (Vous avez déjà ce code dans votre fichier)
+// 1. ÉDITEUR
 // ═══════════════════════════════════════════════════════════════════
 class SpaCardEditor extends LitElement {
-  // ... (Gardez votre code éditeur existant ici) ...
+  // Ajoutez ici tout votre code éditeur (SpaCardEditor)
 }
 customElements.define('spa-card-editor', SpaCardEditor);
 
 // ═══════════════════════════════════════════════════════════════════
-// 2. CARTE PRINCIPALE (La partie manquante pour l'affichage)
+// 2. CARTE PRINCIPALE
 // ═══════════════════════════════════════════════════════════════════
 class SpaCard extends LitElement {
-  static get properties() { return { hass: {}, config: {}, _tab: { type: String } }; }
+  static get properties() { return { hass: {}, _config: {}, _tab: { type: String } }; }
 
   constructor() {
     super();
     this._tab = 'home';
   }
 
-  setConfig(config) { this.config = config; }
+  setConfig(config) { this._config = config; }
   
   static getConfigElement() { return document.createElement("spa-card-editor"); }
 
-  // Méthode de rendu principale
+  // CORRECTION 1 : Utilisez this._config au lieu de this.config (pour cohérence)
   render() {
-    if (!this.hass || !this.config) return html``;
+    if (!this.hass || !this._config) return html``;
     return html`
-      <ha-card .header="${this.config.card_title || 'Spa Control'}">
+      <ha-card .header="${this._config.card_title || 'Spa Control'}">
         <div class="content">
           ${this._tab === 'home' ? this._renderHome() : ''}
           ${this._tab === 'chem' ? this._renderChem() : ''}
@@ -36,22 +36,22 @@ class SpaCard extends LitElement {
         </div>
         
         <div class="nav">
-          <ha-icon icon="mdi:home" @click=${() => this._tab = 'home'}></ha-icon>
-          <ha-icon icon="mdi:water-check" @click=${() => this._tab = 'chem'}></ha-icon>
-          <ha-icon icon="mdi:camera" @click=${() => this._tab = 'cam'}></ha-icon>
-          <ha-icon icon="mdi:toggle-switch" @click=${() => this._tab = 'sw'}></ha-icon>
+          <ha-icon icon="mdi:home" @click=${() => {this._tab = 'home'; this.requestUpdate();}}></ha-icon>
+          <ha-icon icon="mdi:water-check" @click=${() => {this._tab = 'chem'; this.requestUpdate();}}></ha-icon>
+          <ha-icon icon="mdi:camera" @click=${() => {this._tab = 'cam'; this.requestUpdate();}}></ha-icon>
+          <ha-icon icon="mdi:toggle-switch" @click=${() => {this._tab = 'sw'; this.requestUpdate();}}></ha-icon>
         </div>
       </ha-card>
     `;
   }
 
-  // --- Vos méthodes de rendu spécifiques ---
-  _renderHome() { return html`<div>VUE ACCUEIL : Ajoutez ici votre logique de jauges</div>`; }
+  // --- Vos méthodes de rendu ---
+  _renderHome() { return html`<div>VUE ACCUEIL</div>`; }
   _renderChem() { return html`<div>VUE CHIMIE</div>`; }
   _renderCam() { return html`<div>VUE CAMÉRA</div>`; }
   _renderSw() { return html`<div>VUE INTERRUPTEURS</div>`; }
 
-  // --- Styles ---
+  // CORRECTION 3 : Ajoutez static get styles() (les parenthèses étaient correctes mais la syntaxe LitElement est plus robuste ainsi)
   static get styles() {
     return css`
       .content { padding: 16px; }
