@@ -182,29 +182,31 @@ _renderChemAdvice() {
   `;
 }
 
-  _renderChem() {
-   return html`
-  ${this._renderChemAdvice()}
+_renderChem() {
+    const c = this.config;
+    const n = v => (v !== undefined && v !== null && v !== '') ? Number(v) : undefined;
+    
+    // Définition des échelles de rendu
+    const DISPLAY = { 
+      ph: { lo: 6.0, hi: 9.0, dec: 1 }, 
+      orp: { lo: -200, hi: 1000, dec: 0 }, 
+      tds: { lo: 0, hi: 3000, dec: 0 }, 
+      salt: { lo: 0, hi: 6000, dec: 0 } 
+    };
 
-  <div class="chem-list">
-    ${sensors.map(s => this._chemGauge(s, DISPLAY[s.key]))}
-  </div>
-`;
-      ${this._acc('a-orp', 'background:rgba(167,139,250,.15);color:#8b5cf6;','ORP','ORP (mV)',[
-        { name:'entity_orp', label:'Entité ORP',  selector:{ entity:{ domain:'sensor' } } },
-        { name:'orp_min',    label:'ORP Minimum', selector:{ number:{ mode:'box' } } },
-        { name:'orp_max',    label:'ORP Maximum', selector:{ number:{ mode:'box' } } }
-      ])}
-      ${this._acc('a-tds', 'background:rgba(167,139,250,.15);color:#8b5cf6;','TDS','TDS (ppm)',[
-        { name:'entity_tds', label:'Entité TDS',  selector:{ entity:{ domain:'sensor' } } },
-        { name:'tds_min',    label:'TDS Minimum', selector:{ number:{ mode:'box' } } },
-        { name:'tds_max',    label:'TDS Maximum', selector:{ number:{ mode:'box' } } }
-      ])}
-      ${this._acc('a-salt','background:rgba(167,139,250,.15);color:#8b5cf6;','SEL','Sel (ppm)',[
-        { name:'entity_salt', label:'Entité sel',  selector:{ entity:{ domain:'sensor' } } },
-        { name:'salt_min',    label:'Sel Minimum', selector:{ number:{ mode:'box' } } },
-        { name:'salt_max',    label:'Sel Maximum', selector:{ number:{ mode:'box' } } }
-      ])}`;
+    const sensors = [
+      { id: c.entity_ph, key: 'ph', label: 'pH', icon: 'mdi:flask', min: n(c.ph_min), max: n(c.ph_max), u: '' },
+      { id: c.entity_orp, key: 'orp', label: 'ORP', icon: 'mdi:lightning-bolt', min: n(c.orp_min), max: n(c.orp_max), u: 'mV' },
+      { id: c.entity_tds, key: 'tds', label: 'TDS', icon: 'mdi:water-percent', min: n(c.tds_min), max: n(c.tds_max), u: 'ppm' },
+      { id: c.entity_salt, key: 'salt', label: 'SEL', icon: 'mdi:shaker-outline', min: n(c.salt_min), max: n(c.salt_max), u: 'ppm' }
+    ].filter(s => this._exists(s.id));
+
+    return html`
+      ${this._renderChemAdvice()}
+      <div class="chem-list">
+        ${sensors.map(s => this._chemGauge(s, DISPLAY[s.key]))}
+      </div>
+    `;
   }
 
   _renderCam() {
