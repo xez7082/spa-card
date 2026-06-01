@@ -102,13 +102,94 @@ class SpaCardEditor extends LitElement {
       ])}`;
   }
 
-  _renderChem() {
+_renderChemAdvice() {
+  const c = this.config;
+  const volume = Number(c.lz_volume || 500);
+
+  const ph   = parseFloat(this._state(c.entity_ph));
+  const orp  = parseFloat(this._state(c.entity_orp));
+  const tds  = parseFloat(this._state(c.entity_tds));
+  const salt = parseFloat(this._state(c.entity_salt));
+
+  const msgs = [];
+  let level = 'good';
+
+  // pH
+  if (!isNaN(ph)) {
+    if (ph < c.ph_min) {
+      const dose = Math.max(5, Math.round((c.ph_min - ph) * 100));
+      msgs.push(`Ajouter environ ${dose} g de pH+`);
+      level = 'warn';
+    }
+    else if (ph > c.ph_max) {
+      const dose = Math.max(5, Math.round((ph - c.ph_max) * 100));
+      msgs.push(`Ajouter environ ${dose} g de pH−`);
+      level = 'warn';
+    }
+  }
+
+  // ORP
+  if (!isNaN(orp)) {
+    if (orp < c.orp_min) {
+      msgs.push('Ajouter 5 à 10 g de chlore rapide');
+      level = 'warn';
+    }
+    else if (orp > c.orp_max) {
+      msgs.push('Taux désinfectant élevé : attendre avant tout ajout');
+      level = 'warn';
+    }
+  }
+
+  // Sel
+  if (!isNaN(salt)) {
+    if (salt < c.salt_min) {
+      const grams = Math.round(((3000 - salt) * volume) / 1000);
+      msgs.push(`Ajouter environ ${grams} g de sel`);
+      level = 'warn';
+    }
+    else if (salt > c.salt_max) {
+      msgs.push('Diluer avec de l’eau neuve');
+      level = 'warn';
+    }
+  }
+
+  // TDS
+  if (!isNaN(tds) && tds > c.tds_max) {
+    msgs.push('Remplacer 30 % de l’eau du spa');
+    level = 'alert';
+  }
+
+  if (!msgs.length) {
     return html`
-      ${this._acc('a-ph',  'background:rgba(167,139,250,.15);color:#8b5cf6;','pH', 'pH',[
-        { name:'entity_ph', label:'Entité pH',  selector:{ entity:{ domain:'sensor' } } },
-        { name:'ph_min',    label:'pH Minimum', selector:{ number:{ step:0.1, mode:'box' } } },
-        { name:'ph_max',    label:'pH Maximum', selector:{ number:{ step:0.1, mode:'box' } } }
-      ])}
+      <div class="chem-advice chem-good">
+        <ha-icon icon="mdi:check-circle"></ha-icon>
+        <span>Chimie parfaite - aucune action requise</span>
+      </div>
+    `;
+  }
+
+  return html`
+    <div class="chem-advice ${level === 'alert' ? 'chem-alert' : 'chem-warn'}">
+      <div class="chem-advice-title">
+        <ha-icon icon="mdi:flask-outline"></ha-icon>
+        Recommandations
+      </div>
+
+      ${msgs.map(m => html`
+        <div class="chem-advice-line">• ${m}</div>
+      `)}
+    </div>
+  `;
+}
+
+  _renderChem() {
+   return html`
+  ${this._renderChemAdvice()}
+
+  <div class="chem-list">
+    ${sensors.map(s => this._chemGauge(s, DISPLAY[s.key]))}
+  </div>
+`;
       ${this._acc('a-orp', 'background:rgba(167,139,250,.15);color:#8b5cf6;','ORP','ORP (mV)',[
         { name:'entity_orp', label:'Entité ORP',  selector:{ entity:{ domain:'sensor' } } },
         { name:'orp_min',    label:'ORP Minimum', selector:{ number:{ mode:'box' } } },
@@ -1188,6 +1269,52 @@ class SpaCard extends LitElement {
     .pill-warn   { background:rgba(255,152,0,.25); color:#ffb040; border:1px solid rgba(255,152,0,.3); }
 
     /* ── Chimie ── */
+
+.chem-advice{
+  margin:4px 6px 12px;
+  padding:12px;
+  border-radius:16px;
+  backdrop-filter:blur(10px);
+}
+
+.chem-good{
+  background:rgba(0,249,249,.08);
+  border:1px solid rgba(0,249,249,.20);
+  color:#00f9f9;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  font-weight:600;
+}
+
+.chem-warn{
+  background:rgba(255,152,0,.08);
+  border:1px solid rgba(255,152,0,.25);
+  color:#ffb040;
+}
+
+.chem-alert{
+  background:rgba(255,80,80,.08);
+  border:1px solid rgba(255,80,80,.25);
+  color:#ff6b6b;
+}
+
+.chem-advice-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  font-weight:700;
+  margin-bottom:8px;
+}
+
+.chem-advice-line{
+  font-size:12px;
+  line-height:1.8;
+  padding-left:2px;
+}
+    
     .chem-list { display:flex; flex-direction:column; gap:10px; width:100%; padding:4px 6px; }
     .cg-row {
       background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
