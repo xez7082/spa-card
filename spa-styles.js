@@ -74,4 +74,10 @@ export const sharedStyles = css`
     padding-top: 16px; 
     border-top: 1px solid var(--divider-color); 
   }
+
+  /* ── Utilitaires ── */
+  .card-content { padding: 16px; }
+  .hidden { display: none; }
+  .center { display: flex; align-items: center; justify-content: center; }
+`;
 `;
