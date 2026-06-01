@@ -1,16 +1,15 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 import { sharedStyles } from "./spa-styles.js";
-import "./spa-editor.js"; // Importe l'éditeur pour Home Assistant
+import "./spa-editor.js"; 
 
 class SpaCard extends LitElement {
   
-  // Définit l'éditeur personnalisé pour cette carte
   static getConfigElement() {
     return document.createElement('spa-card-editor');
   }
 
   static get properties() {
-    return { hass: {}, config: {} };
+    return { hass: { type: Object }, config: { type: Object } };
   }
 
   setConfig(config) {
@@ -20,17 +19,20 @@ class SpaCard extends LitElement {
     this.config = config;
   }
 
+  // Sécurise l'accès à l'état
   _state(entity) {
+    if (!this.hass || !entity) return '---';
     return this.hass.states[entity]?.state || '---';
-  }
-
-  _exists(entity) {
-    return entity && this.hass.states[entity] !== undefined;
   }
 
   // --- Message Chimie ---
   _renderChemAdvice() {
-    const ph = parseFloat(this._state(this.config.entity_ph));
+    const phValue = this._state(this.config.entity_ph);
+    // On vérifie que le pH est un nombre valide
+    const ph = parseFloat(phValue);
+    
+    if (isNaN(ph)) return html``; // N'affiche rien si pas de donnée valide
+
     let msg = "Eau équilibrée";
     let color = "#10b981";
 
@@ -44,10 +46,12 @@ class SpaCard extends LitElement {
   }
 
   render() {
+    if (!this.hass) return html``;
+
     return html`
       <ha-card .header="${this.config.card_title || 'Spa Control'}">
         <div class="card-content">
-          ${this._renderChemAdvice()}
+          ${this.config.entity_ph ? this._renderChemAdvice() : ''}
           
           <div class="main-split-container">
             <div class="left-cam-panel">
@@ -59,7 +63,6 @@ class SpaCard extends LitElement {
     `;
   }
 
-  // Fusion des styles partagés et spécifiques à la carte
   static styles = [sharedStyles, css`
     :host { display: block; }
     .card-content { padding: 15px; }
