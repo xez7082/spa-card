@@ -9,7 +9,6 @@ export class SpaCardEditor extends LitElement {
   constructor() {
     super();
     this._tab = 'gen';
-    // Initialisation des sections ouvertes par défaut
     this._open = new Set(['a-disp', 'a-ph']);
   }
 
@@ -35,7 +34,7 @@ export class SpaCardEditor extends LitElement {
       <div class="acc">
         <div class="ach" @click=${() => this._tog(id)}>
           <div class="aibox" style="${boxStyle}">${icon}</div>
-          <span style="flex-grow:1; font-weight:bold;">${title}</span>
+          <span style="flex-grow:1; font-weight:500;">${title}</span>
           <ha-icon icon="${open ? 'mdi:chevron-up' : 'mdi:chevron-down'}"></ha-icon>
         </div>
         ${open ? html`
@@ -45,38 +44,40 @@ export class SpaCardEditor extends LitElement {
       </div>`;
   }
 
-  _renderGen() {
-    return html`${this._acc('a-disp', 'background:rgba(107,142,255,.18);color:#6b8eff;', 'GEN', 'Apparence générale', [
-      { name: 'card_title', label: 'Titre du spa', selector: { text: {} } },
-      { name: 'background_image', label: 'Image de fond (URL)', selector: { text: {} } }
-    ])}`;
-  }
-
-  _renderChem() {
-    return html`${this._acc('a-ph', 'background:rgba(167,139,250,.15);color:#8b5cf6;', 'pH', 'Réglages Chimie', [
-      { name: 'entity_ph', label: 'Entité pH', selector: { entity: { domain: 'sensor' } } },
-      { name: 'entity_orp', label: 'Entité ORP', selector: { entity: { domain: 'sensor' } } }
-    ])}`;
-  }
-
   render() {
     if (!this.hass || !this._config) return html``;
     
     return html`
       <div class="editor-wrap">
-        <div class="tabs" style="display:flex; margin-bottom:15px; border-bottom:1px solid #ccc;">
-          <button @click=${() => this._tab = 'gen'} style="padding:10px; cursor:pointer;">Général</button>
-          <button @click=${() => this._tab = 'chem'} style="padding:10px; cursor:pointer;">Chimie</button>
+        <div class="tabs">
+          <button class="${this._tab === 'gen' ? 'active' : ''}" @click=${() => this._tab = 'gen'}>Général</button>
+          <button class="${this._tab === 'chem' ? 'active' : ''}" @click=${() => this._tab = 'chem'}>Chimie</button>
         </div>
         <div class="sections">
-          ${this._tab === 'gen' ? this._renderGen() : this._renderChem()}
+          ${this._tab === 'gen' ? 
+            this._acc('a-disp', 'background:rgba(107,142,255,.18);color:#6b8eff;', 'GEN', 'Apparence générale', [
+              { name: 'card_title', label: 'Titre du spa', selector: { text: {} } },
+              { name: 'background_image', label: 'Image de fond (URL)', selector: { text: {} } }
+            ]) 
+            : 
+            this._acc('a-ph', 'background:rgba(167,139,250,.15);color:#8b5cf6;', 'pH', 'Réglages Chimie', [
+              { name: 'entity_ph', label: 'Entité pH', selector: { entity: { domain: 'sensor' } } },
+              { name: 'entity_orp', label: 'Entité ORP', selector: { entity: { domain: 'sensor' } } }
+            ])
+          }
         </div>
       </div>
     `;
   }
 
   static styles = [sharedStyles, css`
-    .tabs button { background:none; border:none; outline:none; }
+    :host { display: block; }
+    .tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid var(--divider-color); }
+    .tabs button { 
+      padding: 10px 20px; cursor: pointer; background: none; border: none; 
+      color: var(--secondary-text-color); font-weight: 500;
+    }
+    .tabs button.active { color: var(--primary-color); border-bottom: 2px solid var(--primary-color); }
     .tabs button:hover { color: var(--primary-color); }
   `];
 }
