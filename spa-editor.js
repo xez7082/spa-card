@@ -7,7 +7,6 @@ import {
 import { sharedStyles } from "./spa-styles.js";
 
 export class SpaCardEditor extends LitElement {
-
   static get properties() {
     return {
       hass: { type: Object },
@@ -49,7 +48,6 @@ export class SpaCardEditor extends LitElement {
   _acc(id, icon, title, schema) {
     if (!this.hass) return html``;
     const open = this._open.has(id);
-
     return html`
       <div class="acc">
         <div class="ach" @click=${() => this._tog(id)}>
@@ -59,12 +57,7 @@ export class SpaCardEditor extends LitElement {
         </div>
         ${open ? html`
           <div class="acbi">
-            <ha-form
-              .hass=${this.hass}
-              .data=${this._config}
-              .schema=${schema}
-              @value-changed=${this._val}
-            ></ha-form>
+            <ha-form .hass=${this.hass} .data=${this._config} .schema=${schema} @value-changed=${this._val}></ha-form>
           </div>
         ` : ""}
       </div>
@@ -73,14 +66,12 @@ export class SpaCardEditor extends LitElement {
 
   render() {
     if (!this.hass || !this._config) return html``;
-
     return html`
       <div class="editor-wrap">
         <div class="tabs">
           <button class="${this._tab === "gen" ? "active" : ""}" @click=${() => (this._tab = "gen")}>Général</button>
           <button class="${this._tab === "chem" ? "active" : ""}" @click=${() => (this._tab = "chem")}>Chimie</button>
         </div>
-
         <div class="sections">
           ${this._tab === "gen"
             ? this._acc("a-disp", "🛁", "Apparence", [
@@ -90,8 +81,7 @@ export class SpaCardEditor extends LitElement {
               ])
             : this._acc("a-ph", "🧪", "Chimie", [
                 { name: "entity_ph", label: "Capteur pH", selector: { entity: { domain: "sensor" } } }
-              ])
-          }
+              ])}
         </div>
       </div>
     `;
