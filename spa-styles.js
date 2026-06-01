@@ -1,10 +1,10 @@
-import {
-  LitElement,
-  html,
-  css
-} from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-import { sharedStyles } from "./spa-styles.js";
+export const sharedStyles = css`
+  :host {
+    display: block;
+    box-sizing: border-box;
+  }
 
 export class SpaCardEditor extends LitElement {
 
