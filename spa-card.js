@@ -215,38 +215,34 @@ class SpaCard extends LitElement {
     return id.startsWith('climate.') ? String(this._attr(id,'temperature') ?? this._state(id)) : this._state(id);
   }
 
-  _renderHome() {
-    const c = this.config; const wTemp = this._waterTemp(); const tTemp = this._targetTemp();
+_renderHome() {
+    const c = this.config;
+    const bg = c.background_image ? `url(${c.background_image})` : 'none';
+
     return html`
-      <div class="home-view">
-        ${this._renderHeatingControl()}
-        ${this._renderLayzspaStatus()}
+      <div class="home-view" style="background-image: ${bg}; background-size: cover; border-radius: 14px;">
         
-        <div class="flex-row-center">
-          <div class="side-col">
-            ${this._exists(c.entity_ext_temp) ? html`<div class="side-info"><div class="val-big">${this._state(c.entity_ext_temp)}°</div><div class="label-tiny">EXTÉRIEUR</div></div>` : ''}
-            ${this._exists(c.entity_ext_hum) ? html`<div class="hum-pill">${this._state(c.entity_ext_hum)}% HR</div>` : ''}
-          </div>
+        <div class="main-split-container" style="display: flex; gap: 15px; padding: 10px;">
           
-          <div class="gauge-container">
-            <div class="center-gauge">
-              <div class="outer-ring"></div>
-              <div class="inner-circle">
-                ${wTemp ? html`<span class="water-label">EAU ACTUELLE</span><span class="water-val">${wTemp}°</span>` : ''}
-                ${tTemp ? html`<div class="target-box">CIBLE ${tTemp}°</div>` : ''}
-              </div>
+          <div class="left-cam-panel" style="flex: 1;">
+            ${this._exists(c.entity_camera) 
+              ? html`<div class="cam-box"><img src="/api/camera_proxy/${c.entity_camera}" style="width:100%; border-radius:10px;"></div>`
+              : html`<div class="no-cam" style="padding:20px; text-align:center; border:1px dashed #666;">Caméra indisponible</div>`}
+          </div>
+
+          <div class="right-sched-panel" style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+            <div class="sched-wrapper">
+              ${this._renderSchedule()}
+            </div>
+            <div class="erp-wrapper">
+              ${this._renderMaintenance()}
             </div>
           </div>
-          
-          <div class="side-col">
-            ${this._exists(c.entity_spa_air_temp) ? html`<div class="side-info"><div class="val-big">${this._state(c.entity_spa_air_temp)}°</div><div class="label-tiny">AIR SPA</div></div>` : ''}
-            ${this._exists(c.entity_spa_hum) ? html`<div class="hum-pill">${this._state(c.entity_spa_hum)}% HR</div>` : ''}
-          </div>
         </div>
-        
-        ${this._renderFooterRow()}
-        ${this._renderMaintenance()}
-        ${this._renderFlood()}
+
+        <div class="status-footer" style="padding: 10px;">
+          ${this._renderLayzspaStatus()}
+        </div>
       </div>`;
   }
 
