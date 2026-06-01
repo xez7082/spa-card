@@ -4,69 +4,142 @@ import {
   css
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-import { sharedStyles } from "./spa-styles.js"; 
+import { sharedStyles } from "./spa-styles.js";
 import "./spa-editor.js";
 
 class SpaCard extends LitElement {
-  // Cette méthode est cruciale pour que Home Assistant sache que cette carte peut être configurée
-  static getConfigElement() { return document.createElement('spa-card-editor'); }
-  
-  static get properties() { return { hass: {}, config: {} }; }
-  
-  setConfig(config) { 
-    if (!config.entity_water_temp) throw new Error("Vous devez définir l'entité de température");
-    this.config = config; 
+
+  static get properties() {
+    return {
+      hass: {},
+      config: {}
+    };
   }
-  
-  _state(e) { return this.hass.states[e]?.state || '---'; }
-  
-  _toggle(e) { 
-    if (!e) return;
-    this.hass.callService("homeassistant", "toggle", { entity_id: e }); 
+
+  static getConfigElement() {
+    return document.createElement("spa-card-editor");
+  }
+
+  static getStubConfig() {
+    return {
+      card_title: "Spa",
+      entity_water_temp: "",
+      entity_filter: ""
+    };
+  }
+
+  setConfig(config) {
+    if (!config.entity_water_temp) {
+      throw new Error("Vous devez définir entity_water_temp");
+    }
+
+    this.config = config;
+  }
+
+  _state(entity) {
+    return this.hass?.states?.[entity]?.state ?? "---";
+  }
+
+  _toggle(entity) {
+    if (!entity || !this.hass) return;
+
+    this.hass.callService("homeassistant", "toggle", {
+      entity_id: entity
+    });
   }
 
   render() {
-    if (!this.config || !this.hass) return html``;
+    if (!this.hass || !this.config) {
+      return html``;
+    }
+
+    const temp = this._state(this.config.entity_water_temp);
+    const filterState = this._state(this.config.entity_filter);
 
     return html`
-      <ha-card .header="${this.config.card_title || 'Spa'}">
+      <ha-card header="${this.config.card_title || "Spa"}">
         <div class="card-content">
-          <div style="font-size:2em; text-align:center;">
-            ${this._state(this.config.entity_water_temp)}°C
+
+          <div class="temperature">
+            ${temp}°C
           </div>
-          
-          <button class="prog-action-btn ${this._state(this.config.entity_filter) === 'on' ? 'pab-on' : ''}" 
-                  @click=${() => this._toggle(this.config.entity_filter)}>
-            Filtration
-          </button>
+
+          ${this.config.entity_filter
+            ? html`
+                <button
+                  class="prog-action-btn ${filterState === "on"
+                    ? "pab-on"
+                    : ""}"
+                  @click=${() =>
+                    this._toggle(this.config.entity_filter)}
+                >
+                  Filtration
+                </button>
+              `
+            : ""}
+
         </div>
-      </ha-card>`;
+      </ha-card>
+    `;
+  }
+
+  getCardSize() {
+    return 2;
   }
 
   static get styles() {
     return [
-      sharedStyles, 
+      sharedStyles,
       css`
-        :host { display: block; }
-        .card-content { padding: 16px; }
-        .prog-action-btn { 
-          width: 100%; 
-          padding: 10px; 
-          margin-top: 10px;
+        :host {
+          display: block;
+        }
+
+        .card-content {
+          padding: 16px;
+        }
+
+        .temperature {
+          font-size: 2em;
+          font-weight: 700;
+          text-align: center;
+          margin-bottom: 16px;
+        }
+
+        .prog-action-btn {
+          width: 100%;
+          padding: 12px;
+          border: none;
+          border-radius: 12px;
           cursor: pointer;
+          font-size: 1rem;
+        }
+
+        .pab-on {
+          font-weight: bold;
         }
       `
     ];
   }
 }
 
-// IMPORTANT : Cette ligne permet à Home Assistant d'enregistrer la carte
-customElements.define('spa-card', SpaCard);
+if (!customElements.get("spa-card")) {
+  customElements.define("spa-card", SpaCard);
+}
 
-// Ajout pour forcer l'affichage dans le sélecteur de cartes
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "spa-card",
-  name: "Spa Control Card",
-  description: "Carte de contrôle pour votre Spa LayZSpa"
-});
+
+if (!window.customCards.find(c => c.type === "spa-card")) {
+  window.customCards.push({
+    type: "spa-card",
+    name: "Spa Control Card",
+    description: "Carte de contrôle pour spa gonflable",
+    preview: true
+  });
+}
+
+console.info(
+  "%c SPA CARD %c v1.0.0 ",
+  "background:#2196f3;color:white;font-weight:bold",
+  "background:#333;color:white"
+);
