@@ -168,12 +168,10 @@ class SpaCardEditor extends LitElement {
     return html`
       <div class="editor-wrap">
         <div class="tabs">
-          ${TABS.map(t => html`
+         ${TABS.map(t => html`
   <button class="tab ${this._tab===t.id?'on':''}" @click=${()=>{ this._tab=t.id; }}>
-    <div class="tab-inner">
-      <div class="tbox" style="${t.s}">${t.i}</div>
-      <span class="tlbl">${t.l}</span>
-    </div>
+    <div class="tbox" style="${t.s}">${t.i}</div>
+    <span class="tlbl">${t.l}</span> 
   </button>`)}
         </div>
         <div class="sections">${content[this._tab]}</div>
