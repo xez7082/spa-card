@@ -141,7 +141,7 @@ class SpaCardEditor extends LitElement {
   }
 
   _renderSw() {
-    const schema = Array.from({ length:10 }, (_, i) => [
+    const schema = Array.from({ length:10 }, (_,i) => [
       { name:`switch_${i+1}`,      label:`Entité bouton ${i+1}`, selector:{ entity:{} } },
       { name:`name_switch_${i+1}`, label:`Nom bouton ${i+1}`,    selector:{ text:{} } }
     ]).flat();
@@ -332,15 +332,17 @@ class SpaCard extends LitElement {
   }
 
   // ═══════════════════════════════════════════════
-  //  ACCUEIL (Optimisé sans Scroll)
+  //  ACCUEIL
   // ═══════════════════════════════════════════════
   _renderHome() {
     const c = this.config;
+    const wTemp  = this._waterTemp();
+    const tTemp  = this._targetTemp();
+
     return html`
       <div class="home-view">
-        ${this._renderFlood()}
-        ${this._renderLayzspaStatus()}
         ${this._renderHeatingControl()}
+        ${this._renderLayzspaStatus()}
 
         <div class="flex-row-center">
           <div class="side-col">
@@ -355,21 +357,23 @@ class SpaCard extends LitElement {
 
           <div class="gauge-container">
             ${this._exists(c.entity_target_temp) ? html`
-              <div class="temp-btn" role="button" @click=${()=>this._changeTemp(0.5)}>
+              <div class="temp-btn" role="button" aria-label="Augmenter"
+                   @click=${()=>this._changeTemp(0.5)}>
                 <ha-icon icon="mdi:chevron-up"></ha-icon>
               </div>` : ''}
             <div class="center-gauge">
               <div class="outer-ring"></div>
               <div class="inner-circle">
-                ${this._waterTemp() ? html`
+                ${wTemp ? html`
                   <span class="water-label">EAU</span>
-                  <span class="water-val">${this._waterTemp()}°</span>` : ''}
-                ${this._targetTemp() ? html`
-                  <div class="target-box">CIBLE ${this._targetTemp()}°</div>` : ''}
+                  <span class="water-val">${wTemp}°</span>` : ''}
+                ${tTemp ? html`
+                  <div class="target-box">CIBLE ${tTemp}°</div>` : ''}
               </div>
             </div>
             ${this._exists(c.entity_target_temp) ? html`
-              <div class="temp-btn" role="button" @click=${()=>this._changeTemp(-0.5)}>
+              <div class="temp-btn" role="button" aria-label="Diminuer"
+                   @click=${()=>this._changeTemp(-0.5)}>
                 <ha-icon icon="mdi:chevron-down"></ha-icon>
               </div>` : ''}
           </div>
@@ -385,15 +389,78 @@ class SpaCard extends LitElement {
           </div>
         </div>
 
-        ${this._renderMaintenance()}
         ${this._renderFooterRow()}
+        ${this._renderMaintenance()}
+        ${this._renderFlood()}
+      </div>`;
+  }
+
+  _renderSchedule() {
+    const c = this.config;
+    const schedId = c.entity_lz_schedule;
+    if (!schedId || !this.hass?.states[schedId]) return html``;
+
+    const raw    = this.hass.states[schedId].state;
+    const parts  = raw.split(':');
+    const h      = parseInt(parts[0] ?? 0);
+    const m      = parseInt(parts[1] ?? 0);
+
+    const calc   = this._calcHeatingTime();
+    let startStr = '';
+    let readyStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    if (calc && calc !== 0) {
+      const nowD    = new Date();
+      const readyD  = new Date(nowD);
+      readyD.setHours(h, m, 0, 0);
+      if (readyD < nowD) readyD.setDate(readyD.getDate() + 1);
+      const startD  = new Date(readyD.getTime() - calc.timeH * 3600000);
+      startStr = `${String(startD.getHours()).padStart(2,'0')}:${String(startD.getMinutes()).padStart(2,'0')}`;
+    }
+
+    const changeTime = (dh, dm) => {
+      let nh = h + dh;
+      let nm = m + dm;
+      if (nm >= 60) { nm -= 60; nh += 1; }
+      if (nm < 0)   { nm += 60; nh -= 1; }
+      nh = ((nh % 24) + 24) % 24;
+      const timeStr = `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}:00`;
+      this.hass.callService('input_datetime', 'set_datetime', {
+        entity_id: schedId,
+        time: timeStr
+      });
+    };
+
+    const activate = () => {
+      this.hass.callService('persistent_notification', 'create', {
+        title: '🛁 Spa programmé',
+        message: `Prêt à ${readyStr} — chauffe démarrera à ${startStr || '…'}`,
+        notification_id: 'spa_schedule'
+      });
+    };
+
+    return html`
+      <div class="sched-bar">
+        <ha-icon class="sched-icon" icon="mdi:clock-outline"></ha-icon>
+        <div class="sched-col">
+          <div class="sched-title">Prêt à</div>
+          ${startStr ? html`<div class="sched-start">Démarrage à ${startStr}</div>` : ''}
+        </div>
+        <div class="sched-time-ctrl">
+          <div class="sched-btn" @click=${()=>changeTime(-1,0)}>◂ h</div>
+          <div class="sched-btn" @click=${()=>changeTime(0,-15)}>◂ 15'</div>
+          <div class="sched-val">${readyStr}</div>
+          <div class="sched-btn" @click=${()=>changeTime(0,15)}>15' ▸</div>
+          <div class="sched-btn" @click=${()=>changeTime(1,0)}>h ▸</div>
+        </div>
+        <button class="sched-set-btn" @click=${activate} title="Confirmer la programmation">✓</button>
       </div>`;
   }
 
   _renderHeatingControl() {
     const c   = this.config;
     const id  = c.entity_target_temp;
-    if (!id || !id.startsWith('climate.') || !this.hass?.states[id]) return html``;
+    if (!id || !id.startsWith('climate.')) return html``;
+    if (!this.hass?.states[id]) return html``;
 
     const hvac    = this.hass.states[id].state;
     const isOn    = hvac === 'heat';
@@ -456,11 +523,13 @@ class SpaCard extends LitElement {
 
   _renderLayzspaStatus() {
     const c = this.config;
-    if (!this._exists(c.entity_lz_ready) && !this._exists(c.entity_lz_conn)) return html``;
+    const hasStatus = this._exists(c.entity_lz_ready) || this._exists(c.entity_lz_conn);
+    if (!hasStatus) return html``;
 
     const connected = !this._exists(c.entity_lz_conn) || this._state(c.entity_lz_conn) === 'on';
     const ready      = this._state(c.entity_lz_ready) === 'on';
     const heating    = this._state(c.entity_lz_heater) === 'on';
+
     const calc = this._calcHeatingTime();
 
     let icon, label, cls, timeStr = '';
@@ -472,7 +541,9 @@ class SpaCard extends LitElement {
       if (calc !== null && calc !== 0) {
         const h   = Math.floor(calc.timeH);
         const min = Math.round((calc.timeH - h) * 60);
-        timeStr   = h > 0 ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''} rest.` : `${min} min rest.`;
+        timeStr   = h > 0
+          ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''} restantes`
+          : `${min} min restantes`;
         label = `En chauffe — ${timeStr}`;
       } else {
         label = 'En chauffe…';
@@ -482,7 +553,9 @@ class SpaCard extends LitElement {
       if (calc !== null && calc !== 0) {
         const h   = Math.floor(calc.timeH);
         const min = Math.round((calc.timeH - h) * 60);
-        timeStr   = h > 0 ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''} pour ${calc.tgtTemp}°` : `${min} min pour ${calc.tgtTemp}°`;
+        timeStr   = h > 0
+          ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''} pour ${calc.tgtTemp}°`
+          : `${min} min pour ${calc.tgtTemp}°`;
         label = `En veille — ${timeStr}`;
       } else {
         label = 'En veille';
@@ -491,71 +564,16 @@ class SpaCard extends LitElement {
     }
 
     const rssi = this._exists(c.entity_lz_rssi) ? parseInt(this._state(c.entity_lz_rssi)) : null;
-    const rssiIcon = rssi===null ? '' : rssi>=-60 ? 'mdi:wifi-strength-4' : rssi>=-70 ? 'mdi:wifi-strength-3' : rssi>=-80 ? 'mdi:wifi-strength-2' : 'mdi:wifi-strength-1';
+    const rssiIcon = rssi===null ? '' : rssi>=-60 ? 'mdi:wifi-strength-4'
+      : rssi>=-70 ? 'mdi:wifi-strength-3'
+      : rssi>=-80 ? 'mdi:wifi-strength-2'
+      : 'mdi:wifi-strength-1';
 
     return html`
       <div class="lz-status ${cls}">
         <ha-icon class="lz-icon" icon="${icon}"></ha-icon>
         <span class="lz-label">${label}</span>
         ${rssiIcon ? html`<ha-icon class="lz-wifi" icon="${rssiIcon}" title="${rssi} dBm"></ha-icon>` : ''}
-      </div>`;
-  }
-
-  _renderSchedule() {
-    const c = this.config;
-    const schedId = c.entity_lz_schedule;
-    if (!schedId || !this.hass?.states[schedId]) return html``;
-
-    const raw    = this.hass.states[schedId].state;
-    const parts  = raw.split(':');
-    const h      = parseInt(parts[0] ?? 0);
-    const m      = parseInt(parts[1] ?? 0);
-
-    const calc   = this._calcHeatingTime();
-    let startStr = '';
-    let readyStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-    if (calc && calc !== 0) {
-      const nowD    = new Date();
-      const readyD  = new Date(nowD);
-      readyD.setHours(h, m, 0, 0);
-      if (readyD < nowD) readyD.setDate(readyD.getDate() + 1);
-      const startD  = new Date(readyD.getTime() - calc.timeH * 3600000);
-      startStr = `${String(startD.getHours()).padStart(2,'0')}:${String(startD.getMinutes()).padStart(2,'0')}`;
-    }
-
-    const changeTime = (dh, dm) => {
-      let nh = h + dh;
-      let nm = m + dm;
-      if (nm >= 60) { nm -= 60; nh += 1; }
-      if (nm < 0)   { nm += 60; nh -= 1; }
-      nh = ((nh % 24) + 24) % 24;
-      const timeStr = `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}:00`;
-      this.hass.callService('input_datetime', 'set_datetime', { entity_id: schedId, time: timeStr });
-    };
-
-    const activate = () => {
-      this.hass.callService('persistent_notification', 'create', {
-        title: '🛁 Spa programmé',
-        message: `Prêt à ${readyStr} — démarrage à ${startStr || '…'}`,
-        notification_id: 'spa_schedule'
-      });
-    };
-
-    return html`
-      <div class="sched-bar">
-        <ha-icon class="sched-icon" icon="mdi:clock-outline"></ha-icon>
-        <div class="sched-col">
-          <div class="sched-title">Prêt à</div>
-          ${startStr ? html`<div class="sched-start">Départ : ${startStr}</div>` : ''}
-        </div>
-        <div class="sched-time-ctrl">
-          <div class="sched-btn" @click=${()=>changeTime(-1,0)}>◂ h</div>
-          <div class="sched-btn" @click=${()=>changeTime(0,-15)}>◂ 15'</div>
-          <div class="sched-val">${readyStr}</div>
-          <div class="sched-btn" @click=${()=>changeTime(0,15)}>15' ▸</div>
-          <div class="sched-btn" @click=${()=>changeTime(1,0)}>h ▸</div>
-        </div>
-        <button class="sched-set-btn" @click=${activate}>✓</button>
       </div>`;
   }
 
@@ -575,7 +593,7 @@ class SpaCard extends LitElement {
         ${hasEnergy ? html`
           <div class="footer-pill">
             <ha-icon icon="mdi:flash"></ha-icon>
-            <span>${parseFloat(this._state(c.entity_lz_energy)).toFixed(1)} kWh</span>
+            <span>${parseFloat(this._state(c.entity_lz_energy)).toFixed(2)} kWh</span>
           </div>` : ''}
       </div>`;
   }
@@ -587,12 +605,19 @@ class SpaCard extends LitElement {
     const filterMax  = Number(c.lz_filter_max  ?? 60);
     const chloreMax  = Number(c.lz_chlorine_max ?? 14);
 
+    const hasResetF = !!c.entity_lz_reset_filter;
+    const hasResetC = !!c.entity_lz_reset_chlore;
+
     if (filterAge === null && chloreAge === null) return html``;
 
     const filterWarn = filterAge !== null && filterAge > filterMax;
     const chloreWarn = chloreAge !== null && chloreAge > chloreMax;
     const filterPct  = filterAge !== null ? Math.min(100, filterAge / filterMax * 100) : 0;
     const chlorePct  = chloreAge !== null ? Math.min(100, chloreAge / chloreMax * 100) : 0;
+
+    const pressReset = (entityId) => {
+      this.hass.callService('button', 'press', { entity_id: entityId });
+    };
 
     return html`
       <div class="maint-row">
@@ -601,61 +626,74 @@ class SpaCard extends LitElement {
             <div class="maint-head">
               <ha-icon icon="mdi:air-filter"></ha-icon>
               <span>Filtre</span>
-              ${c.entity_lz_reset_filter ? html`
-                <button class="maint-reset-btn" @click=${() => this.hass.callService('button', 'press', { entity_id: c.entity_lz_reset_filter })}>✓</button>
-              ` : ''}
+              ${filterWarn ? html`<span class="maint-badge">À changer</span>` : ''}
+              ${hasResetF ? html`
+                <button class="maint-reset-btn" title="Filtre changé — remettre à zéro"
+                  @click=${() => pressReset(c.entity_lz_reset_filter)}>
+                  ✓
+                </button>` : ''}
             </div>
             <div class="maint-bar">
-              <div class="maint-fill ${filterWarn?'maint-fill-warn':''}" style="width:${filterPct}%"></div>
+              <div class="maint-fill ${filterWarn?'maint-fill-warn':''}"
+                   style="width:${filterPct}%"></div>
             </div>
-            <div class="maint-val">${Math.round(filterAge)}/${filterMax}j</div>
+            <div class="maint-val">${Math.round(filterAge)} j / ${filterMax} j</div>
           </div>` : ''}
         ${chloreAge !== null ? html`
           <div class="maint-item ${chloreWarn ? 'maint-warn' : ''}">
             <div class="maint-head">
               <ha-icon icon="mdi:flask-outline"></ha-icon>
               <span>Chlore</span>
-              ${c.entity_lz_reset_chlore ? html`
-                <button class="maint-reset-btn" @click=${() => this.hass.callService('button', 'press', { entity_id: c.entity_lz_reset_chlore })}>✓</button>
-              ` : ''}
+              ${chloreWarn ? html`<span class="maint-badge">À renouveler</span>` : ''}
+              ${hasResetC ? html`
+                <button class="maint-reset-btn" title="Chlore renouvelé — remettre à zéro"
+                  @click=${() => pressReset(c.entity_lz_reset_chlore)}>
+                  ✓
+                </button>` : ''}
             </div>
             <div class="maint-bar">
-              <div class="maint-fill ${chloreWarn?'maint-fill-warn':''}" style="width:${chlorePct}%"></div>
+              <div class="maint-fill ${chloreWarn?'maint-fill-warn':''}"
+                   style="width:${chlorePct}%"></div>
             </div>
-            <div class="maint-val">${Math.round(chloreAge)}/${chloreMax}j</div>
+            <div class="maint-val">${Math.round(chloreAge)} j / ${chloreMax} j</div>
           </div>` : ''}
       </div>`;
   }
 
-  // ─── Sécurité Inondation (Bandeau d'alerte ultra-compact du haut) ───
   _renderFlood() {
     const c = this.config;
-    if (!this._exists(c.entity_water_leak) && !this._exists(c.entity_tamper)) return html``;
+    const hasAny = this._exists(c.entity_water_leak)||this._exists(c.entity_tamper)||this._exists(c.entity_flood_bat);
+    if (!hasAny) return html``;
 
     const leak   = this._state(c.entity_water_leak) === 'on';
     const tamper = this._state(c.entity_tamper)      === 'on';
-    const bat    = this._exists(c.entity_flood_bat) ? parseFloat(this._state(c.entity_flood_bat)) : null;
-    
-    if (!leak && !tamper) return html``; // Disparaît complètement si pas d'alerte active
+    const bat    = this._exists(c.entity_flood_bat)  ? parseFloat(this._state(c.entity_flood_bat)) : null;
+    const alerting = leak || tamper;
+    const batLow = bat !== null && bat <= 15;
 
     return html`
-      <div class="flood-bar flood-alert">
+      <div class="flood-bar ${alerting ? 'flood-alert' : 'flood-ok'}">
         <div class="flood-left">
-          <ha-icon class="flood-icon-alert" icon="${leak ? 'mdi:water-alert' : 'mdi:shield-alert'}"></ha-icon>
-          <span>${leak ? 'FUITE EAU DETECTÉE !' : 'SABOTAGE DETECTÉ !'}</span>
+          <ha-icon class="flood-icon ${alerting ? 'flood-icon-alert' : ''}" 
+                   icon="${leak ? 'mdi:water-alert' : tamper ? 'mdi:shield-alert' : 'mdi:shield-check'}"></ha-icon>
+          <span>${leak ? 'FUITE EAU DETECTÉE !' : tamper ? 'SABOTAGE DETECTÉ !' : 'Sécurité OK'}</span>
         </div>
-        ${bat !== null ? html`
-          <div class="flood-pill ${bat <= 15 ? 'pill-warn' : 'pill-ok'}">
-            <ha-icon icon="mdi:battery"></ha-icon><span>${Math.round(bat)}%</span>
-          </div>` : ''}
+        <div class="flood-right">
+          ${bat !== null ? html`
+            <div class="flood-pill ${batLow ? 'pill-warn' : 'pill-ok'}">
+              <ha-icon icon="${batLow ? 'mdi:battery-alert' : 'mdi:battery'}"></ha-icon>
+              <span>${Math.round(bat)}%</span>
+            </div>` : ''}
+        </div>
       </div>`;
   }
 
   // ═══════════════════════════════════════════════
-  //  ONGLET CHIMIE
+  //  ONGLET CHIMIE (Réintégré dans la classe)
   // ═══════════════════════════════════════════════
   _renderChem() {
     const c = this.config;
+    
     const phMin = c.ph_min !== undefined ? c.ph_min : 7.2;
     const phMax = c.ph_max !== undefined ? c.ph_max : 7.6;
     const orpMin = c.orp_min !== undefined ? c.orp_min : 650;
@@ -676,10 +714,13 @@ class SpaCard extends LitElement {
       <div class="chem-view">
         ${items.map(item => {
           if (!this._exists(item.id)) return '';
+          
           const val = parseFloat(this._state(item.id));
           const ok = (val >= item.min && val <= item.max);
+          
           const span = (item.max * 1.2) - (item.min * 0.8);
           const pct = span > 0 ? Math.min(100, Math.max(0, ((val - (item.min * 0.8)) / span) * 100)) : 0;
+          
           const markerMin = span > 0 ? ((item.min - (item.min * 0.8)) / span) * 100 : 0;
           const markerMax = span > 0 ? ((item.max - (item.min * 0.8)) / span) * 100 : 0;
 
@@ -697,13 +738,15 @@ class SpaCard extends LitElement {
                 <div class="chem-marker" style="left:${markerMax}%"></div>
               </div>
               <div class="chem-range">Cible : ${item.min} – ${item.max}</div>
-            </div>`;
+            </div>
+          `;
         })}
-      </div>`;
+      </div>
+    `;
   }
 
   // ═══════════════════════════════════════════════
-  //  ONGLET CAMÉRA (Fixé)
+  //  ONGLET CAMÉRA (Réintégré dans la classe)
   // ═══════════════════════════════════════════════
   _renderCam() {
     const c = this.config;
@@ -712,8 +755,8 @@ class SpaCard extends LitElement {
     }
 
     const w  = c.cam_w_px ? `${c.cam_w_px}px` : '100%';
-    const h  = c.cam_h_px ? `${c.cam_h_px}px` : '190px';
-    const r  = c.cam_radius !== undefined ? `${c.cam_radius}px` : '16px';
+    const h  = c.cam_h_px ? `${c.cam_h_px}px` : '210px';
+    const r  = c.cam_radius !== undefined ? `${c.cam_radius}px` : '12px';
     const x  = c.cam_x || 0;
     const y  = c.cam_y || 0;
 
@@ -722,17 +765,20 @@ class SpaCard extends LitElement {
         <div class="cam-container ${this._camExpanded ? 'cam-expanded' : ''}"
              style="width:${this._camExpanded ? '100%' : w}; height:${this._camExpanded ? 'auto' : h}; border-radius:${r};"
              @click=${() => this._camExpanded = !this._camExpanded}>
-          <img src="/api/camera_proxy/${c.entity_camera}" style="transform: translate(${x}px, ${y}px);" alt="Flux Spa" />
+          <img src="/api/camera_proxy/${c.entity_camera}" 
+               style="transform: translate(${x}px, ${y}px);" 
+               alt="Flux Spa" />
           <div class="cam-overlay">
             <ha-icon icon="${this._camExpanded ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
           </div>
         </div>
         ${this._renderSchedule()}
-      </div>`;
+      </div>
+    `;
   }
 
   // ═══════════════════════════════════════════════
-  //  ONGLET INTERRUPTEURS (Sublimé)
+  //  ONGLET SWITCHES (Réintégré dans la classe)
   // ═══════════════════════════════════════════════
   _renderSwitches() {
     const c = this.config;
@@ -757,27 +803,23 @@ class SpaCard extends LitElement {
       if (lowLbl.includes('lumi'))    icon = 'mdi:lightbulb';
 
       return html`
-        <div class="sw-tile ${active ? 'sw-on' : ''}" @click=${toggle}>
-          <div class="sw-tile-glow"></div>
-          <div class="sw-tile-content">
-            <div class="sw-icon-circle">
-              <ha-icon icon="${icon}"></ha-icon>
-            </div>
-            <div class="sw-tile-info">
-              <span class="sw-tile-name">${lbl}</span>
-              <span class="sw-tile-status">${active ? 'ACTIF' : 'ARRÊT'}</span>
-            </div>
-          </div>
-        </div>`;
+        <div class="sw-item ${active ? 'sw-active' : ''}" @click=${toggle}>
+          <div class="sw-icon-box"><ha-icon icon="${icon}"></ha-icon></div>
+          <div class="sw-name">${lbl}</div>
+        </div>
+      `;
     });
 
     if (!found) {
       return html`<div class="empty-msg"><ha-icon icon="mdi:toggle-switch-off"></ha-icon><p>Aucun interrupteur configuré</p></div>`;
     }
 
-    return html`<div class="sw-grid-container">${btns}</div>`;
+    return html`<div class="sw-view">${btns}</div>`;
   }
 
+  // ═══════════════════════════════════════════════
+  //  RENDU PRINCIPAL (Réintégré dans la classe)
+  // ═══════════════════════════════════════════════
   render() {
     if (!this.config || !this.hass) return html``;
     const title  = this.config.card_title || 'SPA';
@@ -813,11 +855,11 @@ class SpaCard extends LitElement {
   static styles = css`
     :host {
       display: block;
-      --glass-bg: rgba(255, 255, 255, 0.04);
-      --glass-border: rgba(255, 255, 255, 0.1);
-      --glass-glow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+      --glass-bg: rgba(255, 255, 255, 0.06);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --glass-glow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
       --txt-p: #ffffff;
-      --txt-s: rgba(255, 255, 255, 0.6);
+      --txt-s: rgba(255, 255, 255, 0.65);
       --accent-blue: #38bdf8;
       --accent-green: #4ade80;
       --accent-amber: #fbbf24;
@@ -829,7 +871,7 @@ class SpaCard extends LitElement {
       overflow: hidden;
       border-radius: 24px;
       border: 1px solid var(--glass-border) !important;
-      background: rgba(10, 16, 26, 0.45) !important;
+      background: rgba(10, 15, 25, 0.4) !important;
       box-shadow: var(--glass-glow);
       display: flex;
       flex-direction: column;
@@ -840,285 +882,251 @@ class SpaCard extends LitElement {
     .glass-bg, .glass-overlay {
       position: absolute; top:0; left:0; width:100%; height:100%; z-index: 0; pointer-events: none;
     }
-    .glass-bg { background-size: cover; background-position: center; filter: brightness(0.45); }
+    .glass-bg { background-size: cover; background-position: center; filter: brightness(0.55); }
 
     .card-header-main {
       position: relative; z-index: 1;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 16px 6px; flex-shrink: 0;
+      padding: 16px 20px 8px; flex-shrink: 0;
     }
     .card-header-main h1 {
-      margin: 0; font-size: 16px; font-weight: 700; letter-spacing: 0.5px;
-      background: linear-gradient(135deg, #fff 40%, var(--accent-blue));
+      margin: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #fff 30%, var(--accent-blue));
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
 
     .nav-pills {
-      display: flex; gap: 4px; padding: 3px;
-      background: rgba(255, 255, 255, 0.04); border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.04);
+      display: flex; gap: 6px; padding: 4px;
+      background: rgba(255, 255, 255, 0.05); border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
     .pill {
-      background: transparent; border: none; width: 32px; height: 32px;
-      border-radius: 9px; color: var(--txt-s); cursor: pointer;
+      background: transparent; border: none; width: 34px; height: 34px;
+      border-radius: 10px; color: var(--txt-s); cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .pill ha-icon { --mdc-icon-size: 16px; }
+    .pill ha-icon { --mdc-icon-size: 18px; }
     .pill:hover { color: #fff; background: rgba(255,255,255,0.05); }
-    .pill.on { background: #fff; color: #0a0f19; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .pill.on { background: #fff; color: #111827; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 
     .card-content-scroller {
       position: relative; z-index: 1; flex: 1;
-      overflow: hidden; padding: 6px 14px 14px;
+      overflow-y: auto; overflow-x: hidden; padding: 8px 16px 20px;
     }
+    .card-content-scroller::-webkit-scrollbar { width: 5px; }
+    .card-content-scroller::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
 
-    /* ACCUEIL SANS SCROLL */
-    .home-view { display: flex; flex-direction: column; gap: 10px; height: 100%; justify-content: space-between; }
+    .home-view { display: flex; flex-direction: column; gap: 14px; }
 
     .lz-status {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 12px; border-radius: 12px;
-      border: 1px solid var(--glass-border); font-size: 12px; font-weight: 500;
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 14px;
+      border: 1px solid var(--glass-border); font-size: 13px; font-weight: 500;
     }
-    .lz-icon { --mdc-icon-size: 16px; }
-    .lz-wifi { --mdc-icon-size: 13px; margin-left: auto; opacity: 0.6; }
+    .lz-icon { --mdc-icon-size: 18px; }
+    .lz-wifi { --mdc-icon-size: 14px; margin-left: auto; opacity: 0.7; }
     
-    .lz-heating { background: rgba(248, 113, 113, 0.1); color: #f87171; border-color: rgba(248, 113, 113, 0.15); }
-    .lz-ready { background: rgba(74, 222, 128, 0.1); color: #4ade80; border-color: rgba(74, 222, 128, 0.18); animation: pulse-border 2s infinite; }
-    .lz-standby { background: rgba(251, 191, 36, 0.06); color: #fbbf24; border-color: rgba(251, 191, 36, 0.12); }
-    .lz-disconnected { background: rgba(156, 163, 175, 0.1); color: #9ca3af; border-color: rgba(156, 163, 175, 0.15); }
+    .lz-heating { background: rgba(248, 113, 113, 0.12); color: #f87171; border-color: rgba(248, 113, 113, 0.2); }
+    .lz-ready { background: rgba(74, 222, 128, 0.12); color: #4ade80; border-color: rgba(74, 222, 128, 0.2); animation: pulse-border 2s infinite; }
+    .lz-standby { background: rgba(251, 191, 36, 0.08); color: #fbbf24; border-color: rgba(251, 191, 36, 0.15); }
+    .lz-disconnected { background: rgba(156, 163, 175, 0.12); color: #9ca3af; border-color: rgba(156, 163, 175, 0.2); }
 
     @keyframes pulse-border {
-      0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.15); }
-      70% { box-shadow: 0 0 0 5px rgba(74, 222, 128, 0); }
+      0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.2); }
+      70% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
       100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
     }
 
     .heat-ctrl {
-      display: flex; background: rgba(255, 255, 255, 0.02);
-      border: 1px solid var(--glass-border); border-radius: 14px; padding: 4px; gap: 6px;
+      display: flex; background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--glass-border); border-radius: 16px; padding: 6px; gap: 8px;
     }
     .heat-btn {
-      flex: 1; border: none; border-radius: 10px; display: flex; align-items: center;
-      justify-content: center; gap: 6px; font-weight: 600; font-size: 12px; cursor: pointer;
-      transition: all 0.2s; padding: 8px;
+      flex: 1; border: none; border-radius: 12px; display: flex; align-items: center;
+      justify-content: center; gap: 8px; font-weight: 600; font-size: 13px; cursor: pointer;
+      transition: all 0.2s; padding: 10px;
     }
-    .heat-btn ha-icon { --mdc-icon-size: 16px; }
-    .heat-off { background: rgba(255,255,255,0.04); color: var(--txt-s); }
-    .heat-off:hover { background: rgba(255,255,255,0.08); color: #fff; }
-    .heat-on { background: linear-gradient(135deg, #ef4444, #f87171); color: #fff; box-shadow: 0 3px 10px rgba(239,68,68,0.2); }
+    .heat-btn ha-icon { --mdc-icon-size: 18px; }
+    .heat-off { background: rgba(255,255,255,0.05); color: var(--txt-s); }
+    .heat-off:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .heat-on { background: linear-gradient(135deg, #ef4444, #f87171); color: #fff; box-shadow: 0 4px 12px rgba(239,68,68,0.25); }
 
-    .heat-temps { display: flex; align-items: center; background: rgba(0,0,0,0.15); border-radius: 10px; padding: 0 2px; }
-    .heat-target { min-width: 40px; text-align: center; font-size: 14px; font-weight: 700; color: #fff; }
-    .heat-t-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0.6; }
+    .heat-temps { display: flex; align-items: center; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 0 4px; }
+    .heat-target { min-width: 46px; text-align: center; font-size: 15px; font-weight: 700; color: #fff; }
+    .heat-t-btn {
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; opacity: 0.7; transition: opacity 0.15s;
+    }
     .heat-t-btn:hover { opacity: 1; }
-    .heat-t-btn ha-icon { --mdc-icon-size: 14px; }
+    .heat-t-btn ha-icon { --mdc-icon-size: 16px; }
 
-    .flex-row-center { display: flex; align-items: center; justify-content: space-between; margin: 2px 0; gap: 4px; }
-    .side-col { width: 70px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .val-big { font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
-    .label-tiny { font-size: 8px; font-weight: 600; color: var(--txt-s); letter-spacing: 0.5px; }
-    .hum-pill { background: rgba(255,255,255,0.04); padding: 2px 6px; border-radius: 20px; font-size: 8px; color: var(--accent-blue); font-weight: 600; border: 1px solid rgba(56,189,248,0.12); }
+    .flex-row-center { display: flex; align-items: center; justify-content: space-between; margin: 6px 0; gap: 8px; }
+    .side-col { width: 75px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .side-info { text-align: center; }
+    .val-big { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+    .label-tiny { font-size: 9px; font-weight: 600; color: var(--txt-s); letter-spacing: 0.5px; margin-top: 2px; }
+    .hum-pill { background: rgba(255,255,255,0.05); padding: 3px 7px; border-radius: 20px; font-size: 9px; color: var(--accent-blue); font-weight: 600; border: 1px solid rgba(56,189,248,0.15); }
 
-    .gauge-container { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .gauge-container { display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .temp-btn {
-      width: 30px; height: 30px; background: var(--glass-bg); border: 1px solid var(--glass-border);
-      border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--txt-s);
+      width: 36px; height: 36px; background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s; color: var(--txt-s);
     }
-    .temp-btn ha-icon { --mdc-icon-size: 18px; }
+    .temp-btn:hover { background: rgba(255,255,255,0.15); color: #fff; transform: scale(1.05); }
+    .temp-btn ha-icon { --mdc-icon-size: 20px; }
 
-    .center-gauge { width: 116px; height: 116px; position: relative; display: flex; align-items: center; justify-content: center; }
+    .center-gauge {
+      width: 130px; height: 130px; position: relative; display: flex; align-items: center; justify-content: center;
+    }
     .outer-ring {
       position: absolute; width: 100%; height: 100%; border-radius: 50%;
-      border: 2px dashed rgba(56, 189, 248, 0.2); animation: rotate-ring 30s linear infinite;
+      border: 3px dashed rgba(56, 189, 248, 0.25);
+      animation: rotate-ring 25s linear infinite;
     }
     @keyframes rotate-ring { to { transform: rotate(360deg); } }
 
     .inner-circle {
-      width: 100px; height: 100px; border-radius: 50%;
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.06), rgba(255,255,255,0.01));
-      border: 1px solid rgba(255,255,255,0.12); display: flex; flex-direction: column; align-items: center; justify-content: center;
+      width: 112px; height: 112px; border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.15); box-shadow: inset 0 4px 12px rgba(0,0,0,0.2);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
     }
-    .water-label { font-size: 9px; font-weight: 700; color: var(--accent-blue); letter-spacing: 1px; }
-    .water-val { font-size: 26px; font-weight: 900; color: #fff; line-height: 28px; margin: 1px 0; }
-    .target-box { font-size: 8px; font-weight: 600; color: var(--txt-s); background: rgba(0,0,0,0.2); padding: 1px 5px; border-radius: 6px; }
+    .water-label { font-size: 10px; font-weight: 700; color: var(--accent-blue); letter-spacing: 1px; }
+    .water-val { font-size: 30px; font-weight: 900; color: #fff; line-height: 32px; letter-spacing: -0.5px; margin: 2px 0; }
+    .target-box { font-size: 9px; font-weight: 600; color: var(--txt-s); background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
 
-    .footer-row { display: flex; justify-content: center; gap: 6px; }
+    .footer-row { display: flex; justify-content: center; gap: 8px; margin-top: 2px; }
     .footer-pill {
-      background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255,255,255,0.05);
-      padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--txt-s);
+      background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255,255,255,0.06);
+      padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 600; color: var(--txt-s);
     }
-    .footer-pill ha-icon { --mdc-icon-size: 12px; color: var(--accent-blue); }
+    .footer-pill ha-icon { --mdc-icon-size: 13px; color: var(--accent-blue); }
     .anim-pulse { animation: pulse-glow 1.8s infinite ease-in-out; }
-    @keyframes pulse-glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    @keyframes pulse-glow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; transform: scale(1.05); } }
 
-    .maint-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .maint-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .maint-item {
-      background: rgba(255, 255, 255, 0.01); border: 1px solid var(--glass-border);
-      border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;
+      background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border);
+      border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
     }
-    .maint-head { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--txt-s); }
-    .maint-head ha-icon { --mdc-icon-size: 14px; color: var(--accent-blue); }
-    .maint-warn { border-color: rgba(251, 191, 36, 0.25); background: rgba(251, 191, 36, 0.01); }
+    .maint-head { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--txt-s); }
+    .maint-head ha-icon { --mdc-icon-size: 15px; color: var(--accent-blue); }
+    .maint-badge { font-size: 8px; background: var(--accent-amber); color: #000; padding: 1px 4px; border-radius: 6px; font-weight: 700; margin-left: auto; }
+    .maint-warn { border-color: rgba(251, 191, 36, 0.3); background: rgba(251, 191, 36, 0.02); }
+    .maint-warn .maint-head ha-icon { color: var(--accent-amber); }
     
     .maint-reset-btn {
-      margin-left: auto; background: rgba(255,255,255,0.06); border: none; border-radius: 4px;
-      color: #fff; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 9px; cursor: pointer;
+      margin-left: auto; background: rgba(255,255,255,0.08); border: none; border-radius: 6px;
+      color: #fff; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; cursor: pointer; transition: background 0.2s; padding: 0;
     }
     .maint-reset-btn:hover { background: var(--accent-green); color: #000; }
-    .maint-bar { height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
-    .maint-fill { height: 100%; background: var(--accent-blue); }
-    .maint-fill-warn { background: linear-gradient(90deg, var(--accent-amber), var(--accent-red)); }
-    .maint-val { font-size: 9px; color: var(--txt-s); text-align: right; }
 
-    /* Alerte Inondation Haut de page */
+    .maint-bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+    .maint-fill { height: 100%; background: var(--accent-blue); border-radius: 2px; }
+    .maint-fill-warn { background: linear-gradient(90deg, var(--accent-amber), var(--accent-red)); }
+    .maint-val { font-size: 10px; color: var(--txt-s); text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; }
+
     .flood-bar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 6px 10px; border-radius: 10px; border: 1px solid #f87171;
-      font-size: 11px; font-weight: 700; background: rgba(248, 113, 113, 0.2);
-      animation: flood-flash 1.5s infinite alternate;
+      padding: 10px 14px; border-radius: 14px; border: 1px solid var(--glass-border);
+      font-size: 12px; font-weight: 600; transition: all 0.3s;
     }
-    .flood-left { display: flex; align-items: center; gap: 6px; }
-    .flood-icon-alert { color: #f87171; --mdc-icon-size: 14px; }
-    @keyframes flood-flash { 0% { background: rgba(248,113,113,0.15); } 100% { background: rgba(248,113,113,0.3); } }
+    .flood-left { display: flex; align-items: center; gap: 8px; }
+    .flood-icon { --mdc-icon-size: 16px; }
+    .flood-ok { background: rgba(74, 222, 128, 0.04); color: rgba(255,255,255,0.7); border-color: rgba(74, 222, 128, 0.15); }
+    .flood-ok .flood-icon { color: var(--accent-green); }
+    
+    .flood-alert { background: rgba(248, 113, 113, 0.15); color: #fff; border-color: #f87171; animation: flood-flash 1.5s infinite alternate; }
+    .flood-icon-alert { color: #f87171; animation: pulse-glow 0.8s infinite alternate; }
+    @keyframes flood-flash { 0% { background: rgba(248,113,113,0.1); } 100% { background: rgba(248,113,113,0.25); box-shadow: inset 0 0 10px rgba(248,113,113,0.2); } }
 
-    /* PROGRAMMATION ET CAMERA */
+    .flood-right { display: flex; align-items: center; }
+    .flood-pill { display: flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 500; }
+    .flood-pill ha-icon { --mdc-icon-size: 13px; }
+    .pill-ok { background: rgba(255,255,255,0.06); color: var(--txt-s); }
+    .pill-warn { background: rgba(251,191,36,0.2); color: var(--accent-amber); font-weight: 700; }
+
     .sched-bar {
-      display: flex; align-items: center; gap: 8px; padding: 8px 10px;
-      background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 12px; margin-top: 8px;
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border);
+      border-radius: 14px; margin-top: 10px;
     }
-    .sched-icon { --mdc-icon-size: 16px; color: var(--accent-blue); }
+    .sched-icon { --mdc-icon-size: 18px; color: var(--accent-blue); }
     .sched-col { flex: 1; display: flex; flex-direction: column; }
-    .sched-title { font-size: 11px; font-weight: 600; }
-    .sched-start { font-size: 9px; color: var(--accent-green); }
-    .sched-time-ctrl { display: flex; align-items: center; background: rgba(0,0,0,0.15); border-radius: 6px; padding: 1px; }
-    .sched-btn { padding: 3px 5px; font-size: 9px; color: var(--txt-s); cursor: pointer; }
-    .sched-val { padding: 0 5px; font-size: 11px; font-weight: 700; color: #fff; }
-    .sched-set-btn { background: var(--accent-blue); border: none; border-radius: 6px; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; color: #000; font-weight: 700; cursor: pointer; font-size: 10px; }
+    .sched-title { font-size: 12px; font-weight: 600; color: #fff; }
+    .sched-start { font-size: 10px; color: var(--accent-green); font-weight: 500; margin-top: 1px; }
+    .sched-time-ctrl { display: flex; align-items: center; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 2px; border: 1px solid rgba(255,255,255,0.05); }
+    .sched-btn { padding: 4px 6px; font-size: 10px; font-weight: 600; color: var(--txt-s); cursor: pointer; user-select: none; }
+    .sched-btn:hover { color: #fff; background: rgba(255,255,255,0.05); border-radius: 4px; }
+    .sched-val { padding: 0 6px; font-size: 12px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; border-left: 1px solid rgba(255,255,255,0.1); border-right: 1px solid rgba(255,255,255,0.1); }
+    .sched-set-btn { background: var(--accent-blue); border: none; border-radius: 8px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: #000; font-weight: 700; cursor: pointer; font-size: 11px; margin-left: 2px; }
+    .sched-set-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
 
-    .cam-view { display: flex; flex-direction: column; }
-    .cam-container { position: relative; overflow: hidden; background: #000; border: 1px solid var(--glass-border); cursor: pointer; }
-    .cam-container img { width: 100%; height: 100%; object-fit: cover; }
-    .cam-overlay { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.4); border-radius: 6px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; color: #fff; }
-    .cam-container:hover .cam-overlay { opacity: 1; }
-    .cam-expanded { width: 100% !important; height: auto !important; max-height: 75vh; z-index: 99; }
+    .chem-view { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .chem-card {
+      background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border);
+      border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px;
+    }
+    .chem-header { display: flex; align-items: center; gap: 6px; }
+    .chem-header ha-icon { --mdc-icon-size: 16px; }
+    .chem-title { font-size: 13px; font-weight: 600; color: var(--txt-s); }
+    .chem-status-tag { font-size: 9px; padding: 2px 6px; border-radius: 8px; font-weight: 700; margin-left: auto; }
+    .chem-value { font-size: 22px; font-weight: 800; color: #fff; margin: 2px 0; font-variant-numeric: tabular-nums; }
+    
+    .chem-gauge-bg { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; position: relative; overflow: visible; margin: 4px 0; }
+    .chem-gauge-fill { height: 100%; background: var(--accent-green); border-radius: 3px; }
+    .chem-marker { position: absolute; top: -2px; width: 2px; height: 9px; background: rgba(255,255,255,0.5); }
+    .chem-range { font-size: 9px; color: var(--txt-s); font-weight: 500; }
 
-    /* CHIMIE */
-    .chem-view { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .chem-card { background: rgba(255, 255, 255, 0.01); border: 1px solid var(--glass-border); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 2px; }
-    .chem-header { display: flex; align-items: center; gap: 4px; }
-    .chem-header ha-icon { --mdc-icon-size: 14px; }
-    .chem-title { font-size: 12px; font-weight: 600; color: var(--txt-s); }
-    .chem-status-tag { font-size: 8px; padding: 1px 5px; border-radius: 6px; font-weight: 700; margin-left: auto; }
-    .chem-value { font-size: 18px; font-weight: 800; color: #fff; }
-    .chem-gauge-bg { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; position: relative; overflow: hidden; margin: 2px 0; }
-    .chem-gauge-fill { height: 100%; background: var(--accent-green); }
-    .chem-marker { position: absolute; top:0; width: 1px; height: 100%; background: rgba(255,255,255,0.3); }
-    .chem-range { font-size: 8px; color: var(--txt-s); }
-    .chem-ok { border-color: rgba(74, 222, 128, 0.1); }
+    .chem-ok { border-color: rgba(74, 222, 128, 0.12); }
     .chem-ok .chem-header ha-icon { color: var(--accent-green); }
-    .chem-ok .chem-status-tag { background: rgba(74, 222, 128, 0.1); color: #4ade80; }
-    .chem-warn { border-color: rgba(248, 113, 113, 0.2); }
+    .chem-ok .chem-status-tag { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
+    
+    .chem-warn { border-color: rgba(248, 113, 113, 0.25); background: rgba(248, 113, 113, 0.01); }
     .chem-warn .chem-header ha-icon { color: var(--accent-red); }
-    .chem-warn .chem-status-tag { background: rgba(248, 113, 113, 0.12); color: #f87171; }
+    .chem-warn .chem-status-tag { background: rgba(248, 113, 113, 0.15); color: #f87171; }
     .chem-warn .chem-gauge-fill { background: var(--accent-red); }
 
-    /* DESIGN SUBLIME DES INTERRUPTEURS */
-    .sw-grid-container {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      height: 100%;
-      align-content: start;
+    .cam-view { display: flex; flex-direction: column; }
+    .cam-container {
+      position: relative; overflow: hidden; background: #000;
+      border: 1px solid var(--glass-border); cursor: pointer;
     }
-    .sw-tile {
-      position: relative;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 10px 12px;
-      cursor: pointer;
-      overflow: hidden;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    .cam-container img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
+    .cam-overlay {
+      position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5);
+      border-radius: 8px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.2s; color: #fff;
     }
-    .sw-tile-glow {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255,255,255,0.04) 0%, transparent 60%);
-      pointer-events: none;
-    }
-    .sw-tile-content {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .sw-icon-circle {
-      width: 34px;
-      height: 34px;
-      border-radius: 11px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--txt-s);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .sw-icon-circle ha-icon {
-      --mdc-icon-size: 16px;
-    }
-    .sw-tile-info {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-      overflow: hidden;
-    }
-    .sw-tile-name {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--txt-p);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .sw-tile-status {
-      font-size: 8px;
-      font-weight: 700;
-      color: var(--txt-s);
-      letter-spacing: 0.5px;
-    }
-    
-    /* Hover & Active States */
-    .sw-tile:hover {
-      background: rgba(255, 255, 255, 0.05);
-      border-color: rgba(255, 255, 255, 0.15);
-      transform: translateY(-1px);
-    }
-    .sw-on {
-      background: rgba(56, 189, 248, 0.06);
-      border-color: rgba(56, 189, 248, 0.3);
-      box-shadow: inset 0 0 12px rgba(56, 189, 248, 0.05);
-    }
-    .sw-on .sw-icon-circle {
-      background: linear-gradient(135deg, var(--accent-blue), #0284c7);
-      color: #060b13;
-      border-color: transparent;
-      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
-    }
-    .sw-on .sw-tile-name {
-      color: #fff;
-      font-weight: 700;
-    }
-    .sw-on .sw-tile-status {
-      color: var(--accent-blue);
-    }
+    .cam-container:hover .cam-overlay { opacity: 1; }
+    .cam-container:hover img { filter: brightness(1.1); }
+    .cam-expanded { width: 100% !important; height: auto !important; max-height: 80vh; z-index: 99; }
 
-    .empty-msg { text-align: center; padding: 30px; color: var(--txt-s); }
-    .empty-msg ha-icon { --mdc-icon-size: 28px; opacity: 0.4; margin-bottom: 6px; }
-    .empty-msg p { margin: 0; font-size: 12px; }
+    .sw-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+    .sw-item {
+      background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border);
+      border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px;
+      cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .sw-icon-box {
+      width: 32px; height: 32px; border-radius: 10px; background: rgba(255,255,255,0.05);
+      display: flex; align-items: center; justify-content: center; color: var(--txt-s); transition: all 0.2s;
+    }
+    .sw-icon-box ha-icon { --mdc-icon-size: 16px; }
+    .sw-name { font-size: 11px; font-weight: 600; color: var(--txt-p); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .sw-item:hover { background: rgba(255,255,255,0.06); transform: translateY(-1px); }
+    .sw-active { background: rgba(56, 189, 248, 0.08); border-color: rgba(56, 189, 248, 0.25); }
+    .sw-active .sw-icon-box { background: var(--accent-blue); color: #0a0f19; box-shadow: 0 2px 8px rgba(56,189,248,0.3); }
+    .sw-active .sw-name { color: #fff; font-weight: 700; }
+
+    .empty-msg { text-align: center; padding: 40px 20px; color: var(--txt-s); }
+    .empty-msg ha-icon { --mdc-icon-size: 32px; opacity: 0.5; margin-bottom: 8px; }
+    .empty-msg p { margin: 0; font-size: 13px; }
   `;
 }
 customElements.define('spa-card', SpaCard);
