@@ -896,22 +896,26 @@ class SpaCard extends LitElement {
     .lz-wifi { --mdc-icon-size: 12px; opacity: 0.6; }
 
     /* Horloge */
-    .sched-bar { display: flex; align-items: center; gap: 6px; padding: 5px 8px; background: rgba(107,142,255,0.08); border: 1px solid rgba(107,142,255,0.2); border-radius: 10px; font-size: 11px; }
+    .sched-bar { display: flex; align-items: center; gap: 6px; padding: 5px 8px; background: rgba(107,142,255,0.08); border: 1px solid rgba(107,142,255,0.2); border-radius: 10px; font-size: 11px; 
+    width: 50%; /* Force à prendre toute la largeur */
+  box-sizing: border-box;    /* Évite que le padding ne dépasse */
+  justify-content: space-between; /* Écarte les infos à gauche et les contrôles à droite */
+} }
     .sched-info-group { display: flex; align-items: center; gap: 6px; flex: 1; }
     .sched-icon { color: #6b8eff; --mdc-icon-size: 14px; }
     .sched-col { display: flex; flex-direction: column; }
     .sched-title { font-weight: 700; color: rgba(255,255,255,0.9); }
     .sched-start { font-size: 9px; color: #6b8eff; opacity: 0.9; margin-top: 1px; }
-    .sched-time-ctrl { display: flex; align-items: center; gap: 3px; background: rgba(255,255,255,0.04); padding: 2px; border-radius: 6px; }
-    .sched-btn { padding: 2px 4px; background: rgba(255,255,255,0.06); border-radius: 4px; cursor: pointer; font-size: 9px; font-weight: bold; }
+    .sched-time-ctrl { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.04); padding: 4px 6px; border-radius: 6px; }
+    .sched-btn { padding: 4px 8px; background: rgba(255,255,255,0.06); border-radius: 4px; cursor: pointer; font-size: 9px; font-weight: bold; }
     .sched-btn:hover { background: rgba(255,255,255,0.15); }
-    .sched-val { font-weight: 700; padding: 0 2px; color: #6b8eff; font-size: 11px; }
-    .sched-set-btn { background: #6b8eff; border: none; color: #fff; border-radius: 4px; padding: 2px 6px; font-weight: bold; cursor: pointer; font-size: 10px; }
+    .sched-val { font-weight: 700; padding: 0 2px; color: #6b8eff; font-size: 13px; }
+    .sched-set-btn { background: #6b8eff; border: none; color: #fff; border-radius: 4px; padding: 4px 10px; font-weight: bold; cursor: pointer; font-size: 10px; }
 
     /* ── Vue Caméra Découpée en Colonnes (Intégration Droite) ── */
     .cam-layout-wrapper { display: flex; gap: 10px; padding: 4px 0; height: 100%; align-items: stretch; }
     .cam-main-box { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-    .cam-sidebar-controls { width: 190px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 8px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box; }
+    .cam-sidebar-controls { width: 230px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 8px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box; }
     .sidebar-header { font-size: 9px; font-weight: 800; opacity: 0.4; letter-spacing: 0.5px; text-align: center; }
     .sidebar-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0; }
     .sidebar-sched { flex-direction: column; align-items: stretch; gap: 6px; padding: 6px; background: transparent; border: none; }
