@@ -839,7 +839,7 @@ class SpaCard extends LitElement {
     /* ── Vue Accueil (Sans scroll) ── */
     .home-view { display: flex; flex-direction: column; gap: 6px; height: 100%; justify-content: space-between; overflow: hidden; }
     .flex-row-center { display: flex; align-items: center; justify-content: space-between; margin: 2px 0; }
-    .side-col { width: 70px; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+    .side-col { width: 100px; display: flex; flex-direction: column; gap: 4px; align-items: center; }
     .side-info { text-align: center; background: rgba(255,255,255,0.05); padding: 4px 2px; border-radius: 10px; width: 100%; border: 1px solid rgba(255,255,255,0.08); }
     .val-big { font-size: 15px; font-weight: 700; color: #00f9f9; }
     .label-tiny { font-size: 8px; opacity: 0.5; font-weight: 600; letter-spacing: 0.5px; margin-top: 1px; }
