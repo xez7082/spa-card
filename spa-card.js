@@ -848,54 +848,104 @@ _renderCam() {
   `;
 }
 
-  // ═══════════════════════════════════════════════
-  //  ONGLET SWITCHES (Redessinés Style Tactile)
-  // ═══════════════════════════════════════════════
-  _renderSwitches() {
-    const c = this.config;
-    let found = false;
+// ═══════════════════════════════════════════════
+// ONGLET SWITCHES PREMIUM
+// ═══════════════════════════════════════════════
+_renderSwitches() {
+  const c = this.config;
+  const buttons = [];
 
-    const btns = Array.from({ length: 10 }, (_, i) => {
-      const ep = c[`switch_${i + 1}`];
-      const lbl = c[`name_switch_${i + 1}`] || `Bouton ${i + 1}`;
-      if (!this._exists(ep)) return null;
-      found = true;
+  for (let i = 1; i <= 10; i++) {
 
-      const active = this._state(ep) === 'on';
-      const toggle = () => this.hass.callService('switch', 'toggle', { entity_id: ep });
+    const entity = c[`switch_${i}`];
+    if (!entity || !this.hass.states[entity]) continue;
 
-      let icon = 'mdi:power';
-      const lowLbl = lbl.toLowerCase();
-      if (lowLbl.includes('pompe'))   icon = 'mdi:pump';
-      if (lowLbl.includes('bulle'))   icon = 'mdi:bubble';
-      if (lowLbl.includes('jet'))     icon = 'mdi:hydro-power';
-      if (lowLbl.includes('chauffe')) icon = 'mdi:radiator';
-      if (lowLbl.includes('verrou'))  icon = active ? 'mdi:lock' : 'mdi:lock-open';
-      if (lowLbl.includes('lumi'))    icon = 'mdi:lightbulb';
+    const label = c[`name_switch_${i}`] || `Switch ${i}`;
+    const state = this.hass.states[entity];
 
-      return html`
-        <div class="custom-switch-card ${active ? 'is-active' : ''}" @click=${toggle}>
-          <div class="switch-inner">
-            <div class="switch-glow-effect"></div>
-            <div class="switch-icon-container">
-              <ha-icon icon="${icon}"></ha-icon>
-            </div>
-            <div class="switch-meta">
-              <span class="switch-title-lbl">${lbl}</span>
-              <span class="switch-status-lbl">${active ? 'ACTIF' : 'ÉTEINT'}</span>
-            </div>
-            <div class="switch-hardware-led"></div>
+    const active =
+      state.state === "on" ||
+      state.state === "heat" ||
+      state.state === "playing";
+
+    let icon = "mdi:power";
+
+    const txt = label.toLowerCase();
+
+    if (txt.includes("spa"))         icon = "mdi:hot-tub";
+    else if (txt.includes("tv"))     icon = "mdi:television";
+    else if (txt.includes("cam"))    icon = "mdi:cctv";
+    else if (txt.includes("alexa"))  icon = "mdi:amazon-alexa";
+    else if (txt.includes("beem"))   icon = "mdi:solar-power";
+    else if (txt.includes("aspir"))  icon = "mdi:robot-vacuum";
+    else if (txt.includes("filtr"))  icon = "mdi:air-filter";
+    else if (txt.includes("bull"))   icon = "mdi:bubble";
+    else if (txt.includes("led"))    icon = "mdi:led-strip-variant";
+    else if (txt.includes("anal"))   icon = "mdi:test-tube";
+    else if (txt.includes("chauff")) icon = "mdi:radiator";
+    else if (txt.includes("lumi"))   icon = "mdi:lightbulb";
+    else if (txt.includes("pompe"))  icon = "mdi:pump";
+
+    const toggle = (ev) => {
+      ev.stopPropagation();
+
+      const domain = entity.split(".")[0];
+
+      this.hass.callService(
+        domain,
+        "toggle",
+        { entity_id: entity }
+      );
+    };
+
+    buttons.push(html`
+      <div
+        class="custom-switch-card ${active ? "is-active" : ""}"
+        @click=${toggle}
+        tabindex="0"
+        role="button"
+        aria-label="${label}"
+      >
+
+        <div class="switch-inner">
+
+          <div class="switch-hardware-led"></div>
+
+          <div class="switch-icon-container">
+            <ha-icon icon="${icon}"></ha-icon>
           </div>
+
+          <div class="switch-meta">
+            <span class="switch-title-lbl">
+              ${label}
+            </span>
+
+            <span class="switch-status-lbl">
+              ${active ? "ACTIF" : "ÉTEINT"}
+            </span>
+          </div>
+
         </div>
-      `;
-    });
 
-    if (!found) {
-      return html`<div class="empty-msg"><ha-icon icon="mdi:toggle-switch-off"></ha-icon><p>Aucun interrupteur configuré</p></div>`;
-    }
-
-    return html`<div class="custom-switches-grid">${btns}</div>`;
+      </div>
+    `);
   }
+
+  if (!buttons.length) {
+    return html`
+      <div class="empty-msg">
+        <ha-icon icon="mdi:toggle-switch-off"></ha-icon>
+        <p>Aucun interrupteur configuré</p>
+      </div>
+    `;
+  }
+
+  return html`
+    <div class="custom-switches-grid">
+      ${buttons}
+    </div>
+  `;
+}
 
   // ═══════════════════════════════════════════════
   //  RENDU PRINCIPAL
@@ -1296,56 +1346,213 @@ _renderCam() {
   }
 }
 
-    /* LES INTERRUPTEURS MAGNIFIÉS STYLE GLASSMORPHISM GLOW */
-    .custom-switches-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
-    .custom-switch-card {
-      background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
-      border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 12px;
-      cursor: pointer; position: relative; overflow: hidden; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: inset 0 1px 1px rgba(255,255,255,0.05);
-    }
-    .switch-inner { display: flex; align-items: center; gap: 10px; position: relative; z-index: 2; }
-    
-    .switch-icon-container {
-      width: 36px; height: 36px; border-radius: 12px; background: rgba(0,0,0,0.2);
-      display: flex; align-items: center; justify-content: center; color: var(--txt-s);
-      border: 1px solid rgba(255,255,255,0.04); transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .switch-icon-container ha-icon { --mdc-icon-size: 18px; transition: transform 0.2s; }
-    
-    .switch-meta { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-    .switch-title-lbl { font-size: 12px; font-weight: 600; color: var(--txt-p); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .switch-status-lbl { font-size: 8px; font-weight: 700; color: var(--txt-s); letter-spacing: 0.5px; }
-    
-    .switch-hardware-led {
-      width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.15);
-      box-shadow: inset 0 1px 1px rgba(0,0,0,0.5); transition: all 0.25s;
-    }
-    .switch-glow-effect {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: radial-gradient(circle at center, rgba(56,189,248,0.15) 0%, transparent 70%);
-      opacity: 0; transition: opacity 0.3s; z-index: 1; pointer-events: none;
-    }
+/* ═══════════════════════════════════════════════
+   SWITCHES PREMIUM - 5 COLONNES
+   ═══════════════════════════════════════════════ */
 
-    /* Hover et état actif magnifié */
-    .custom-switch-card:hover {
-      background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.15); transform: translateY(-2px);
-    }
-    .custom-switch-card:hover .switch-icon-container ha-icon { transform: scale(1.08); }
-    
-    .custom-switch-card.is-active {
-      background: rgba(255,255,255,0.05); border-color: rgba(56, 189, 248, 0.4);
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255,255,255,0.1);
-    }
-    .custom-switch-card.is-active .switch-glow-effect { opacity: 1; }
-    .custom-switch-card.is-active .switch-icon-container {
-      background: rgba(56, 189, 248, 0.15); color: var(--accent-blue);
-      border-color: rgba(56, 189, 248, 0.3); box-shadow: 0 0 12px rgba(56,189,248,0.25);
-    }
-    .custom-switch-card.is-active .switch-status-lbl { color: var(--accent-blue); font-weight: 800; }
-    .custom-switch-card.is-active .switch-hardware-led {
-      background: var(--accent-blue); box-shadow: 0 0 6px var(--accent-blue);
-    }
+.custom-switches-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.custom-switch-card {
+  position: relative;
+  overflow: hidden;
+
+  min-height: 82px;
+  padding: 12px;
+
+  border-radius: 18px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(20,30,45,.85),
+      rgba(10,15,25,.85)
+    );
+
+  border: 1px solid rgba(255,255,255,.06);
+
+  cursor: pointer;
+
+  transition:
+    transform .25s ease,
+    border-color .25s ease,
+    box-shadow .25s ease;
+}
+
+.custom-switch-card::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(56,189,248,.18),
+      transparent 70%
+    );
+
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+
+.custom-switch-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,.12);
+}
+
+.custom-switch-card:hover::before {
+  opacity: .6;
+}
+
+.custom-switch-card.is-active {
+  border-color: rgba(56,189,248,.45);
+
+  box-shadow:
+    0 0 18px rgba(56,189,248,.15),
+    inset 0 0 15px rgba(56,189,248,.05);
+}
+
+.custom-switch-card.is-active::before {
+  opacity: 1;
+}
+
+.switch-inner {
+  position: relative;
+  z-index: 2;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+  height: 100%;
+}
+
+.switch-icon-container {
+  width: 46px;
+  height: 46px;
+
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(255,255,255,.10),
+      rgba(255,255,255,.03)
+    );
+
+  border: 1px solid rgba(255,255,255,.05);
+
+  transition: all .25s ease;
+}
+
+.switch-icon-container ha-icon {
+  --mdc-icon-size: 24px;
+  color: var(--txt-s);
+}
+
+.custom-switch-card.is-active .switch-icon-container {
+  background:
+    radial-gradient(
+      circle,
+      rgba(56,189,248,.35),
+      rgba(56,189,248,.08)
+    );
+
+  border-color: rgba(56,189,248,.30);
+
+  box-shadow:
+    0 0 12px rgba(56,189,248,.35);
+}
+
+.custom-switch-card.is-active .switch-icon-container ha-icon {
+  color: #38bdf8;
+}
+
+.switch-meta {
+  text-align: center;
+  width: 100%;
+}
+
+.switch-title-lbl {
+  display: block;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  color: var(--txt-p);
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.switch-status-lbl {
+  display: block;
+
+  margin-top: 2px;
+
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .5px;
+
+  color: var(--txt-s);
+}
+
+.custom-switch-card.is-active .switch-status-lbl {
+  color: #38bdf8;
+}
+
+.switch-hardware-led {
+  position: absolute;
+
+  top: 8px;
+  right: 8px;
+
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: rgba(255,255,255,.12);
+
+  transition: all .25s ease;
+}
+
+.custom-switch-card.is-active .switch-hardware-led {
+  background: #38bdf8;
+
+  box-shadow:
+    0 0 6px #38bdf8,
+    0 0 12px #38bdf8;
+}
+
+.switch-glow-effect {
+  display: none;
+}
+
+/* Tablette */
+@media (max-width: 900px) {
+  .custom-switches-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .custom-switches-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
     .empty-msg { text-align: center; padding: 40px 20px; color: var(--txt-s); }
     .empty-msg ha-icon { --mdc-icon-size: 32px; opacity: 0.5; margin-bottom: 8px; }
