@@ -9,20 +9,23 @@ export class SpaCardEditor extends LitElement {
     this._config = config;
   }
 
-  render() {
+render() {
+    if (!this.hass) return html``;
     return html`
-      <div class="editor">
-        <h3>Configuration du Spa</h3>
-        <ha-form
-          .hass=${this.hass}
-          .data=${this._config}
-          .schema=${[
-            { name: "card_title", label: "Titre de la carte", selector: { text: {} } },
-            { name: "section", label: "Mode d'affichage", selector: { select: { options: ["Spa", "Chimie", "Interrupteurs", "Programmation"] } } }
-          ]}
-          @value-changed=${this._changed}
-        ></ha-form>
-      </div>
+      <ha-form
+        .hass=${this.hass}
+        .data=${this._config}
+        .schema=${[
+          { name: "card_title", label: "Titre de la carte", selector: { text: {} } },
+          { name: "entity_water_temp", label: "Température Eau", selector: { entity: { domain: "sensor" } } },
+          { name: "entity_target_temp", label: "Contrôle Temp (Climate)", selector: { entity: { domain: "climate" } } },
+          { name: "entity_ph", label: "Capteur pH", selector: { entity: { domain: "sensor" } } },
+          { name: "entity_orp", label: "Capteur ORP", selector: { entity: { domain: "sensor" } } },
+          { name: "entity_camera", label: "Caméra Spa", selector: { entity: { domain: "camera" } } },
+          // Ajoutez ici les autres lignes selon le même modèle
+        ]}
+        @value-changed=${this._val}
+      ></ha-form>
     `;
   }
 
