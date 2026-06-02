@@ -170,8 +170,11 @@ class SpaCardEditor extends LitElement {
         <div class="tabs">
           ${TABS.map(t => html`
   <button class="tab ${this._tab===t.id?'on':''}" @click=${()=>{ this._tab=t.id; }}>
-    <div class="tbox" style="${t.s}">${t.i}</div>
-    <span class="tlbl">${t.l}</span> </button>`)}
+    <div class="tab-inner">
+      <div class="tbox" style="${t.s}">${t.i}</div>
+      <span class="tlbl">${t.l}</span>
+    </div>
+  </button>`)}
         </div>
         <div class="sections">${content[this._tab]}</div>
       </div>`;
@@ -193,11 +196,17 @@ class SpaCardEditor extends LitElement {
     .tab:hover { background:rgba(0,0,0,.04); }
     .tab.on    { background:var(--card-background-color,#fff); box-shadow:0 1px 4px rgba(0,0,0,.1); }
     .tbox {
-      width:32px; height:32px; border-radius:9px;
+      width:24px; height:32px; border-radius:9px;
       display:flex; align-items:center; justify-content:center;
       font-size:11px; font-weight:700; letter-spacing:-.3px; transition:.18s;
     }
+    .tab-inner {
+     display: flex;         /* Active le mode côte à côte */
+     align-items: center;   /* Aligne verticalement au centre */
+     gap: 8px;              /* Espace entre l'icône et le texte */
+    }
     .tlbl {
+      white-space: nowrap;
       display: block; /* S'assure que le texte est bien visible */
       font-size: 10px; 
       color: var(--secondary-text-color,#888);
