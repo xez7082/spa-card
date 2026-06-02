@@ -961,8 +961,15 @@ _renderSwitches() {
   // ═══════════════════════════════════════════════
   //  RENDU PRINCIPAL
   // ═══════════════════════════════════════════════
-  render() {
-    if (!this.config || !this.hass) return html``;
+render() {
+    if (!this.hass || !this._config) return html``;
+    const TABS = [
+      { id:'home', s:'background:rgba(107,142,255,.18);color:#6b8eff;', i:'🛁', l:'Spa'      },
+      { id:'sens', s:'background:rgba(52,211,153,.15);color:#10b981;', i:'🌡️', l:'Capteurs' },
+      { id:'chem', s:'background:rgba(167,139,250,.15);color:#8b5cf6;', i:'🧪', l:'Chimie'   },
+      { id:'cam',  s:'background:rgba(56,189,248,.15);color:#0ea5e9;', i:'📷', l:'Caméra'   },
+      { id:'sw',   s:'background:rgba(251,146,60,.15);color:#f97316;', i:'⚡', l:'Switches' }
+    ];
     const title  = this.config.card_title || 'SPA';
     const bgImg  = this.config.background_image ? `url(${this.config.background_image})` : 'none';
     const h      = this.config.card_height || '640px';
