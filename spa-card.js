@@ -5,7 +5,7 @@ import {
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 // ═══════════════════════════════════════════════════════════════════
-//  ÉDITEUR  —  V34  (LayZSpa intégré)
+//  ÉDITEUR  —  V36
 // ═══════════════════════════════════════════════════════════════════
 class SpaCardEditor extends LitElement {
 
@@ -75,14 +75,12 @@ class SpaCardEditor extends LitElement {
       ${this._acc('a-layzspa','background:rgba(251,191,36,.15);color:#f59e0b;','SPA','LayZSpa — états & maintenance',[
         { name:'entity_lz_ready',     label:'Prêt (binary_sensor.layzspa_ready)',       selector:{ entity:{ domain:'binary_sensor' } } },
         { name:'entity_lz_heater',    label:'Chauffage actif (binary_sensor…heater)',   selector:{ entity:{ domain:'binary_sensor' } } },
-        { name:'entity_lz_ttr',       label:'Temps restant avant prêt (sensor…time_to_ready)', selector:{ entity:{ domain:'sensor' } } },
-        { name:'entity_lz_conn',      label:'Connexion WiFi (binary_sensor…connection)',selector:{ entity:{ domain:'binary_sensor' } } },
         { name:'entity_lz_filter',    label:'Âge filtre — jours (sensor…filter_age)',  selector:{ entity:{ domain:'sensor' } } },
-        { name:'lz_filter_max',       label:'Alerter filtre après (jours)',             selector:{ number:{ mode:'box', min:1, max:365 } } },
+        { name:'lz_filter_max',       label:'Alerter filtre après (jours)',              selector:{ number:{ mode:'box', min:1, max:365 } } },
         { name:'entity_lz_chlorine',  label:'Âge chlore — jours (sensor…chlorine_age)',selector:{ entity:{ domain:'sensor' } } },
-        { name:'lz_chlorine_max',     label:'Alerter chlore après (jours)',             selector:{ number:{ mode:'box', min:1, max:365 } } },
+        { name:'lz_chlorine_max',     label:'Alerter chlore après (jours)',              selector:{ number:{ mode:'box', min:1, max:365 } } },
         { name:'entity_lz_energy',    label:'Énergie totale kWh (sensor…energy)',       selector:{ entity:{ domain:'sensor' } } },
-        { name:'entity_lz_rssi',      label:'Signal WiFi RSSI (sensor…rssi)',           selector:{ entity:{ domain:'sensor' } } },
+        { name:'entity_lz_rssi',      label:'Signal WiFi RSSI (sensor…rssi)',            selector:{ entity:{ domain:'sensor' } } },
         { name:'lz_volume',           label:'Volume eau (litres, défaut 500)',           selector:{ number:{ mode:'box', min:100, max:5000 } } },
         { name:'lz_power_w',          label:'Puissance chauffe (W, défaut 1942)',        selector:{ number:{ mode:'box', min:500, max:5000 } } },
         { name:'lz_heat_loss',        label:'Pertes thermiques (%, défaut 30)',          selector:{ number:{ mode:'slider', min:0, max:60 } } },
@@ -149,14 +147,14 @@ class SpaCardEditor extends LitElement {
       ${this._acc('a-sw','background:rgba(251,146,60,.15);color:#f97316;','SW','10 interrupteurs configurables',schema)}`;
   }
 
-render() {
+  render() {
     if (!this.hass || !this._config) return html``;
     const TABS = [
-      { id:'gen',  s:'background:rgba(107,142,255,.18);color:#6b8eff;', i:'GEN', l:'Général'   },
+      { id:'gen',  s:'background:rgba(107,142,255,.18);color:#6b8eff;', i:'GEN', l:'Général'  },
       { id:'sens', s:'background:rgba(52,211,153,.15);color:#10b981;',  i:'T°',  l:'Capteurs' },
-      { id:'chem', s:'background:rgba(167,139,250,.15);color:#8b5cf6;', i:'pH',  l:'Chimie'    },
-      { id:'cam',  s:'background:rgba(56,189,248,.15);color:#0ea5e9;',  i:'CAM', l:'Caméra'    },
-      { id:'sw',   s:'background:rgba(251,146,60,.15);color:#f97316;',  i:'SW',  l:'Switches'  }
+      { id:'chem', s:'background:rgba(167,139,250,.15);color:#8b5cf6;', i:'pH',  l:'Chimie'   },
+      { id:'cam',  s:'background:rgba(56,189,248,.15);color:#0ea5e9;',  i:'CAM', l:'Caméra'   },
+      { id:'sw',   s:'background:rgba(251,146,60,.15);color:#f97316;',  i:'SW',  l:'Switches' }
     ];
     const content = {
       gen:  this._renderGen(),
@@ -170,10 +168,8 @@ render() {
         <div class="tabs">
           ${TABS.map(t => html`
             <button class="tab ${this._tab===t.id?'on':''}" @click=${()=>{ this._tab=t.id; }}>
-              <div class="tab-inner">
-                <div class="tbox" style="${t.s}">${t.i}</div>
-                <span class="tlbl">${t.l}</span>
-              </div>
+              <div class="tbox" style="${t.s}">${t.i}</div>
+              <span class="tlbl">${t.l}</span>
             </button>`)}
         </div>
         <div class="sections">${content[this._tab]}</div>
@@ -188,33 +184,21 @@ render() {
       border-radius:14px; padding:5px; margin-bottom:12px;
     }
     .tab {
-      flex:1; display:flex; 
-      justify-content: center;
-      align-items: center;
-      padding: 8px; cursor:pointer; border:none;
+      flex:1; display:flex; flex-direction:column; align-items:center;
+      gap:4px; padding:5px 2px 7px; cursor:pointer; border:none;
       background:transparent; border-radius:9px; transition:background .18s;
       font-family:var(--paper-font-body1_-_font-family,sans-serif);
     }
-    .tab-inner {
-      display: flex;
-      flex-direction: row;     /* Force l'affichage côte à côte */
-      align-items: center;
-      gap: 8px;                /* Espace entre l'icône et le texte */
-    }
     .tab:hover { background:rgba(0,0,0,.04); }
     .tab.on    { background:var(--card-background-color,#fff); box-shadow:0 1px 4px rgba(0,0,0,.1); }
-    
     .tbox {
-      width:24px; height:24px; border-radius:6px;
+      width:32px; height:32px; border-radius:9px;
       display:flex; align-items:center; justify-content:center;
-      font-size:11px; font-weight:700; transition:.18s;
+      font-size:11px; font-weight:700; letter-spacing:-.3px; transition:.18s;
     }
-    
     .tlbl {
-      white-space: nowrap;
-      font-size: 11px;
-      color: var(--secondary-text-color,#888);
-      transition: color .18s; 
+      font-size:10px; color:var(--secondary-text-color,#888);
+      letter-spacing:.2px; transition:color .18s; white-space:nowrap;
     }
     .tab.on .tlbl { color:var(--primary-text-color,#212121); font-weight:500; }
     .sections { display:flex; flex-direction:column; }
@@ -243,7 +227,7 @@ customElements.define('spa-card-editor', SpaCardEditor);
 
 
 // ═══════════════════════════════════════════════════════════════════
-//  CARTE  —  V34  (LayZSpa intégré)
+//  CARTE  —  V36
 // ═══════════════════════════════════════════════════════════════════
 class SpaCard extends LitElement {
 
@@ -257,8 +241,6 @@ class SpaCard extends LitElement {
       target_temp_min: 20, target_temp_max: 40,
       entity_lz_ready:   'binary_sensor.layzspa_ready',
       entity_lz_heater:  'binary_sensor.layzspa_heater',
-      entity_lz_ttr:      'sensor.layzspa_time_to_ready',
-      entity_lz_conn:    'binary_sensor.layzspa_connection',
       entity_lz_filter:  'sensor.layzspa_filter_age',
       lz_volume:      500,
       lz_power_w:     1942,
@@ -345,9 +327,6 @@ class SpaCard extends LitElement {
     return this._state(id);
   }
 
-  // ═══════════════════════════════════════════════
-  //  ACCUEIL
-  // ═══════════════════════════════════════════════
   _renderHome() {
     const c = this.config;
     const wTemp  = this._waterTemp();
@@ -355,8 +334,7 @@ class SpaCard extends LitElement {
 
     return html`
       <div class="home-view">
-        
-       
+        ${this._renderHeatingControl()}
 
         <div class="flex-row-center">
           <div class="side-col">
@@ -458,7 +436,7 @@ class SpaCard extends LitElement {
           <ha-icon icon="mdi:clock-digital"></ha-icon>
           <span>PLANIFICATION CHAUFFE</span>
         </div>
-        
+         
         <div class="sched-display-box">
           <div class="sched-main-val">${readyStr}</div>
           <div class="sched-sub-info">
@@ -544,62 +522,6 @@ class SpaCard extends LitElement {
     return { timeH, deltaT, curTemp, tgtTemp, powerW, efficiency };
   }
 
-  _renderLayzspaStatus() {
-    const c = this.config;
-    const hasStatus = this._exists(c.entity_lz_ready) || this._exists(c.entity_lz_conn);
-    if (!hasStatus) return html``;
-
-    const connected = !this._exists(c.entity_lz_conn) || this._state(c.entity_lz_conn) === 'on';
-    const ready      = this._state(c.entity_lz_ready) === 'on';
-    const heating    = this._state(c.entity_lz_heater) === 'on';
-
-    const calc = this._calcHeatingTime();
-
-    let icon, label, cls, timeStr = '';
-    if (!connected) {
-      icon='mdi:wifi-off';    label='Déconnecté';  cls='lz-disconnected';
-    } else if (ready || (calc !== null && calc === 0)) {
-      icon='mdi:hot-tub';      label='Prêt !';       cls='lz-ready';
-    } else if (heating) {
-      if (calc !== null && calc !== 0) {
-        const h   = Math.floor(calc.timeH);
-        const min = Math.round((calc.timeH - h) * 60);
-        timeStr   = h > 0
-          ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''} restantes`
-          : `${min} min restantes`;
-        label = `En chauffe — ${timeStr}`;
-      } else {
-        label = 'En chauffe…';
-      }
-      icon='mdi:radiator'; cls='lz-heating';
-    } else {
-      if (calc !== null && calc !== 0) {
-        const h   = Math.floor(calc.timeH);
-        const min = Math.round((calc.timeH - h) * 60);
-        timeStr   = h > 0
-          ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''} pour ${calc.tgtTemp}°`
-          : `${min} min pour ${calc.tgtTemp}°`;
-        label = `En veille — ${timeStr}`;
-      } else {
-        label = 'En veille';
-      }
-      icon='mdi:power-sleep'; cls='lz-standby';
-    }
-
-    const rssi = this._exists(c.entity_lz_rssi) ? parseInt(this._state(c.entity_lz_rssi)) : null;
-    const rssiIcon = rssi===null ? '' : rssi>=-60 ? 'mdi:wifi-strength-4'
-      : rssi>=-70 ? 'mdi:wifi-strength-3'
-      : rssi>=-80 ? 'mdi:wifi-strength-2'
-      : 'mdi:wifi-strength-1';
-
-    return html`
-      <div class="lz-status ${cls}">
-        <ha-icon class="lz-icon" icon="${icon}"></ha-icon>
-        <span class="lz-label">${label}</span>
-        ${rssiIcon ? html`<ha-icon class="lz-wifi" icon="${rssiIcon}" title="${rssi} dBm"></ha-icon>` : ''}
-      </div>`;
-  }
-
   _renderFooterRow() {
     const c = this.config;
     const hasCons = this._exists(c.main_cons_entity);
@@ -647,7 +569,7 @@ class SpaCard extends LitElement {
         ${filterAge !== null ? html`
           <div class="maint-item ${filterWarn ? 'maint-warn' : ''}">
             <div class="maint-head">
-              <ha-icon icon="mdi:air-filter"></ha-icon>
+              <ha-icon icon="mdi:air-filter"></ha-filter>
               <span>Filtre</span>
               ${filterWarn ? html`<span class="maint-badge">À changer</span>` : ''}
               ${hasResetF ? html`
@@ -711,873 +633,119 @@ class SpaCard extends LitElement {
       </div>`;
   }
 
-  // ═══════════════════════════════════════════════
-  //  ONGLET CHIMIE (Alertes textuelles intégrées)
-  // ═══════════════════════════════════════════════
-  _renderChem() {
+  _renderCam() {
     const c = this.config;
-    
-    const phMin = c.ph_min !== undefined ? c.ph_min : 7.2;
-    const phMax = c.ph_max !== undefined ? c.ph_max : 7.6;
-    const orpMin = c.orp_min !== undefined ? c.orp_min : 650;
-    const orpMax = c.orp_max !== undefined ? c.orp_max : 800;
-    const tdsMin = c.tds_min !== undefined ? c.tds_min : 500;
-    const tdsMax = c.tds_max !== undefined ? c.tds_max : 1500;
-    const saltMin = c.salt_min !== undefined ? c.salt_min : 2500;
-    const saltMax = c.salt_max !== undefined ? c.salt_max : 3500;
+    if (!this._exists(c.entity_camera)) {
+      return html`<div class="empty-msg"><ha-icon icon="mdi:camera-off"></ha-icon><p>Aucune caméra configurée</p></div>`;
+    }
 
-    const items = [
-      { id: c.entity_ph,   name: 'pH',  icon: 'mdi:ph',         min: phMin,   max: phMax,   dec: 1, u: '',
-        txtLow: 'Trop bas ! Eau acide, risque d\'irritation et de corrosion.', txtHigh: 'Trop haut ! Eau basique, entartrage et baisse du chlore.' },
-      { id: c.entity_orp,  name: 'ORP', icon: 'mdi:test-tube',   min: orpMin,  max: orpMax,  dec: 0, u: ' mV',
-        txtLow: 'Trop bas ! Désinfection insuffisante, risque d\'algues.', txtHigh: 'Trop haut ! Eau trop oxydante, risque pour la peau et les yeux.' },
-      { id: c.entity_tds,  name: 'TDS', icon: 'mdi:shaker',      min: tdsMin,  max: tdsMax,  dec: 0, u: ' ppm',
-        txtLow: 'Minéralisation faible.', txtHigh: 'Trop haut ! Eau saturée en minéraux, renouveler une partie de l\'eau.' },
-      { id: c.entity_salt, name: 'Sel', icon: 'mdi:snowflake',   min: saltMin, max: saltMax, dec: 0, u: ' ppm',
-        txtLow: 'Manque de sel ! L\'éco-stérilisateur ne peut pas produire de chlore.', txtHigh: 'Trop de sel ! Risque de corrosion précoce des métaux.' }
-    ];
+    const w  = c.cam_w_px ? `${c.cam_w_px}px` : '100%';
+    const h  = c.cam_h_px ? `${c.cam_h_px}px` : '210px';
+    const r  = c.cam_radius !== undefined ? `${c.cam_radius}px` : '12px';
+    const x  = c.cam_x || 0;
+    const y  = c.cam_y || 0;
 
     return html`
-      <div class="chem-view">
-        ${items.map(item => {
-          if (!this._exists(item.id)) return '';
-          
-          const val = parseFloat(this._state(item.id));
-          const isLow = val < item.min;
-          const isHigh = val > item.max;
-          const ok = (!isLow && !isHigh);
-          
-          const span = (item.max * 1.2) - (item.min * 0.8);
-          const pct = span > 0 ? Math.min(100, Math.max(0, ((val - (item.min * 0.8)) / span) * 100)) : 0;
-          
-          const markerMin = span > 0 ? ((item.min - (item.min * 0.8)) / span) * 100 : 0;
-          const markerMax = span > 0 ? ((item.max - (item.min * 0.8)) / span) * 100 : 0;
-
-          return html`
-            <div class="chem-card ${ok ? 'chem-ok' : 'chem-warn'}">
-              <div class="chem-header">
-                <ha-icon icon="${item.icon}"></ha-icon>
-                <span class="chem-title">${item.name}</span>
-                <span class="chem-status-tag">${ok ? 'Idéal' : 'Ajuster'}</span>
-              </div>
-              <div class="chem-value">${val.toFixed(item.dec)}${item.u}</div>
-              <div class="chem-gauge-bg">
-                <div class="chem-gauge-fill ${!ok ? 'chem-fill-warn' : ''}" style="width:${pct}%"></div>
-                <div class="chem-marker" style="left:${markerMin}%"></div>
-                <div class="chem-marker" style="left:${markerMax}%"></div>
-              </div>
-              <div class="chem-range">Cible : ${item.min} – ${item.max}</div>
-              ${!ok ? html`
-                <div class="chem-alert-text">
-                  <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
-                  <span>${isLow ? item.txtLow : item.txtHigh}</span>
-                </div>
-              ` : ''}
-            </div>
-          `;
-        })}
-      </div>
-    `;
-  }
-
-// ═══════════════════════════════════════════════
-// ONGLET CAMÉRA
-// ═══════════════════════════════════════════════
-_renderCam() {
-  const c = this.config;
-
-  if (!c.entity_camera || !this.hass.states[c.entity_camera]) {
-    return html`
-      <div class="empty-msg">
-        <ha-icon icon="mdi:camera-off"></ha-icon>
-        <p>Caméra introuvable</p>
-      </div>
-    `;
-  }
-
-  const cam = this.hass.states[c.entity_camera];
-
-  const w = c.cam_w_px ? `${c.cam_w_px}px` : "100%";
-  const h = c.cam_h_px ? `${c.cam_h_px}px` : "100%";
-  const r = c.cam_radius !== undefined ? `${c.cam_radius}px` : "16px";
-  const x = c.cam_x || 0;
-  const y = c.cam_y || 0;
-
-  const imgSrc = cam.attributes.entity_picture;
-
-  return html`
-    <div class="cam-split-layout">
-
-      <!-- CAMÉRA -->
-      <div class="cam-column-video">
-
-        <div
-          class="cam-container ${this._camExpanded ? "cam-expanded" : ""}"
-          style="
-            width:${this._camExpanded ? "100%" : w};
-            height:${this._camExpanded ? "100%" : h};
-            border-radius:${r};
-          "
-          @click=${() => {
-            this._camExpanded = !this._camExpanded;
-            this.requestUpdate();
-          }}
-        >
-
-          <img
-            src="${imgSrc}"
-            alt="Spa Camera"
-            loading="lazy"
-            style="
-              width:100%;
-              height:100%;
-              object-fit:cover;
-              border-radius:${r};
-              transform:translate(${x}px, ${y}px);
-              display:block;
-            "
-            @error=${(e) => {
-              console.error("Erreur caméra :", e);
-            }}
-          >
-
+      <div class="cam-view">
+        <div class="cam-container ${this._camExpanded ? 'cam-expanded' : ''}"
+             style="width:${this._camExpanded ? '100%' : w}; height:${this._camExpanded ? 'auto' : h}; border-radius:${r}; min-height: 150px;">
+          <ha-camera-stream
+            .hass=${this.hass}
+            .entityId=${c.entity_camera}
+            style="transform: translate(${x}px, ${y}px); width: 100%; height: 100%; display: block;"
+            controls
+          ></ha-camera-stream>
           <div class="cam-overlay">
-            <ha-icon
-              icon="${this._camExpanded
-                ? "mdi:fullscreen-exit"
-                : "mdi:fullscreen"}">
-            </ha-icon>
+            <ha-icon icon="${this._camExpanded ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
           </div>
-
         </div>
-
-      </div>
-
-      <!-- PLANNING -->
-      <div class="cam-column-sched">
         ${this._renderSchedule()}
       </div>
-
-    </div>
-  `;
-}
-
-// ═══════════════════════════════════════════════
-// ONGLET SWITCHES PREMIUM
-// ═══════════════════════════════════════════════
-_renderSwitches() {
-  const c = this.config;
-  const buttons = [];
-
-  for (let i = 1; i <= 10; i++) {
-
-    const entity = c[`switch_${i}`];
-    if (!entity || !this.hass.states[entity]) continue;
-
-    const label = c[`name_switch_${i}`] || `Switch ${i}`;
-    const state = this.hass.states[entity];
-
-    const active =
-      state.state === "on" ||
-      state.state === "heat" ||
-      state.state === "playing";
-
-    let icon = "mdi:power";
-
-    const txt = label.toLowerCase();
-
-    if (txt.includes("spa"))         icon = "mdi:hot-tub";
-    else if (txt.includes("tv"))     icon = "mdi:television";
-    else if (txt.includes("cam"))    icon = "mdi:cctv";
-    else if (txt.includes("alexa"))  icon = "mdi:amazon-alexa";
-    else if (txt.includes("beem"))   icon = "mdi:solar-power";
-    else if (txt.includes("aspir"))  icon = "mdi:robot-vacuum";
-    else if (txt.includes("filtr"))  icon = "mdi:air-filter";
-    else if (txt.includes("bull"))   icon = "mdi:bubble";
-    else if (txt.includes("led"))    icon = "mdi:led-strip-variant";
-    else if (txt.includes("anal"))   icon = "mdi:test-tube";
-    else if (txt.includes("chauff")) icon = "mdi:radiator";
-    else if (txt.includes("lumi"))   icon = "mdi:lightbulb";
-    else if (txt.includes("pompe"))  icon = "mdi:pump";
-
-    const toggle = (ev) => {
-      ev.stopPropagation();
-
-      const domain = entity.split(".")[0];
-
-      this.hass.callService(
-        domain,
-        "toggle",
-        { entity_id: entity }
-      );
-    };
-
-    buttons.push(html`
-      <div
-        class="custom-switch-card ${active ? "is-active" : ""}"
-        @click=${toggle}
-        tabindex="0"
-        role="button"
-        aria-label="${label}"
-      >
-
-        <div class="switch-inner">
-
-          <div class="switch-hardware-led"></div>
-
-          <div class="switch-icon-container">
-            <ha-icon icon="${icon}"></ha-icon>
-          </div>
-
-          <div class="switch-meta">
-            <span class="switch-title-lbl">
-              ${label}
-            </span>
-
-            <span class="switch-status-lbl">
-              ${active ? "ACTIF" : "ÉTEINT"}
-            </span>
-          </div>
-
-        </div>
-
-      </div>
-    `);
-  }
-
-  if (!buttons.length) {
-    return html`
-      <div class="empty-msg">
-        <ha-icon icon="mdi:toggle-switch-off"></ha-icon>
-        <p>Aucun interrupteur configuré</p>
-      </div>
-    `;
-  }
-
-  return html`
-    <div class="custom-switches-grid">
-      ${buttons}
-    </div>
-  `;
-}
-
-  // ═══════════════════════════════════════════════
-  //  RENDU PRINCIPAL
-  // ═══════════════════════════════════════════════
-render() {
-    if (!this.hass || !this._config) return html``;
-    const TABS = [
-      { id:'home', s:'background:rgba(107,142,255,.18);color:#6b8eff;', i:'🛁', l:'Spa'      },
-      { id:'sens', s:'background:rgba(52,211,153,.15);color:#10b981;', i:'🌡️', l:'Capteurs' },
-      { id:'chem', s:'background:rgba(167,139,250,.15);color:#8b5cf6;', i:'🧪', l:'Chimie'   },
-      { id:'cam',  s:'background:rgba(56,189,248,.15);color:#0ea5e9;', i:'📷', l:'Caméra'   },
-      { id:'sw',   s:'background:rgba(251,146,60,.15);color:#f97316;', i:'⚡', l:'Switches' }
-    ];
-    const title  = this.config.card_title || 'SPA';
-    const bgImg  = this.config.background_image ? `url(${this.config.background_image})` : 'none';
-    const h      = this.config.card_height || '640px';
-    const blur   = this.config.blur_amount !== undefined ? `${this.config.blur_amount}px` : '15px';
-
-    return html`
-      <ha-card style="height: ${h};">
-        <div class="glass-bg" style="background-image: ${bgImg};"></div>
-        <div class="glass-overlay" style="backdrop-filter: blur(${blur}); -webkit-backdrop-filter: blur(${blur});"></div>
-
-        <div class="card-header-main">
-          <h1>${title}</h1>
-          <div class="nav-pills">
-            <button class="pill ${this._tab==='home'?'on':''}" @click=${()=>this._tab='home'}><ha-icon icon="mdi:home-heart"></ha-icon></button>
-            <button class="pill ${this._tab==='chem'?'on':''}" @click=${()=>this._tab='chem'}><ha-icon icon="mdi:flask-round-bottom"></ha-icon></button>
-            <button class="pill ${this._tab==='cam'?'on':''}"  @click=${()=>this._tab='cam'}><ha-icon icon="mdi:cctv"></ha-icon></button>
-            <button class="pill ${this._tab==='sw'?'on':''}"   @click=${()=>this._tab='sw'}><ha-icon icon="mdi:tune"></ha-icon></button>
-          </div>
-        </div>
-
-        <div class="card-content-scroller">
-          ${this._tab === 'home' ? this._renderHome() : ''}
-          ${this._tab === 'chem' ? this._renderChem() : ''}
-          ${this._tab === 'cam'  ? this._renderCam()  : ''}
-          ${this._tab === 'sw'   ? this._renderSwitches() : ''}
-        </div>
-      </ha-card>
     `;
   }
 
   static styles = css`
-    :host {
-      display: block;
-      --glass-bg: rgba(255, 255, 255, 0.06);
-      --glass-border: rgba(255, 255, 255, 0.12);
-      --glass-glow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-      --txt-p: #ffffff;
-      --txt-s: rgba(255, 255, 255, 0.65);
-      --accent-blue: #38bdf8;
-      --accent-green: #4ade80;
-      --accent-amber: #fbbf24;
-      --accent-red: #f87171;
-    }
-
-    ha-card {
-      position: relative;
-      overflow: hidden;
-      border-radius: 24px;
-      border: 1px solid var(--glass-border) !important;
-      background: rgba(10, 15, 25, 0.4) !important;
-      box-shadow: var(--glass-glow);
-      display: flex;
-      flex-direction: column;
-      color: var(--txt-p);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-
-    .glass-bg, .glass-overlay {
-      position: absolute; top:0; left:0; width:100%; height:100%; z-index: 0; pointer-events: none;
-    }
-    .glass-bg { background-size: cover; background-position: center; filter: brightness(0.55); }
-
-    .card-header-main {
-      position: relative; z-index: 1;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px 8px; flex-shrink: 0;
-    }
-    .card-header-main h1 {
-      margin: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.5px;
-      background: linear-gradient(135deg, #fff 30%, var(--accent-blue));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-
-    .nav-pills {
-      display: flex; gap: 6px; padding: 4px;
-      background: rgba(255, 255, 255, 0.05); border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .pill {
-      background: transparent; border: none; width: 34px; height: 34px;
-      border-radius: 10px; color: var(--txt-s); cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .pill ha-icon { --mdc-icon-size: 18px; }
-    .pill:hover { color: #fff; background: rgba(255,255,255,0.05); }
-    .pill.on { background: #fff; color: #111827; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-
-    .card-content-scroller {
-      position: relative; z-index: 1; flex: 1;
-      overflow-y: auto; overflow-x: hidden; padding: 8px 16px 20px;
-    }
-    .card-content-scroller::-webkit-scrollbar { width: 5px; }
-    .card-content-scroller::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
-
-    .home-view { display: flex; flex-direction: column; gap: 14px; }
-
-    .lz-status {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 14px; border-radius: 14px;
-      border: 1px solid var(--glass-border); font-size: 13px; font-weight: 500;
-    }
-    .lz-icon { --mdc-icon-size: 18px; }
-    .lz-wifi { --mdc-icon-size: 14px; margin-left: auto; opacity: 0.7; }
-    
-    .lz-heating { background: rgba(248, 113, 113, 0.12); color: #f87171; border-color: rgba(248, 113, 113, 0.2); }
-    .lz-ready { background: rgba(74, 222, 128, 0.12); color: #4ade80; border-color: rgba(74, 222, 128, 0.2); animation: pulse-border 2s infinite; }
-    .lz-standby { background: rgba(251, 191, 36, 0.08); color: #fbbf24; border-color: rgba(251, 191, 36, 0.15); }
-    .lz-disconnected { background: rgba(156, 163, 175, 0.12); color: #9ca3af; border-color: rgba(156, 163, 175, 0.2); }
-
-    @keyframes pulse-border {
-      0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.2); }
-      70% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
-    }
-
-    .heat-ctrl {
-      display: flex; background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--glass-border); border-radius: 16px; padding: 6px; gap: 8px;
-    }
-    .heat-btn {
-      flex: 1; border: none; border-radius: 12px; display: flex; align-items: center;
-      justify-content: center; gap: 8px; font-weight: 600; font-size: 13px; cursor: pointer;
-      transition: all 0.2s; padding: 10px;
-    }
-    .heat-btn ha-icon { --mdc-icon-size: 18px; }
-    .heat-off { background: rgba(255,255,255,0.05); color: var(--txt-s); }
-    .heat-off:hover { background: rgba(255,255,255,0.1); color: #fff; }
-    .heat-on { background: linear-gradient(135deg, #ef4444, #f87171); color: #fff; box-shadow: 0 4px 12px rgba(239,68,68,0.25); }
-
-    .heat-temps { display: flex; align-items: center; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 0 4px; }
-    .heat-target { min-width: 46px; text-align: center; font-size: 15px; font-weight: 700; color: #fff; }
-    .heat-t-btn {
-      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
-      cursor: pointer; opacity: 0.7; transition: opacity 0.15s;
-    }
-    .heat-t-btn:hover { opacity: 1; }
-    .heat-t-btn ha-icon { --mdc-icon-size: 16px; }
-
-    .flex-row-center { display: flex; align-items: center; justify-content: space-between; margin: 6px 0; gap: 8px; }
-    .side-col { width: 75px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    :host { display: block; --glass-border: rgba(255,255,255,0.12); --txt-p: #ffffff; --txt-s: rgba(255,255,255,0.65); }
+    .home-view, .cam-view { display: flex; flex-direction: column; gap: 14px; padding: 10px; }
+    .flex-row-center { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
+    .side-col { width: 75px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .side-info { text-align: center; }
-    .val-big { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+    .val-big { font-size: 20px; font-weight: 700; color: var(--txt-p); text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
     .label-tiny { font-size: 9px; font-weight: 600; color: var(--txt-s); letter-spacing: 0.5px; margin-top: 2px; }
-    .hum-pill { background: rgba(255,255,255,0.05); padding: 3px 7px; border-radius: 20px; font-size: 9px; color: var(--accent-blue); font-weight: 600; border: 1px solid rgba(56,189,248,0.15); }
-
-    .gauge-container { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-    .temp-btn {
-      width: 36px; height: 36px; background: var(--glass-bg); border: 1px solid var(--glass-border);
-      border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: all 0.2s; color: var(--txt-s);
-    }
-    .temp-btn:hover { background: rgba(255,255,255,0.15); color: #fff; transform: scale(1.05); }
-    .temp-btn ha-icon { --mdc-icon-size: 20px; }
-
-    .center-gauge {
-      width: 130px; height: 130px; position: relative; display: flex; align-items: center; justify-content: center;
-    }
-    .outer-ring {
-      position: absolute; width: 100%; height: 100%; border-radius: 50%;
-      border: 3px dashed rgba(56, 189, 248, 0.25);
-      animation: rotate-ring 25s linear infinite;
-    }
-    @keyframes rotate-ring { to { transform: rotate(360deg); } }
-
-    .inner-circle {
-      width: 112px; height: 112px; border-radius: 50%;
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
-      border: 1px solid rgba(255,255,255,0.15); box-shadow: inset 0 4px 12px rgba(0,0,0,0.2);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-    }
-    .water-label { font-size: 10px; font-weight: 700; color: var(--accent-blue); letter-spacing: 1px; }
-    .water-val { font-size: 30px; font-weight: 900; color: #fff; line-height: 32px; letter-spacing: -0.5px; margin: 2px 0; }
-    .target-box { font-size: 9px; font-weight: 600; color: var(--txt-s); background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
-
-    .footer-row { display: flex; justify-content: center; gap: 8px; margin-top: 2px; }
-    .footer-pill {
-      background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255,255,255,0.06);
-      padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px;
-      font-size: 11px; font-weight: 600; color: var(--txt-s);
-    }
-    .footer-pill ha-icon { --mdc-icon-size: 13px; color: var(--accent-blue); }
-    .anim-pulse { animation: pulse-glow 1.8s infinite ease-in-out; }
-    @keyframes pulse-glow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; transform: scale(1.05); } }
+    .hum-pill { background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); border-radius: 20px; padding: 3px 8px; font-size: 10px; color: var(--txt-p); font-weight: 500; }
+    
+    .gauge-container { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .center-gauge { width: 140px; height: 140px; position: relative; display: flex; align-items: center; justify-content: center; }
+    .outer-ring { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; border: 2px dashed rgba(255,255,255,0.15); box-sizing: border-box; }
+    .inner-circle { width: 116px; height: 116px; border-radius: 50%; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 0 0 15px rgba(255,255,255,0.02), 0 4px 15px rgba(0,0,0,0.15); }
+    .water-label { font-size: 9px; font-weight: 700; color: var(--txt-s); letter-spacing: 1px; }
+    .water-val { font-size: 32px; font-weight: 800; color: var(--txt-p); line-height: 36px; letter-spacing: -0.5px; }
+    .target-box { font-size: 9px; font-weight: 600; color: #10b981; background: rgba(16,185,129,0.12); padding: 2px 7px; border-radius: 20px; margin-top: 2px; border: 1px solid rgba(16,185,129,0.2); }
+    .temp-btn { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center; color: var(--txt-p); cursor: pointer; transition: all 0.2s; }
+    .temp-btn:hover { background: rgba(255,255,255,0.15); }
+    
+    .heat-ctrl { display: flex; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 14px; padding: 6px; align-items: center; justify-content: space-between; }
+    .heat-btn { border: none; outline: none; border-radius: 10px; padding: 8px 14px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+    .heat-off { background: rgba(255,255,255,0.05); color: var(--txt-s); border: 1px solid transparent; }
+    .heat-on { background: linear-gradient(135deg, #ff9800, #f44336); color: #fff; box-shadow: 0 3px 10px rgba(244,67,54,0.3); border: 1px solid rgba(255,255,255,0.1); }
+    .heat-temps { display: flex; align-items: center; gap: 12px; padding-right: 6px; }
+    .heat-target { font-size: 16px; font-weight: 700; color: var(--txt-p); min-width: 40px; text-align: center; }
+    .heat-t-btn { color: var(--txt-p); cursor: pointer; display: flex; align-items: center; opacity: 0.7; transition: 0.2s; }
+    .heat-t-btn:hover { opacity: 1; transform: scale(1.1); }
+    
+    .footer-row { display: flex; gap: 8px; justify-content: center; }
+    .footer-pill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 10px; padding: 5px 10px; font-size: 11px; color: var(--txt-p); font-weight: 500; }
+    .footer-pill ha-icon { --mdc-icon-size: 13px; }
+    .anim-pulse { animation: pulse 2s infinite ease-in-out; }
+    @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; color: #ffeb3b; } }
 
     .maint-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .maint-item {
-      background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border);
-      border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
-    }
-    .maint-head { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--txt-s); }
-    .maint-head ha-icon { --mdc-icon-size: 15px; color: var(--accent-blue); }
-    .maint-badge { font-size: 8px; background: var(--accent-amber); color: #000; padding: 1px 4px; border-radius: 6px; font-weight: 700; margin-left: auto; }
-    .maint-warn { border-color: rgba(251, 191, 36, 0.3); background: rgba(251, 191, 36, 0.02); }
-    .maint-warn .maint-head ha-icon { color: var(--accent-amber); }
-    
-    .maint-reset-btn {
-      margin-left: auto; background: rgba(255,255,255,0.08); border: none; border-radius: 6px;
-      color: #fff; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
-      font-size: 10px; cursor: pointer; transition: background 0.2s; padding: 0;
-    }
-    .maint-reset-btn:hover { background: var(--accent-green); color: #000; }
+    .maint-item { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 5px; position: relative; overflow: hidden; }
+    .maint-head { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--txt-s); }
+    .maint-head ha-icon { --mdc-icon-size: 14px; }
+    .maint-bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; margin-top: 2px; }
+    .maint-fill { height: 100%; background: #10b981; border-radius: 2px; }
+    .maint-fill-warn { background: #ef4444 !important; }
+    .maint-val { font-size: 10px; color: var(--txt-p); font-weight: 500; text-align: right; }
+    .maint-badge { font-size: 8px; font-weight: 700; text-transform: uppercase; padding: 1px 4px; border-radius: 4px; background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+    .maint-reset-btn { position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--txt-p); font-size: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .maint-reset-btn:hover { background: #10b981; color: #fff; border-color: transparent; }
+    .maint-warn { border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.01); }
 
-    .maint-bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
-    .maint-fill { height: 100%; background: var(--accent-blue); border-radius: 2px; }
-    .maint-fill-warn { background: linear-gradient(90deg, var(--accent-amber), var(--accent-red)); }
-    .maint-val { font-size: 10px; color: var(--txt-s); text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; }
-
-    .flood-bar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 14px; border-radius: 14px; border: 1px solid var(--glass-border);
-      font-size: 12px; font-weight: 600; transition: all 0.3s;
-    }
+    .flood-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; border: 1px solid transparent; }
+    .flood-ok { background: rgba(16,185,129,0.04); border-color: rgba(16,185,129,0.15); color: #10b981; }
+    .flood-alert { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); color: #ef4444; animation: flood-flash 1.5s infinite alternate; }
     .flood-left { display: flex; align-items: center; gap: 8px; }
     .flood-icon { --mdc-icon-size: 16px; }
-    .flood-ok { background: rgba(74, 222, 128, 0.04); color: rgba(255,255,255,0.7); border-color: rgba(74, 222, 128, 0.15); }
-    .flood-ok .flood-icon { color: var(--accent-green); }
-    
-    .flood-alert { background: rgba(248, 113, 113, 0.15); color: #fff; border-color: #f87171; animation: flood-flash 1.5s infinite alternate; }
-    .flood-icon-alert { color: #f87171; animation: pulse-glow 0.8s infinite alternate; }
-    @keyframes flood-flash { 0% { background: rgba(248,113,113,0.1); } 100% { background: rgba(248,113,113,0.25); box-shadow: inset 0 0 10px rgba(248,113,113,0.2); } }
+    @keyframes flood-flash { 0% { box-shadow: 0 0 4px rgba(239,68,68,0.1); } 100% { box-shadow: 0 0 12px rgba(239,68,68,0.3); } }
+    .flood-icon-alert { animation: rot-alert 0.5s infinite alternate; }
+    @keyframes rot-alert { 0% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
+    .flood-pill { display: flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 6px; font-size: 9px; }
+    .pill-ok { background: rgba(255,255,255,0.05); color: var(--txt-p); }
+    .pill-warn { background: rgba(239,68,68,0.15); color: #ef4444; }
 
-    .flood-right { display: flex; align-items: center; }
-    .flood-pill { display: flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 500; }
-    .flood-pill ha-icon { --mdc-icon-size: 13px; }
-    .pill-ok { background: rgba(255,255,255,0.06); color: var(--txt-s); }
-    .pill-warn { background: rgba(251,191,36,0.2); color: var(--accent-amber); font-weight: 700; }
-
-    /* NOUVEAU DESIGN : PANNEAU PROGRAMMATION RENDU PRATIQUE */
-    .sched-panel {
-      display: flex; flex-direction: column; gap: 12px; padding: 14px;
-      background: rgba(15, 23, 42, 0.3); border: 1px solid var(--glass-border);
-      border-radius: 16px; height: 100%; box-sizing: border-box; justify-content: space-between;
-    }
-    .sched-header { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.5px; }
-    .sched-header ha-icon { --mdc-icon-size: 16px; }
-    
-    .sched-display-box {
-      background: rgba(0, 0, 0, 0.25); border-radius: 12px; padding: 14px; text-align: center;
-      border: 1px solid rgba(255,255,255,0.04);
-    }
-    .sched-main-val { font-size: 34px; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; line-height: 1; }
-    .sched-sub-info { font-size: 11px; color: var(--txt-s); margin-top: 6px; }
-    .sched-sub-info strong { color: var(--accent-green); }
-
+    .sched-panel { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .sched-header { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: var(--txt-s); letter-spacing: 0.5px; }
+    .sched-header ha-icon { --mdc-icon-size: 15px; color: #6b8eff; }
+    .sched-display-box { text-align: center; padding: 4px 0; }
+    .sched-main-val { font-size: 26px; font-weight: 800; color: var(--txt-p); letter-spacing: -0.5px; }
+    .sched-sub-info { font-size: 10px; color: var(--txt-s); margin-top: 1px; }
+    .sched-sub-info strong { color: #6b8eff; font-weight: 600; }
     .sched-grid-ctrl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-    .sched-ctrl-btn {
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
-      color: #fff; padding: 8px 4px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;
-    }
-    .sched-ctrl-btn:hover { background: rgba(255,255,255,0.12); border-color: var(--glass-border); }
-    .sched-ctrl-btn:active { transform: scale(0.96); }
-    .text-accent { color: var(--accent-blue); }
-
-    .sched-confirm-action {
-      background: linear-gradient(135deg, #0284c7, #38bdf8); border: none; border-radius: 10px;
-      padding: 10px; color: #000; font-weight: 700; font-size: 12px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(56,189,248,0.2); transition: all 0.2s;
-    }
-    .sched-confirm-action:hover { filter: brightness(1.1); transform: translateY(-1px); }
-    .sched-confirm-action ha-icon { --mdc-icon-size: 16px; }
-
-    /* CHIMIE : AJOUT DES ALERTES TEXTUELLES */
-    .chem-view { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .chem-card {
-      background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border);
-      border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px;
-    }
-    .chem-header { display: flex; align-items: center; gap: 6px; }
-    .chem-header ha-icon { --mdc-icon-size: 16px; }
-    .chem-title { font-size: 13px; font-weight: 600; color: var(--txt-s); }
-    .chem-status-tag { font-size: 9px; padding: 2px 6px; border-radius: 8px; font-weight: 700; margin-left: auto; }
-    .chem-value { font-size: 22px; font-weight: 800; color: #fff; margin: 2px 0; font-variant-numeric: tabular-nums; }
-    
-    .chem-gauge-bg { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; position: relative; overflow: visible; margin: 4px 0; }
-    .chem-gauge-fill { height: 100%; background: var(--accent-green); border-radius: 3px; }
-    .chem-marker { position: absolute; top: -2px; width: 2px; height: 9px; background: rgba(255,255,255,0.5); }
-    .chem-range { font-size: 9px; color: var(--txt-s); font-weight: 500; }
-    
-    .chem-alert-text {
-      display: flex; gap: 6px; margin-top: 6px; background: rgba(248, 113, 113, 0.08);
-      border-radius: 8px; padding: 6px 8px; font-size: 10px; line-height: 1.3; color: #fca5a5;
-      align-items: flex-start; border: 1px solid rgba(248, 113, 113, 0.15);
-    }
-    .chem-alert-text ha-icon { --mdc-icon-size: 12px; flex-shrink: 0; margin-top: 1px; color: var(--accent-red); }
-
-    .chem-ok { border-color: rgba(74, 222, 128, 0.12); }
-    .chem-ok .chem-header ha-icon { color: var(--accent-green); }
-    .chem-ok .chem-status-tag { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
-    
-    .chem-warn { border-color: rgba(248, 113, 113, 0.25); background: rgba(248, 113, 113, 0.01); }
-    .chem-warn .chem-header ha-icon { color: var(--accent-red); }
-    .chem-warn .chem-status-tag { background: rgba(248, 113, 113, 0.15); color: #f87171; }
-    .chem-warn .chem-gauge-fill { background: var(--accent-red); }
-
-   /* ═══════════════════════════════════════════════
-   CAMÉRA - LAYOUT 50/50 CORRIGÉ
-   ═══════════════════════════════════════════════ */
-
-.cam-split-layout {
-  display: flex;
-  gap: 12px;
-  align-items: stretch;
-  width: 100%;
-  height: 210px;
-  min-height: 210px;
-}
-
-.cam-column-video,
-.cam-column-sched {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-}
-
-.cam-column-video {
-  display: flex;
-}
-
-.cam-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #000;
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  box-sizing: border-box;
-  cursor: pointer;
-}
-
-.cam-container img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center center;
-  border-radius: inherit;
-  transition: filter 0.2s ease;
-}
-
-.cam-container:hover img {
-  filter: brightness(1.08);
-}
-
-.cam-overlay {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.55);
-  border-radius: 8px;
-  color: #fff;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  z-index: 2;
-}
-
-.cam-container:hover .cam-overlay {
-  opacity: 1;
-}
-
-/* Mode plein écran */
-.cam-expanded {
-  position: fixed !important;
-  inset: 20px;
-  width: auto !important;
-  height: auto !important;
-  max-width: calc(100vw - 40px);
-  max-height: calc(100vh - 40px);
-  z-index: 9999;
-  border-radius: 20px;
-}
-
-/* Mobile */
-@media (max-width: 480px) {
-  .cam-split-layout {
-    flex-direction: column;
-    height: auto;
-  }
-
-  .cam-column-video {
-    height: 220px;
-  }
-
-  .cam-column-sched {
-    height: auto;
-  }
-}
-
-/* ═══════════════════════════════════════════════
-   SWITCHES PREMIUM - 5 COLONNES
-   ═══════════════════════════════════════════════ */
-
-.custom-switches-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-}
-
-.custom-switch-card {
-  position: relative;
-  overflow: hidden;
-
-  min-height: 82px;
-  padding: 12px;
-
-  border-radius: 18px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(20,30,45,.85),
-      rgba(10,15,25,.85)
-    );
-
-  border: 1px solid rgba(255,255,255,.06);
-
-  cursor: pointer;
-
-  transition:
-    transform .25s ease,
-    border-color .25s ease,
-    box-shadow .25s ease;
-}
-
-.custom-switch-card::before {
-  content: "";
-
-  position: absolute;
-  inset: 0;
-
-  background:
-    radial-gradient(
-      circle at top left,
-      rgba(56,189,248,.18),
-      transparent 70%
-    );
-
-  opacity: 0;
-  transition: opacity .3s ease;
-}
-
-.custom-switch-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255,255,255,.12);
-}
-
-.custom-switch-card:hover::before {
-  opacity: .6;
-}
-
-.custom-switch-card.is-active {
-  border-color: rgba(56,189,248,.45);
-
-  box-shadow:
-    0 0 18px rgba(56,189,248,.15),
-    inset 0 0 15px rgba(56,189,248,.05);
-}
-
-.custom-switch-card.is-active::before {
-  opacity: 1;
-}
-
-.switch-inner {
-  position: relative;
-  z-index: 2;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  gap: 8px;
-  height: 100%;
-}
-
-.switch-icon-container {
-  width: 46px;
-  height: 46px;
-
-  border-radius: 50%;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background:
-    radial-gradient(
-      circle,
-      rgba(255,255,255,.10),
-      rgba(255,255,255,.03)
-    );
-
-  border: 1px solid rgba(255,255,255,.05);
-
-  transition: all .25s ease;
-}
-
-.switch-icon-container ha-icon {
-  --mdc-icon-size: 24px;
-  color: var(--txt-s);
-}
-
-.custom-switch-card.is-active .switch-icon-container {
-  background:
-    radial-gradient(
-      circle,
-      rgba(56,189,248,.35),
-      rgba(56,189,248,.08)
-    );
-
-  border-color: rgba(56,189,248,.30);
-
-  box-shadow:
-    0 0 12px rgba(56,189,248,.35);
-}
-
-.custom-switch-card.is-active .switch-icon-container ha-icon {
-  color: #38bdf8;
-}
-
-.switch-meta {
-  text-align: center;
-  width: 100%;
-}
-
-.switch-title-lbl {
-  display: block;
-
-  font-size: 11px;
-  font-weight: 700;
-
-  color: var(--txt-p);
-
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.switch-status-lbl {
-  display: block;
-
-  margin-top: 2px;
-
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: .5px;
-
-  color: var(--txt-s);
-}
-
-.custom-switch-card.is-active .switch-status-lbl {
-  color: #38bdf8;
-}
-
-.switch-hardware-led {
-  position: absolute;
-
-  top: 8px;
-  right: 8px;
-
-  width: 7px;
-  height: 7px;
-
-  border-radius: 50%;
-
-  background: rgba(255,255,255,.12);
-
-  transition: all .25s ease;
-}
-
-.custom-switch-card.is-active .switch-hardware-led {
-  background: #38bdf8;
-
-  box-shadow:
-    0 0 6px #38bdf8,
-    0 0 12px #38bdf8;
-}
-
-.switch-glow-effect {
-  display: none;
-}
-
-/* Tablette */
-@media (max-width: 900px) {
-  .custom-switches-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-/* Mobile */
-@media (max-width: 600px) {
-  .custom-switches-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-    .empty-msg { text-align: center; padding: 40px 20px; color: var(--txt-s); }
-    .empty-msg ha-icon { --mdc-icon-size: 32px; opacity: 0.5; margin-bottom: 8px; }
-    .empty-msg p { margin: 0; font-size: 13px; }
+    .sched-ctrl-btn { border: none; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; padding: 6px 0; color: var(--txt-p); font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.15s; }
+    .sched-ctrl-btn:hover { background: rgba(255,255,255,0.12); }
+    .text-accent { color: #6b8eff !important; }
+    .sched-confirm-action { border: none; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; border-radius: 10px; padding: 8px 0; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 3px 8px rgba(29,78,216,0.2); transition: 0.2s; }
+    .sched-confirm-action:hover { opacity: 0.9; transform: translateY(-0.5px); }
+    .sched-confirm-action ha-icon { --mdc-icon-size: 13px; }
+
+    .cam-container { position: relative; background: #000; overflow: hidden; border: 1px solid var(--glass-border); box-sizing: border-box; margin: 0 auto; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .cam-overlay { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.5); color: #fff; padding: 4px; border-radius: 6px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+    .cam-container:hover .cam-overlay { opacity: 1; }
+    .cam-overlay ha-icon { --mdc-icon-size: 16px; }
+    .cam-expanded { position: fixed !important; top: 10vh; left: 5vw; width: 90vw !important; height: auto !important; max-height: 80vh; z-index: 99; }
+    .empty-msg { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; color: var(--txt-s); font-size: 12px; gap: 8px; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 12px; }
+    .empty-msg ha-icon { --mdc-icon-size: 24px; }
   `;
 }
 customElements.define('spa-card', SpaCard);
