@@ -169,10 +169,9 @@ class SpaCardEditor extends LitElement {
       <div class="editor-wrap">
         <div class="tabs">
           ${TABS.map(t => html`
-            <button class="tab ${this._tab===t.id?'on':''}" @click=${()=>{ this._tab=t.id; }}>
-              <div class="tbox" style="${t.s}">${t.i}</div>
-              <span class="tlbl">${t.l}</span>
-            </button>`)}
+  <button class="tab ${this._tab===t.id?'on':''}" @click=${()=>{ this._tab=t.id; }}>
+    <div class="tbox" style="${t.s}">${t.i}</div>
+    <span class="tlbl">${t.l}</span> </button>`)}
         </div>
         <div class="sections">${content[this._tab]}</div>
       </div>`;
@@ -199,8 +198,11 @@ class SpaCardEditor extends LitElement {
       font-size:11px; font-weight:700; letter-spacing:-.3px; transition:.18s;
     }
     .tlbl {
-      font-size:10px; color:var(--secondary-text-color,#888);
-      letter-spacing:.2px; transition:color .18s; white-space:nowrap;
+      display: block; /* S'assure que le texte est bien visible */
+      font-size: 10px; 
+      color: var(--secondary-text-color,#888);
+      margin-top: 4px; /* Un peu d'espace entre l'icône et le texte */
+      transition: color .18s; 
     }
     .tab.on .tlbl { color:var(--primary-text-color,#212121); font-weight:500; }
     .sections { display:flex; flex-direction:column; }
