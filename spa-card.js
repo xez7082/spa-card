@@ -5,7 +5,7 @@ import {
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 // ═══════════════════════════════════════════════════════════════════
-//  ÉDITEUR  —  V33  (LayZSpa intégré)
+//  ÉDITEUR  —  V34  (LayZSpa intégré)
 // ═══════════════════════════════════════════════════════════════════
 class SpaCardEditor extends LitElement {
 
@@ -229,7 +229,7 @@ customElements.define('spa-card-editor', SpaCardEditor);
 
 
 // ═══════════════════════════════════════════════════════════════════
-//  CARTE  —  V33  (LayZSpa intégré)
+//  CARTE  —  V34  (LayZSpa intégré)
 // ═══════════════════════════════════════════════════════════════════
 class SpaCard extends LitElement {
 
@@ -439,20 +439,29 @@ class SpaCard extends LitElement {
     };
 
     return html`
-      <div class="sched-bar">
-        <ha-icon class="sched-icon" icon="mdi:clock-outline"></ha-icon>
-        <div class="sched-col">
-          <div class="sched-title">Prêt à</div>
-          ${startStr ? html`<div class="sched-start">Démarrage à ${startStr}</div>` : ''}
+      <div class="sched-panel">
+        <div class="sched-header">
+          <ha-icon icon="mdi:clock-digital"></ha-icon>
+          <span>PLANIFICATION CHAUFFE</span>
         </div>
-        <div class="sched-time-ctrl">
-          <div class="sched-btn" @click=${()=>changeTime(-1,0)}>◂ h</div>
-          <div class="sched-btn" @click=${()=>changeTime(0,-15)}>◂ 15'</div>
-          <div class="sched-val">${readyStr}</div>
-          <div class="sched-btn" @click=${()=>changeTime(0,15)}>15' ▸</div>
-          <div class="sched-btn" @click=${()=>changeTime(1,0)}>h ▸</div>
+        
+        <div class="sched-display-box">
+          <div class="sched-main-val">${readyStr}</div>
+          <div class="sched-sub-info">
+            ${startStr ? html`<span>Démarrage estimé à : <strong>${startStr}</strong></span>` : html`<span>Prêt immédiatement</span>`}
+          </div>
         </div>
-        <button class="sched-set-btn" @click=${activate} title="Confirmer la programmation">✓</button>
+
+        <div class="sched-grid-ctrl">
+          <button class="sched-ctrl-btn text-accent" @click=${()=>changeTime(-1,0)}>-1h</button>
+          <button class="sched-ctrl-btn" @click=${()=>changeTime(0,-15)}>-15m</button>
+          <button class="sched-ctrl-btn" @click=${()=>changeTime(0,15)}>+15m</button>
+          <button class="sched-ctrl-btn text-accent" @click=${()=>changeTime(1,0)}>+1h</button>
+        </div>
+
+        <button class="sched-confirm-action" @click=${activate}>
+          <ha-icon icon="mdi:calendar-check"></ha-icon> Activer la programmation
+        </button>
       </div>`;
   }
 
@@ -647,7 +656,7 @@ class SpaCard extends LitElement {
               ${chloreWarn ? html`<span class="maint-badge">À renouveler</span>` : ''}
               ${hasResetC ? html`
                 <button class="maint-reset-btn" title="Chlore renouvelé — remettre à zéro"
-                  @click=${() => pressReset(c.entity_lz_reset_chlore)}>
+                  @click=${() => pressReset(c.entity_lz_reset_chlorine)}>
                   ✓
                 </button>` : ''}
             </div>
@@ -689,7 +698,7 @@ class SpaCard extends LitElement {
   }
 
   // ═══════════════════════════════════════════════
-  //  ONGLET CHIMIE (Réintégré dans la classe)
+  //  ONGLET CHIMIE (Alertes textuelles intégrées)
   // ═══════════════════════════════════════════════
   _renderChem() {
     const c = this.config;
@@ -704,10 +713,14 @@ class SpaCard extends LitElement {
     const saltMax = c.salt_max !== undefined ? c.salt_max : 3500;
 
     const items = [
-      { id: c.entity_ph,   name: 'pH',  icon: 'mdi:ph',         min: phMin,   max: phMax,   dec: 1, u: '' },
-      { id: c.entity_orp,  name: 'ORP', icon: 'mdi:test-tube',   min: orpMin,  max: orpMax,  dec: 0, u: ' mV' },
-      { id: c.entity_tds,  name: 'TDS', icon: 'mdi:shaker',      min: tdsMin,  max: tdsMax,  dec: 0, u: ' ppm' },
-      { id: c.entity_salt, name: 'Sel', icon: 'mdi:snowflake',   min: saltMin, max: saltMax, dec: 0, u: ' ppm' }
+      { id: c.entity_ph,   name: 'pH',  icon: 'mdi:ph',         min: phMin,   max: phMax,   dec: 1, u: '',
+        txtLow: 'Trop bas ! Eau acide, risque d\'irritation et de corrosion.', txtHigh: 'Trop haut ! Eau basique, entartrage et baisse du chlore.' },
+      { id: c.entity_orp,  name: 'ORP', icon: 'mdi:test-tube',   min: orpMin,  max: orpMax,  dec: 0, u: ' mV',
+        txtLow: 'Trop bas ! Désinfection insuffisante, risque d\'algues.', txtHigh: 'Trop haut ! Eau trop oxydante, risque pour la peau et les yeux.' },
+      { id: c.entity_tds,  name: 'TDS', icon: 'mdi:shaker',      min: tdsMin,  max: tdsMax,  dec: 0, u: ' ppm',
+        txtLow: 'Minéralisation faible.', txtHigh: 'Trop haut ! Eau saturée en minéraux, renouveler une partie de l\'eau.' },
+      { id: c.entity_salt, name: 'Sel', icon: 'mdi:snowflake',   min: saltMin, max: saltMax, dec: 0, u: ' ppm',
+        txtLow: 'Manque de sel ! L\'éco-stérilisateur ne peut pas produire de chlore.', txtHigh: 'Trop de sel ! Risque de corrosion précoce des métaux.' }
     ];
 
     return html`
@@ -716,7 +729,9 @@ class SpaCard extends LitElement {
           if (!this._exists(item.id)) return '';
           
           const val = parseFloat(this._state(item.id));
-          const ok = (val >= item.min && val <= item.max);
+          const isLow = val < item.min;
+          const isHigh = val > item.max;
+          const ok = (!isLow && !isHigh);
           
           const span = (item.max * 1.2) - (item.min * 0.8);
           const pct = span > 0 ? Math.min(100, Math.max(0, ((val - (item.min * 0.8)) / span) * 100)) : 0;
@@ -738,6 +753,12 @@ class SpaCard extends LitElement {
                 <div class="chem-marker" style="left:${markerMax}%"></div>
               </div>
               <div class="chem-range">Cible : ${item.min} – ${item.max}</div>
+              ${!ok ? html`
+                <div class="chem-alert-text">
+                  <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
+                  <span>${isLow ? item.txtLow : item.txtHigh}</span>
+                </div>
+              ` : ''}
             </div>
           `;
         })}
@@ -746,7 +767,7 @@ class SpaCard extends LitElement {
   }
 
   // ═══════════════════════════════════════════════
-  //  ONGLET CAMÉRA (Réintégré dans la classe)
+  //  ONGLET CAMÉRA (Mise en page Split 50/50)
   // ═══════════════════════════════════════════════
   _renderCam() {
     const c = this.config;
@@ -755,30 +776,35 @@ class SpaCard extends LitElement {
     }
 
     const w  = c.cam_w_px ? `${c.cam_w_px}px` : '100%';
-    const h  = c.cam_h_px ? `${c.cam_h_px}px` : '210px';
-    const r  = c.cam_radius !== undefined ? `${c.cam_radius}px` : '12px';
+    const h  = c.cam_h_px ? `${c.cam_h_px}px` : '100%';
+    const r  = c.cam_radius !== undefined ? `${c.cam_radius}px` : '16px';
     const x  = c.cam_x || 0;
     const y  = c.cam_y || 0;
 
     return html`
-      <div class="cam-view">
-        <div class="cam-container ${this._camExpanded ? 'cam-expanded' : ''}"
-             style="width:${this._camExpanded ? '100%' : w}; height:${this._camExpanded ? 'auto' : h}; border-radius:${r};"
-             @click=${() => this._camExpanded = !this._camExpanded}>
-          <img src="/api/camera_proxy/${c.entity_camera}" 
-               style="transform: translate(${x}px, ${y}px);" 
-               alt="Flux Spa" />
-          <div class="cam-overlay">
-            <ha-icon icon="${this._camExpanded ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
+      <div class="cam-split-layout">
+        <div class="cam-column-video">
+          <div class="cam-container ${this._camExpanded ? 'cam-expanded' : ''}"
+               style="width:${this._camExpanded ? '100%' : w}; height:${this._camExpanded ? '100%' : h}; border-radius:${r};"
+               @click=${() => this._camExpanded = !this._camExpanded}>
+            <img src="/api/camera_proxy/${c.entity_camera}" 
+                 style="transform: translate(${x}px, ${y}px);" 
+                 alt="Flux Spa" />
+            <div class="cam-overlay">
+              <ha-icon icon="${this._camExpanded ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
+            </div>
           </div>
         </div>
-        ${this._renderSchedule()}
+        
+        <div class="cam-column-sched">
+          ${this._renderSchedule()}
+        </div>
       </div>
     `;
   }
 
   // ═══════════════════════════════════════════════
-  //  ONGLET SWITCHES (Réintégré dans la classe)
+  //  ONGLET SWITCHES (Redessinés Style Tactile)
   // ═══════════════════════════════════════════════
   _renderSwitches() {
     const c = this.config;
@@ -803,9 +829,18 @@ class SpaCard extends LitElement {
       if (lowLbl.includes('lumi'))    icon = 'mdi:lightbulb';
 
       return html`
-        <div class="sw-item ${active ? 'sw-active' : ''}" @click=${toggle}>
-          <div class="sw-icon-box"><ha-icon icon="${icon}"></ha-icon></div>
-          <div class="sw-name">${lbl}</div>
+        <div class="custom-switch-card ${active ? 'is-active' : ''}" @click=${toggle}>
+          <div class="switch-inner">
+            <div class="switch-glow-effect"></div>
+            <div class="switch-icon-container">
+              <ha-icon icon="${icon}"></ha-icon>
+            </div>
+            <div class="switch-meta">
+              <span class="switch-title-lbl">${lbl}</span>
+              <span class="switch-status-lbl">${active ? 'ACTIF' : 'ÉTEINT'}</span>
+            </div>
+            <div class="switch-hardware-led"></div>
+          </div>
         </div>
       `;
     });
@@ -814,11 +849,11 @@ class SpaCard extends LitElement {
       return html`<div class="empty-msg"><ha-icon icon="mdi:toggle-switch-off"></ha-icon><p>Aucun interrupteur configuré</p></div>`;
     }
 
-    return html`<div class="sw-view">${btns}</div>`;
+    return html`<div class="custom-switches-grid">${btns}</div>`;
   }
 
   // ═══════════════════════════════════════════════
-  //  RENDU PRINCIPAL (Réintégré dans la classe)
+  //  RENDU PRINCIPAL
   // ═══════════════════════════════════════════════
   render() {
     if (!this.config || !this.hass) return html``;
@@ -1050,22 +1085,41 @@ class SpaCard extends LitElement {
     .pill-ok { background: rgba(255,255,255,0.06); color: var(--txt-s); }
     .pill-warn { background: rgba(251,191,36,0.2); color: var(--accent-amber); font-weight: 700; }
 
-    .sched-bar {
-      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border);
-      border-radius: 14px; margin-top: 10px;
+    /* NOUVEAU DESIGN : PANNEAU PROGRAMMATION RENDU PRATIQUE */
+    .sched-panel {
+      display: flex; flex-direction: column; gap: 12px; padding: 14px;
+      background: rgba(15, 23, 42, 0.3); border: 1px solid var(--glass-border);
+      border-radius: 16px; height: 100%; box-sizing: border-box; justify-content: space-between;
     }
-    .sched-icon { --mdc-icon-size: 18px; color: var(--accent-blue); }
-    .sched-col { flex: 1; display: flex; flex-direction: column; }
-    .sched-title { font-size: 12px; font-weight: 600; color: #fff; }
-    .sched-start { font-size: 10px; color: var(--accent-green); font-weight: 500; margin-top: 1px; }
-    .sched-time-ctrl { display: flex; align-items: center; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 2px; border: 1px solid rgba(255,255,255,0.05); }
-    .sched-btn { padding: 4px 6px; font-size: 10px; font-weight: 600; color: var(--txt-s); cursor: pointer; user-select: none; }
-    .sched-btn:hover { color: #fff; background: rgba(255,255,255,0.05); border-radius: 4px; }
-    .sched-val { padding: 0 6px; font-size: 12px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; border-left: 1px solid rgba(255,255,255,0.1); border-right: 1px solid rgba(255,255,255,0.1); }
-    .sched-set-btn { background: var(--accent-blue); border: none; border-radius: 8px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: #000; font-weight: 700; cursor: pointer; font-size: 11px; margin-left: 2px; }
-    .sched-set-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
+    .sched-header { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.5px; }
+    .sched-header ha-icon { --mdc-icon-size: 16px; }
+    
+    .sched-display-box {
+      background: rgba(0, 0, 0, 0.25); border-radius: 12px; padding: 14px; text-align: center;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .sched-main-val { font-size: 34px; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; line-height: 1; }
+    .sched-sub-info { font-size: 11px; color: var(--txt-s); margin-top: 6px; }
+    .sched-sub-info strong { color: var(--accent-green); }
 
+    .sched-grid-ctrl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .sched-ctrl-btn {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+      color: #fff; padding: 8px 4px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .sched-ctrl-btn:hover { background: rgba(255,255,255,0.12); border-color: var(--glass-border); }
+    .sched-ctrl-btn:active { transform: scale(0.96); }
+    .text-accent { color: var(--accent-blue); }
+
+    .sched-confirm-action {
+      background: linear-gradient(135deg, #0284c7, #38bdf8); border: none; border-radius: 10px;
+      padding: 10px; color: #000; font-weight: 700; font-size: 12px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(56,189,248,0.2); transition: all 0.2s;
+    }
+    .sched-confirm-action:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .sched-confirm-action ha-icon { --mdc-icon-size: 16px; }
+
+    /* CHIMIE : AJOUT DES ALERTES TEXTUELLES */
     .chem-view { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .chem-card {
       background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border);
@@ -1081,6 +1135,13 @@ class SpaCard extends LitElement {
     .chem-gauge-fill { height: 100%; background: var(--accent-green); border-radius: 3px; }
     .chem-marker { position: absolute; top: -2px; width: 2px; height: 9px; background: rgba(255,255,255,0.5); }
     .chem-range { font-size: 9px; color: var(--txt-s); font-weight: 500; }
+    
+    .chem-alert-text {
+      display: flex; gap: 6px; margin-top: 6px; background: rgba(248, 113, 113, 0.08);
+      border-radius: 8px; padding: 6px 8px; font-size: 10px; line-height: 1.3; color: #fca5a5;
+      align-items: flex-start; border: 1px solid rgba(248, 113, 113, 0.15);
+    }
+    .chem-alert-text ha-icon { --mdc-icon-size: 12px; flex-shrink: 0; margin-top: 1px; color: var(--accent-red); }
 
     .chem-ok { border-color: rgba(74, 222, 128, 0.12); }
     .chem-ok .chem-header ha-icon { color: var(--accent-green); }
@@ -1091,7 +1152,16 @@ class SpaCard extends LitElement {
     .chem-warn .chem-status-tag { background: rgba(248, 113, 113, 0.15); color: #f87171; }
     .chem-warn .chem-gauge-fill { background: var(--accent-red); }
 
-    .cam-view { display: flex; flex-direction: column; }
+    /* NOUVEAU DESIGN COMPACT 50/50 POUR LA CAMÉRA */
+    .cam-split-layout { display: flex; gap: 12px; align-items: stretch; width: 100%; height: 210px; }
+    .cam-column-video { flex: 1; min-width: 0; }
+    .cam-column-sched { flex: 1; min-width: 0; }
+
+    @media (max-width: 480px) {
+      .cam-split-layout { flex-direction: column; height: auto; }
+      .cam-split-layout .cam-column-video { height: 180px; }
+    }
+
     .cam-container {
       position: relative; overflow: hidden; background: #000;
       border: 1px solid var(--glass-border); cursor: pointer;
@@ -1106,23 +1176,56 @@ class SpaCard extends LitElement {
     .cam-container:hover img { filter: brightness(1.1); }
     .cam-expanded { width: 100% !important; height: auto !important; max-height: 80vh; z-index: 99; }
 
-    .sw-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
-    .sw-item {
-      background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border);
-      border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px;
-      cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    /* LES INTERRUPTEURS MAGNIFIÉS STYLE GLASSMORPHISM GLOW */
+    .custom-switches-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    .custom-switch-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 12px;
+      cursor: pointer; position: relative; overflow: hidden; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.05);
     }
-    .sw-icon-box {
-      width: 32px; height: 32px; border-radius: 10px; background: rgba(255,255,255,0.05);
-      display: flex; align-items: center; justify-content: center; color: var(--txt-s); transition: all 0.2s;
-    }
-    .sw-icon-box ha-icon { --mdc-icon-size: 16px; }
-    .sw-name { font-size: 11px; font-weight: 600; color: var(--txt-p); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .switch-inner { display: flex; align-items: center; gap: 10px; position: relative; z-index: 2; }
     
-    .sw-item:hover { background: rgba(255,255,255,0.06); transform: translateY(-1px); }
-    .sw-active { background: rgba(56, 189, 248, 0.08); border-color: rgba(56, 189, 248, 0.25); }
-    .sw-active .sw-icon-box { background: var(--accent-blue); color: #0a0f19; box-shadow: 0 2px 8px rgba(56,189,248,0.3); }
-    .sw-active .sw-name { color: #fff; font-weight: 700; }
+    .switch-icon-container {
+      width: 36px; height: 36px; border-radius: 12px; background: rgba(0,0,0,0.2);
+      display: flex; align-items: center; justify-content: center; color: var(--txt-s);
+      border: 1px solid rgba(255,255,255,0.04); transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .switch-icon-container ha-icon { --mdc-icon-size: 18px; transition: transform 0.2s; }
+    
+    .switch-meta { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+    .switch-title-lbl { font-size: 12px; font-weight: 600; color: var(--txt-p); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .switch-status-lbl { font-size: 8px; font-weight: 700; color: var(--txt-s); letter-spacing: 0.5px; }
+    
+    .switch-hardware-led {
+      width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.15);
+      box-shadow: inset 0 1px 1px rgba(0,0,0,0.5); transition: all 0.25s;
+    }
+    .switch-glow-effect {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at center, rgba(56,189,248,0.15) 0%, transparent 70%);
+      opacity: 0; transition: opacity 0.3s; z-index: 1; pointer-events: none;
+    }
+
+    /* Hover et état actif magnifié */
+    .custom-switch-card:hover {
+      background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.15); transform: translateY(-2px);
+    }
+    .custom-switch-card:hover .switch-icon-container ha-icon { transform: scale(1.08); }
+    
+    .custom-switch-card.is-active {
+      background: rgba(255,255,255,0.05); border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .custom-switch-card.is-active .switch-glow-effect { opacity: 1; }
+    .custom-switch-card.is-active .switch-icon-container {
+      background: rgba(56, 189, 248, 0.15); color: var(--accent-blue);
+      border-color: rgba(56, 189, 248, 0.3); box-shadow: 0 0 12px rgba(56,189,248,0.25);
+    }
+    .custom-switch-card.is-active .switch-status-lbl { color: var(--accent-blue); font-weight: 800; }
+    .custom-switch-card.is-active .switch-hardware-led {
+      background: var(--accent-blue); box-shadow: 0 0 6px var(--accent-blue);
+    }
 
     .empty-msg { text-align: center; padding: 40px 20px; color: var(--txt-s); }
     .empty-msg ha-icon { --mdc-icon-size: 32px; opacity: 0.5; margin-bottom: 8px; }
