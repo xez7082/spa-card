@@ -766,7 +766,7 @@ class SpaCard extends LitElement {
     `;
   }
 
-  // ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════
   //  ONGLET CAMÉRA
   // ═══════════════════════════════════════════════
   _renderCam() {
@@ -784,12 +784,11 @@ class SpaCard extends LitElement {
     return html`
       <div class="cam-view">
         <div class="cam-container ${this._camExpanded ? 'cam-expanded' : ''}"
-             style="width:${this._camExpanded ? '100%' : w}; height:${this._camExpanded ? 'auto' : h}; border-radius:${r};"
-             @click=${() => this._camExpanded = !this._camExpanded}>
+             style="width:${this._camExpanded ? '100%' : w}; height:${this._camExpanded ? 'auto' : h}; border-radius:${r}; min-height: 150px;">
           <ha-camera-stream
             .hass=${this.hass}
             .entityId=${c.entity_camera}
-            style="transform: translate(${x}px, ${y}px);"
+            style="transform: translate(${x}px, ${y}px); width: 100%; height: 100%; display: block;"
             controls
           ></ha-camera-stream>
           <div class="cam-overlay">
