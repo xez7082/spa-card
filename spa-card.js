@@ -530,47 +530,7 @@ class SpaCard extends LitElement {
     return { timeH, deltaT, curTemp, tgtTemp, powerW, efficiency };
   }
 
-  _renderLayzspaStatus() {
-    const c = this.config;
-    const hasStatus = this._exists(c.entity_lz_ready) || this._exists(c.entity_lz_conn);
-    if (!hasStatus) return html``;
 
-    const connected = !this._exists(c.entity_lz_conn) || this._state(c.entity_lz_conn) === 'on';
-    const ready      = this._state(c.entity_lz_ready) === 'on';
-    const heating    = this._state(c.entity_lz_heater) === 'on';
-
-    const calc = this._calcHeatingTime();
-
-    let icon, label, cls, timeStr = '';
-    if (!connected) {
-      icon='mdi:wifi-off';    label='Déconnecté';  cls='lz-disconnected';
-    } else if (ready || (calc !== null && calc === 0)) {
-      icon='mdi:hot-tub';      label='Prêt !';       cls='lz-ready';
-    } else if (heating) {
-      if (calc !== null && calc !== 0) {
-        const h   = Math.floor(calc.timeH);
-        const min = Math.round((calc.timeH - h) * 60);
-        timeStr   = h > 0
-          ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''} restantes`
-          : `${min} min restantes`;
-        label = `En chauffe — ${timeStr}`;
-      } else {
-        label = 'En chauffe…';
-      }
-      icon='mdi:radiator'; cls='lz-heating';
-    } else {
-      if (calc !== null && calc !== 0) {
-        const h   = Math.floor(calc.timeH);
-        const min = Math.round((calc.timeH - h) * 60);
-        timeStr   = h > 0
-          ? `${h}h${min > 0 ? min.toString().padStart(2,'0') : ''} pour ${calc.tgtTemp}°`
-          : `${min} min pour ${calc.tgtTemp}°`;
-        label = `En veille — ${timeStr}`;
-      } else {
-        label = 'En veille';
-      }
-      icon='mdi:power-sleep'; cls='lz-standby';
-    }
 
     const rssi = this._exists(c.entity_lz_rssi) ? parseInt(this._state(c.entity_lz_rssi)) : null;
     const rssiIcon = rssi===null ? '' : rssi>=-60 ? 'mdi:wifi-strength-4'
