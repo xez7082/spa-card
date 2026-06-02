@@ -1,7 +1,11 @@
-import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import {
+  LitElement,
+  html,
+  css
+} from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 // ═══════════════════════════════════════════════════════════════════
-//  ÉDITEUR  —  V36
+//  ÉDITEUR  —  V34  (LayZSpa intégré)
 // ═══════════════════════════════════════════════════════════════════
 class SpaCardEditor extends LitElement {
 
@@ -71,6 +75,8 @@ class SpaCardEditor extends LitElement {
       ${this._acc('a-layzspa','background:rgba(251,191,36,.15);color:#f59e0b;','SPA','LayZSpa — états & maintenance',[
         { name:'entity_lz_ready',     label:'Prêt (binary_sensor.layzspa_ready)',       selector:{ entity:{ domain:'binary_sensor' } } },
         { name:'entity_lz_heater',    label:'Chauffage actif (binary_sensor…heater)',   selector:{ entity:{ domain:'binary_sensor' } } },
+        { name:'entity_lz_ttr',       label:'Temps restant avant prêt (sensor…time_to_ready)', selector:{ entity:{ domain:'sensor' } } },
+        { name:'entity_lz_conn',      label:'Connexion WiFi (binary_sensor…connection)',selector:{ entity:{ domain:'binary_sensor' } } },
         { name:'entity_lz_filter',    label:'Âge filtre — jours (sensor…filter_age)',  selector:{ entity:{ domain:'sensor' } } },
         { name:'lz_filter_max',       label:'Alerter filtre après (jours)',              selector:{ number:{ mode:'box', min:1, max:365 } } },
         { name:'entity_lz_chlorine',  label:'Âge chlore — jours (sensor…chlorine_age)',selector:{ entity:{ domain:'sensor' } } },
@@ -223,7 +229,7 @@ customElements.define('spa-card-editor', SpaCardEditor);
 
 
 // ═══════════════════════════════════════════════════════════════════
-//  CARTE  —  V36
+//  CARTE  —  V34  (LayZSpa intégré)
 // ═══════════════════════════════════════════════════════════════════
 class SpaCard extends LitElement {
 
@@ -237,6 +243,8 @@ class SpaCard extends LitElement {
       target_temp_min: 20, target_temp_max: 40,
       entity_lz_ready:   'binary_sensor.layzspa_ready',
       entity_lz_heater:  'binary_sensor.layzspa_heater',
+      entity_lz_ttr:      'sensor.layzspa_time_to_ready',
+      entity_lz_conn:    'binary_sensor.layzspa_connection',
       entity_lz_filter:  'sensor.layzspa_filter_age',
       lz_volume:      500,
       lz_power_w:     1942,
@@ -323,6 +331,9 @@ class SpaCard extends LitElement {
     return this._state(id);
   }
 
+  // ═══════════════════════════════════════════════
+  //  ACCUEIL
+  // ═══════════════════════════════════════════════
   _renderHome() {
     const c = this.config;
     const wTemp  = this._waterTemp();
@@ -565,7 +576,7 @@ class SpaCard extends LitElement {
         ${filterAge !== null ? html`
           <div class="maint-item ${filterWarn ? 'maint-warn' : ''}">
             <div class="maint-head">
-              <ha-icon icon="mdi:air-filter"></ha-filter>
+              <ha-icon icon="mdi:air-filter"></ha-icon>
               <span>Filtre</span>
               ${filterWarn ? html`<span class="maint-badge">À changer</span>` : ''}
               ${hasResetF ? html`
@@ -629,6 +640,9 @@ class SpaCard extends LitElement {
       </div>`;
   }
 
+  // ═══════════════════════════════════════════════
+  //  ONGLET CAMÉRA
+  // ═══════════════════════════════════════════════
   _renderCam() {
     const c = this.config;
     if (!this._exists(c.entity_camera)) {
@@ -659,89 +673,5 @@ class SpaCard extends LitElement {
       </div>
     `;
   }
-
-  static styles = css`
-    :host { display: block; --glass-border: rgba(255,255,255,0.12); --txt-p: #ffffff; --txt-s: rgba(255,255,255,0.65); }
-    .home-view, .cam-view { display: flex; flex-direction: column; gap: 14px; padding: 10px; }
-    .flex-row-center { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
-    .side-col { width: 75px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-    .side-info { text-align: center; }
-    .val-big { font-size: 20px; font-weight: 700; color: var(--txt-p); text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-    .label-tiny { font-size: 9px; font-weight: 600; color: var(--txt-s); letter-spacing: 0.5px; margin-top: 2px; }
-    .hum-pill { background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); border-radius: 20px; padding: 3px 8px; font-size: 10px; color: var(--txt-p); font-weight: 500; }
-    
-    .gauge-container { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-    .center-gauge { width: 140px; height: 140px; position: relative; display: flex; align-items: center; justify-content: center; }
-    .outer-ring { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; border: 2px dashed rgba(255,255,255,0.15); box-sizing: border-box; }
-    .inner-circle { width: 116px; height: 116px; border-radius: 50%; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 0 0 15px rgba(255,255,255,0.02), 0 4px 15px rgba(0,0,0,0.15); }
-    .water-label { font-size: 9px; font-weight: 700; color: var(--txt-s); letter-spacing: 1px; }
-    .water-val { font-size: 32px; font-weight: 800; color: var(--txt-p); line-height: 36px; letter-spacing: -0.5px; }
-    .target-box { font-size: 9px; font-weight: 600; color: #10b981; background: rgba(16,185,129,0.12); padding: 2px 7px; border-radius: 20px; margin-top: 2px; border: 1px solid rgba(16,185,129,0.2); }
-    .temp-btn { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center; color: var(--txt-p); cursor: pointer; transition: all 0.2s; }
-    .temp-btn:hover { background: rgba(255,255,255,0.15); }
-    
-    .heat-ctrl { display: flex; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 14px; padding: 6px; align-items: center; justify-content: space-between; }
-    .heat-btn { border: none; outline: none; border-radius: 10px; padding: 8px 14px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-    .heat-off { background: rgba(255,255,255,0.05); color: var(--txt-s); border: 1px solid transparent; }
-    .heat-on { background: linear-gradient(135deg, #ff9800, #f44336); color: #fff; box-shadow: 0 3px 10px rgba(244,67,54,0.3); border: 1px solid rgba(255,255,255,0.1); }
-    .heat-temps { display: flex; align-items: center; gap: 12px; padding-right: 6px; }
-    .heat-target { font-size: 16px; font-weight: 700; color: var(--txt-p); min-width: 40px; text-align: center; }
-    .heat-t-btn { color: var(--txt-p); cursor: pointer; display: flex; align-items: center; opacity: 0.7; transition: 0.2s; }
-    .heat-t-btn:hover { opacity: 1; transform: scale(1.1); }
-    
-    .footer-row { display: flex; gap: 8px; justify-content: center; }
-    .footer-pill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 10px; padding: 5px 10px; font-size: 11px; color: var(--txt-p); font-weight: 500; }
-    .footer-pill ha-icon { --mdc-icon-size: 13px; }
-    .anim-pulse { animation: pulse 2s infinite ease-in-out; }
-    @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; color: #ffeb3b; } }
-
-    .maint-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .maint-item { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 5px; position: relative; overflow: hidden; }
-    .maint-head { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--txt-s); }
-    .maint-head ha-icon { --mdc-icon-size: 14px; }
-    .maint-bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; margin-top: 2px; }
-    .maint-fill { height: 100%; background: #10b981; border-radius: 2px; }
-    .maint-fill-warn { background: #ef4444 !important; }
-    .maint-val { font-size: 10px; color: var(--txt-p); font-weight: 500; text-align: right; }
-    .maint-badge { font-size: 8px; font-weight: 700; text-transform: uppercase; padding: 1px 4px; border-radius: 4px; background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
-    .maint-reset-btn { position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--txt-p); font-size: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .maint-reset-btn:hover { background: #10b981; color: #fff; border-color: transparent; }
-    .maint-warn { border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.01); }
-
-    .flood-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; border: 1px solid transparent; }
-    .flood-ok { background: rgba(16,185,129,0.04); border-color: rgba(16,185,129,0.15); color: #10b981; }
-    .flood-alert { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); color: #ef4444; animation: flood-flash 1.5s infinite alternate; }
-    .flood-left { display: flex; align-items: center; gap: 8px; }
-    .flood-icon { --mdc-icon-size: 16px; }
-    @keyframes flood-flash { 0% { box-shadow: 0 0 4px rgba(239,68,68,0.1); } 100% { box-shadow: 0 0 12px rgba(239,68,68,0.3); } }
-    .flood-icon-alert { animation: rot-alert 0.5s infinite alternate; }
-    @keyframes rot-alert { 0% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
-    .flood-pill { display: flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 6px; font-size: 9px; }
-    .pill-ok { background: rgba(255,255,255,0.05); color: var(--txt-p); }
-    .pill-warn { background: rgba(239,68,68,0.15); color: #ef4444; }
-
-    .sched-panel { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
-    .sched-header { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: var(--txt-s); letter-spacing: 0.5px; }
-    .sched-header ha-icon { --mdc-icon-size: 15px; color: #6b8eff; }
-    .sched-display-box { text-align: center; padding: 4px 0; }
-    .sched-main-val { font-size: 26px; font-weight: 800; color: var(--txt-p); letter-spacing: -0.5px; }
-    .sched-sub-info { font-size: 10px; color: var(--txt-s); margin-top: 1px; }
-    .sched-sub-info strong { color: #6b8eff; font-weight: 600; }
-    .sched-grid-ctrl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-    .sched-ctrl-btn { border: none; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; padding: 6px 0; color: var(--txt-p); font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.15s; }
-    .sched-ctrl-btn:hover { background: rgba(255,255,255,0.12); }
-    .text-accent { color: #6b8eff !important; }
-    .sched-confirm-action { border: none; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; border-radius: 10px; padding: 8px 0; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 3px 8px rgba(29,78,216,0.2); transition: 0.2s; }
-    .sched-confirm-action:hover { opacity: 0.9; transform: translateY(-0.5px); }
-    .sched-confirm-action ha-icon { --mdc-icon-size: 13px; }
-
-    .cam-container { position: relative; background: #000; overflow: hidden; border: 1px solid var(--glass-border); box-sizing: border-box; margin: 0 auto; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .cam-overlay { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.5); color: #fff; padding: 4px; border-radius: 6px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
-    .cam-container:hover .cam-overlay { opacity: 1; }
-    .cam-overlay ha-icon { --mdc-icon-size: 16px; }
-    .cam-expanded { position: fixed !important; top: 10vh; left: 5vw; width: 90vw !important; height: auto !important; max-height: 80vh; z-index: 99; }
-    .empty-msg { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; color: var(--txt-s); font-size: 12px; gap: 8px; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 12px; }
-    .empty-msg ha-icon { --mdc-icon-size: 24px; }
-  `;
 }
 customElements.define('spa-card', SpaCard);
