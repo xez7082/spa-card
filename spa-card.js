@@ -1,11 +1,8 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-// ═══════════════════════════════════════════════════════════════════
-// 1. ÉDITEUR VISUEL (Avec structure accordéon)
-// ═══════════════════════════════════════════════════════════════════
+// 1. ÉDITEUR VISUEL COMPLET
 class SpaCardEditor extends LitElement {
   static get properties() { return { hass: {}, _config: {} }; }
-  
   setConfig(config) { this._config = { ...config }; }
 
   _val(ev) {
@@ -16,52 +13,45 @@ class SpaCardEditor extends LitElement {
   }
 
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass) return html`<p>Veuillez patienter...</p>`;
     return html`
-      <div class="editor">
-        <ha-form
-          .hass=${this.hass}
-          .data=${this._config}
-          .schema=${[
-            { name: "card_title", label: "Titre", selector: { text: {} } },
-            { name: "entity_water_temp", label: "Température Eau", selector: { entity: { domain: "sensor" } } },
-            { name: "entity_target_temp", label: "Contrôle Temp", selector: { entity: { domain: "climate" } } }
-          ]}
-          @value-changed=${this._val}
-        ></ha-form>
-      </div>
+      <ha-form
+        .hass=${this.hass}
+        .data=${this._config}
+        .schema=${[
+          { name: "card_title", label: "Titre de la carte", selector: { text: {} } },
+          { name: "entity_water_temp", label: "Température Eau", selector: { entity: { domain: "sensor" } } },
+          { name: "entity_target_temp", label: "Contrôle Temp (Climate)", selector: { entity: { domain: "climate" } } },
+          { name: "entity_ph", label: "Capteur pH", selector: { entity: { domain: "sensor" } } },
+          { name: "entity_orp", label: "Capteur ORP", selector: { entity: { domain: "sensor" } } },
+          { name: "entity_salt", label: "Capteur Salinité", selector: { entity: { domain: "sensor" } } },
+          { name: "entity_camera", label: "Caméra", selector: { entity: { domain: "camera" } } },
+          { name: "switch_1", label: "Switch Spa", selector: { entity: { domain: "switch" } } }
+        ]}
+        @value-changed=${this._val}
+      ></ha-form>
     `;
   }
 }
 if (!customElements.get("spa-card-editor")) customElements.define("spa-card-editor", SpaCardEditor);
 
-// ═══════════════════════════════════════════════════════════════════
-// 2. CARTE PRINCIPALE (Logique de rendu)
-// ═══════════════════════════════════════════════════════════════════
+// 2. CARTE PRINCIPALE
 class SpaCard extends LitElement {
-  static get properties() { return { hass: {}, config: {}, _tab: { type: String } }; }
-
+  static get properties() { return { hass: {}, config: {} }; }
   setConfig(config) { this.config = config; }
   static getConfigElement() { return document.createElement("spa-card-editor"); }
 
-  _getState(entity) { return this.hass.states[entity]?.state || 'N/A'; }
-
   render() {
-    if (!this.hass || !this.config) return html``;
-    
     return html`
-      <ha-card .header="${this.config.card_title}">
-        <div class="content">
-          <div class="temp-display">Eau: ${this._getState(this.config.entity_water_temp)}°C</div>
+      <ha-card .header="${this.config.card_title || 'Spa'}">
+        <div style="padding:16px">
+          <p>La carte est connectée. Utilisez l'éditeur visuel (trois points > Modifier) pour configurer les entités.</p>
         </div>
-      </ha-card>
-    `;
+      </ha-card>`;
   }
-
-  static get styles() { return css` .content { padding: 16px; } `; }
 }
 if (!customElements.get("spa-card")) customElements.define("spa-card", SpaCard);
 
 // 3. ENREGISTREMENT
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "spa-card", name: "Spa Control", preview: true });
+window.customCards.push({ type: "spa-card", name: "Spa Control Card", preview: true });
