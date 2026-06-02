@@ -1197,29 +1197,104 @@ _renderCam() {
     .chem-warn .chem-status-tag { background: rgba(248, 113, 113, 0.15); color: #f87171; }
     .chem-warn .chem-gauge-fill { background: var(--accent-red); }
 
-    /* NOUVEAU DESIGN COMPACT 50/50 POUR LA CAMÉRA */
-    .cam-split-layout { display: flex; gap: 12px; align-items: stretch; width: 100%; height: 210px; }
-    .cam-column-video { flex: 1; min-width: 0; }
-    .cam-column-sched { flex: 1; min-width: 0; }
+   /* ═══════════════════════════════════════════════
+   CAMÉRA - LAYOUT 50/50 CORRIGÉ
+   ═══════════════════════════════════════════════ */
 
-    @media (max-width: 480px) {
-      .cam-split-layout { flex-direction: column; height: auto; }
-      .cam-split-layout .cam-column-video { height: 180px; }
-    }
+.cam-split-layout {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  width: 100%;
+  height: 210px;
+  min-height: 210px;
+}
 
-    .cam-container {
-      position: relative; overflow: hidden; background: #000;
-      border: 1px solid var(--glass-border); cursor: pointer;
-    }
-    .cam-container img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
-    .cam-overlay {
-      position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5);
-      border-radius: 8px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
-      opacity: 0; transition: opacity 0.2s; color: #fff;
-    }
-    .cam-container:hover .cam-overlay { opacity: 1; }
-    .cam-container:hover img { filter: brightness(1.1); }
-    .cam-expanded { width: 100% !important; height: auto !important; max-height: 80vh; z-index: 99; }
+.cam-column-video,
+.cam-column-sched {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.cam-column-video {
+  display: flex;
+}
+
+.cam-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.cam-container img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  border-radius: inherit;
+  transition: filter 0.2s ease;
+}
+
+.cam-container:hover img {
+  filter: brightness(1.08);
+}
+
+.cam-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.55);
+  border-radius: 8px;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 2;
+}
+
+.cam-container:hover .cam-overlay {
+  opacity: 1;
+}
+
+/* Mode plein écran */
+.cam-expanded {
+  position: fixed !important;
+  inset: 20px;
+  width: auto !important;
+  height: auto !important;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 40px);
+  z-index: 9999;
+  border-radius: 20px;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .cam-split-layout {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .cam-column-video {
+    height: 220px;
+  }
+
+  .cam-column-sched {
+    height: auto;
+  }
+}
 
     /* LES INTERRUPTEURS MAGNIFIÉS STYLE GLASSMORPHISM GLOW */
     .custom-switches-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
