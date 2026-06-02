@@ -817,7 +817,7 @@ class SpaCard extends LitElement {
   }
 
   static styles = css`
-    :host { display:block; margin: 0 auto; overflow: hidden; }
+    :host { display:block; margin: 0 auto; overflow: hidden;max-width: 480px; }
     
     .spa-card {
       position: relative; overflow: hidden; border-radius: 24px;
@@ -845,17 +845,26 @@ class SpaCard extends LitElement {
     .label-tiny { font-size: 8px; opacity: 0.5; font-weight: 600; letter-spacing: 0.5px; margin-top: 1px; }
     .hum-pill { font-size: 9px; background: rgba(255,255,255,0.08); padding: 2px 5px; border-radius: 20px; white-space: nowrap; color: rgba(255,255,255,0.8); }
     
-    /* Jauge circulaire */
-    .gauge-container { display: flex; flex-direction: column; align-items: center; gap: 1px; }
-    .center-gauge { position: relative; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; }
-    .outer-ring {
-      position: absolute; width: 100%; height: 100%; border-radius: 50%;
-      border: 3px solid rgba(255,255,255,0.06); border-top-color: #00f9f9;
-      box-shadow: 0 0 8px rgba(0, 249, 249, 0.2); animation: spin 2s linear infinite;
+   /* Jauge circulaire agrandie */
+    .center-gauge { 
+      position: relative; 
+      width: 130px;   /* Augmenté de 100px à 130px */
+      height: 130px;  /* Augmenté de 100px à 130px */
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
     }
+    
     .inner-circle {
-      width: 86px; height: 86px; border-radius: 50%; background: rgba(255,255,255,0.04);
-      display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1);
+      width: 114px;   /* Augmenté de 86px à 114px (pour garder l'épaisseur de l'anneau) */
+      height: 114px;  /* Augmenté de 86px à 114px */
+      border-radius: 50%; 
+      background: rgba(255,255,255,0.04);
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      border: 1px solid rgba(255,255,255,0.1);
     }
     .water-label { font-size: 8px; opacity: 0.5; font-weight: 700; }
     .water-val { font-size: 24px; font-weight: 800; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }
