@@ -713,20 +713,38 @@ class SpaCard extends LitElement {
   // ═══════════════════════════════════════════════
   _renderChem() {
     const c = this.config;
+    
+    // Sécurisation des valeurs par défaut en amont pour éviter les conflits de tokens dans le template
+    const phMin = c.ph_min !== undefined ? c.ph_min : 7.2;
+    const phMax = c.ph_max !== undefined ? c.ph_max : 7.6;
+    const orpMin = c.orp_min !== undefined ? c.orp_min : 650;
+    const orpMax = c.orp_max !== undefined ? c.orp_max : 800;
+    const tdsMin = c.tds_min !== undefined ? c.tds_min : 500;
+    const tdsMax = c.tds_max !== undefined ? c.tds_max : 1500;
+    const saltMin = c.salt_min !== undefined ? c.salt_min : 2500;
+    const saltMax = c.salt_max !== undefined ? c.salt_max : 3500;
+
     const items = [
-      { id: c.entity_ph,   name: 'pH',  icon: 'mdi:ph',         min: c.ph_min??7.2,   max: c.ph_max??7.6,   dec: 1, u: '' },
-      { id: c.entity_orp,  name: 'ORP', icon: 'mdi:test-tube',   min: c.orp_min??650,  max: c.orp_max??800,  dec: 0, u: ' mV' },
-      { id: c.entity_tds,  name: 'TDS', icon: 'mdi:shaker',      min: c.tds_min??500,  max: c.tds_max??1500, dec: 0, u: ' ppm' },
-      { id: c.entity_salt, name: 'Sel', icon: 'mdi:snowflake',   min: c.salt_min??2500,max: c.salt_max??3500,dec: 0, u: ' ppm' }
+      { id: c.entity_ph,   name: 'pH',  icon: 'mdi:ph',         min: phMin,   max: phMax,   dec: 1, u: '' },
+      { id: c.entity_orp,  name: 'ORP', icon: 'mdi:test-tube',   min: orpMin,  max: orpMax,  dec: 0, u: ' mV' },
+      { id: c.entity_tds,  name: 'TDS', icon: 'mdi:shaker',      min: tdsMin,  max: tdsMax,  dec: 0, u: ' ppm' },
+      { id: c.entity_salt, name: 'Sel', icon: 'mdi:snowflake',   min: saltMin, max: saltMax, dec: 0, u: ' ppm' }
     ];
 
     return html`
       <div class="chem-view">
         ${items.map(item => {
           if (!this._exists(item.id)) return '';
+          
           const val = parseFloat(this._state(item.id));
-          const ok = val >= item.min && val <= item.max;
-          const pct = Math.min(100, Math.max(0, ((val - (item.min * 0.8)) / ((item.max * 1.2) - (item.min * 0.8))) * 100));
+          const ok = (val >= item.min && val <= item.max);
+          
+          // Calcul du pourcentage pour la jauge visuelle
+          const span = (item.max * 1.2) - (item.min * 0.8);
+          const pct = span > 0 ? Math.min(100, Math.max(0, ((val - (item.min * 0.8)) / span) * 100)) : 0;
+          
+          const markerMin = span > 0 ? ((item.min - (item.min * 0.8)) / span) * 100 : 0;
+          const markerMax = span > 0 ? ((item.max - (item.min * 0.8)) / span) * 100 : 0;
 
           return html`
             <div class="chem-card ${ok ? 'chem-ok' : 'chem-warn'}">
@@ -738,13 +756,15 @@ class SpaCard extends LitElement {
               <div class="chem-value">${val.toFixed(item.dec)}${item.u}</div>
               <div class="chem-gauge-bg">
                 <div class="chem-gauge-fill ${!ok ? 'chem-fill-warn' : ''}" style="width:${pct}%"></div>
-                <div class="chem-marker" style="left:${((item.min - (item.min * 0.8)) / ((item.max * 1.2) - (item.min * 0.8))) * 100}%"></div>
-                <div class="chem-marker" style="left:${((item.max - (item.min * 0.8)) / ((item.max * 1.2) - (item.min * 0.8))) * 100}%"></div>
+                <div class="chem-marker" style="left:${markerMin}%"></div>
+                <div class="chem-marker" style="left:${markerMax}%"></div>
               </div>
               <div class="chem-range">Cible : ${item.min} – ${item.max}</div>
-            </div>`;
+            </div>
+          `;
         })}
-      </div>`;
+      </div>
+    `;
   }
 
   // ═══════════════════════════════════════════════
@@ -765,7 +785,7 @@ class SpaCard extends LitElement {
     return html`
       <div class="cam-view">
         <div class="cam-container ${this._camExpanded ? 'cam-expanded' : ''}"
-             style="width:${this._camExpanded?'100%':w}; height:${this._camExpanded?'auto':h}; border-radius:${r};"
+             style="width:${this._camExpanded ? '100%' : w}; height:${this._camExpanded ? 'auto' : h}; border-radius:${r};"
              @click=${() => this._camExpanded = !this._camExpanded}>
           <img src="/api/camera_proxy/${c.entity_camera}" 
                style="transform: translate(${x}px, ${y}px);" 
@@ -775,7 +795,8 @@ class SpaCard extends LitElement {
           </div>
         </div>
         ${this._renderSchedule()}
-      </div>`;
+      </div>
+    `;
   }
 
   // ═══════════════════════════════════════════════
@@ -795,18 +816,20 @@ class SpaCard extends LitElement {
       const toggle = () => this.hass.callService('switch', 'toggle', { entity_id: ep });
 
       let icon = 'mdi:power';
-      if (lbl.toLowerCase().includes('pompe'))   icon = 'mdi:pump';
-      if (lbl.toLowerCase().includes('bulle'))   icon = 'mdi:bubble';
-      if (lbl.toLowerCase().includes('jet'))     icon = 'mdi:hydro-power';
-      if (lbl.toLowerCase().includes('chauffe')) icon = 'mdi:radiator';
-      if (lbl.toLowerCase().includes('verrou'))  icon = active ? 'mdi:lock' : 'mdi:lock-open';
-      if (lbl.toLowerCase().includes('lumi'))    icon = 'mdi:lightbulb';
+      const lowLbl = lbl.toLowerCase();
+      if (lowLbl.includes('pompe'))   icon = 'mdi:pump';
+      if (lowLbl.includes('bulle'))   icon = 'mdi:bubble';
+      if (lowLbl.includes('jet'))     icon = 'mdi:hydro-power';
+      if (lowLbl.includes('chauffe')) icon = 'mdi:radiator';
+      if (lowLbl.includes('verrou'))  icon = active ? 'mdi:lock' : 'mdi:lock-open';
+      if (lowLbl.includes('lumi'))    icon = 'mdi:lightbulb';
 
       return html`
         <div class="sw-item ${active ? 'sw-active' : ''}" @click=${toggle}>
           <div class="sw-icon-box"><ha-icon icon="${icon}"></ha-icon></div>
           <div class="sw-name">${lbl}</div>
-        </div>`;
+        </div>
+      `;
     });
 
     if (!found) {
@@ -847,7 +870,8 @@ class SpaCard extends LitElement {
           ${this._tab === 'cam'  ? this._renderCam()  : ''}
           ${this._tab === 'sw'   ? this._renderSwitches() : ''}
         </div>
-      </ha-card>`;
+      </ha-card>
+    `;
   }
 
   static styles = css`
