@@ -767,38 +767,86 @@ class SpaCard extends LitElement {
   }
 
 // ═══════════════════════════════════════════════
-  //  ONGLET CAMÉRA
-  // ═══════════════════════════════════════════════
-  _renderCam() {
-    const c = this.config;
-    if (!this._exists(c.entity_camera)) {
-      return html`<div class="empty-msg"><ha-icon icon="mdi:camera-off"></ha-icon><p>Aucune caméra configurée</p></div>`;
-    }
+// ONGLET CAMÉRA
+// ═══════════════════════════════════════════════
+_renderCam() {
+  const c = this.config;
 
-    const w  = c.cam_w_px ? `${c.cam_w_px}px` : '100%';
-    const h  = c.cam_h_px ? `${c.cam_h_px}px` : '210px';
-    const r  = c.cam_radius !== undefined ? `${c.cam_radius}px` : '12px';
-    const x  = c.cam_x || 0;
-    const y  = c.cam_y || 0;
-
+  if (!c.entity_camera || !this.hass.states[c.entity_camera]) {
     return html`
-      <div class="cam-view">
-        <div class="cam-container ${this._camExpanded ? 'cam-expanded' : ''}"
-             style="width:${this._camExpanded ? '100%' : w}; height:${this._camExpanded ? 'auto' : h}; border-radius:${r}; min-height: 150px;">
-          <ha-camera-stream
-            .hass=${this.hass}
-            .entityId=${c.entity_camera}
-            style="transform: translate(${x}px, ${y}px); width: 100%; height: 100%; display: block;"
-            controls
-          ></ha-camera-stream>
-          <div class="cam-overlay">
-            <ha-icon icon="${this._camExpanded ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
-          </div>
-        </div>
-        ${this._renderSchedule()}
+      <div class="empty-msg">
+        <ha-icon icon="mdi:camera-off"></ha-icon>
+        <p>Caméra introuvable</p>
       </div>
     `;
   }
+
+  const cam = this.hass.states[c.entity_camera];
+
+  const w = c.cam_w_px ? `${c.cam_w_px}px` : "100%";
+  const h = c.cam_h_px ? `${c.cam_h_px}px` : "100%";
+  const r = c.cam_radius !== undefined ? `${c.cam_radius}px` : "16px";
+  const x = c.cam_x || 0;
+  const y = c.cam_y || 0;
+
+  const imgSrc = cam.attributes.entity_picture;
+
+  return html`
+    <div class="cam-split-layout">
+
+      <!-- CAMÉRA -->
+      <div class="cam-column-video">
+
+        <div
+          class="cam-container ${this._camExpanded ? "cam-expanded" : ""}"
+          style="
+            width:${this._camExpanded ? "100%" : w};
+            height:${this._camExpanded ? "100%" : h};
+            border-radius:${r};
+          "
+          @click=${() => {
+            this._camExpanded = !this._camExpanded;
+            this.requestUpdate();
+          }}
+        >
+
+          <img
+            src="${imgSrc}"
+            alt="Spa Camera"
+            loading="lazy"
+            style="
+              width:100%;
+              height:100%;
+              object-fit:cover;
+              border-radius:${r};
+              transform:translate(${x}px, ${y}px);
+              display:block;
+            "
+            @error=${(e) => {
+              console.error("Erreur caméra :", e);
+            }}
+          >
+
+          <div class="cam-overlay">
+            <ha-icon
+              icon="${this._camExpanded
+                ? "mdi:fullscreen-exit"
+                : "mdi:fullscreen"}">
+            </ha-icon>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- PLANNING -->
+      <div class="cam-column-sched">
+        ${this._renderSchedule()}
+      </div>
+
+    </div>
+  `;
+}
 
   // ═══════════════════════════════════════════════
   //  ONGLET SWITCHES (Redessinés Style Tactile)
