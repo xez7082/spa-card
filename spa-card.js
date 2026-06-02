@@ -130,8 +130,8 @@ class SpaCardEditor extends LitElement {
     return html`
       ${this._acc('a-cdim','background:rgba(56,189,248,.15);color:#0ea5e9;','CAM','Caméra & dimensions',[
         { name:'entity_camera', label:'Entité caméra',         selector:{ entity:{ domain:'camera' } } },
-        { name:'cam_w_px',      label:'Largeur caméra (px) — vide = 50% auto', selector:{ number:{ mode:'box', min:40, max:800 } } },
-        { name:'cam_h_px',      label:'Hauteur caméra (px) — vide = hauteur auto', selector:{ number:{ mode:'box', min:40, max:800 } } },
+        { name:'cam_w_px',      label:'Largeur caméra (px) — vide = 100%', selector:{ number:{ mode:'box', min:40, max:800 } } },
+        { name:'cam_h_px',      label:'Hauteur caméra (px) — vide = 100%', selector:{ number:{ mode:'box', min:40, max:800 } } },
         { name:'cam_radius',    label:'Arrondi des coins (px)', selector:{ number:{ mode:'slider', min:0, max:50 } } }
       ])}
       ${this._acc('a-cpos','background:rgba(56,189,248,.15);color:#0ea5e9;','XY','Position',[
@@ -331,6 +331,9 @@ class SpaCard extends LitElement {
     return this._state(id);
   }
 
+  // ═══════════════════════════════════════════════
+  //  ACCUEIL
+  // ═══════════════════════════════════════════════
   _renderHome() {
     const c = this.config;
     const wTemp  = this._waterTemp();
@@ -389,67 +392,6 @@ class SpaCard extends LitElement {
         ${this._renderFooterRow()}
         ${this._renderMaintenance()}
         ${this._renderFlood()}
-      </div>`;
-  }
-
-  _renderSchedule() {
-    const c = this.config;
-    const schedId = c.entity_lz_schedule;
-    if (!schedId || !this.hass?.states[schedId]) return html``;
-
-    const raw    = this.hass.states[schedId].state;
-    const parts  = raw.split(':');
-    const h      = parseInt(parts[0] ?? 0);
-    const m      = parseInt(parts[1] ?? 0);
-
-    const calc   = this._calcHeatingTime();
-    let startStr = '';
-    let readyStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-    if (calc && calc !== 0) {
-      const nowD    = new Date();
-      const readyD  = new Date(nowD);
-      readyD.setHours(h, m, 0, 0);
-      if (readyD < nowD) readyD.setDate(readyD.getDate() + 1);
-      const startD  = new Date(readyD.getTime() - calc.timeH * 3600000);
-      startStr = `${String(startD.getHours()).padStart(2,'0')}:${String(startD.getMinutes()).padStart(2,'0')}`;
-    }
-
-    const changeTime = (dh, dm) => {
-      let nh = h + dh;
-      let nm = m + dm;
-      if (nm >= 60) { nm -= 60; nh += 1; }
-      if (nm < 0)   { nm += 60; nh -= 1; }
-      nh = ((nh % 24) + 24) % 24;
-      const timeStr = `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}:00`;
-      this.hass.callService('input_datetime', 'set_datetime', {
-        entity_id: schedId,
-        time: timeStr
-      });
-    };
-
-    const activate = () => {
-      this.hass.callService('persistent_notification', 'create', {
-        title: '🛁 Spa programmé',
-        message: `Prêt à ${readyStr} — chauffe démarrera à ${startStr || '…'}`,
-        notification_id: 'spa_schedule'
-      });
-    };
-
-    return html`
-      <div class="sched-bar">
-        <ha-icon class="sched-icon" icon="mdi:clock-outline"></ha-icon>
-        <div class="sched-col">
-          <div class="sched-title">Prêt à</div>
-          ${startStr ? html`<div class="sched-start">Démarrage à ${startStr}</div>` : ''}
-        </div>
-        <div class="sched-time-ctrl">
-          <div class="sched-btn" @click=${()=>changeTime(-1,0)}>◂ h</div>
-          <div class="sched-btn" @click=${()=>changeTime(0,-15)}>◂ 15'</div>
-          <div class="sched-val">${readyStr}</div>
-          <div class="sched-btn" @click=${()=>changeTime(0,15)}>15' ▸</div>
-          <div class="sched-btn" @click=${()=>changeTime(1,0)}>h ▸</div>
-        </div>
-        <button class="sched-set-btn" @click=${activate} title="Confirmer la programmation">✓</button>
       </div>`;
   }
 
@@ -673,7 +615,7 @@ class SpaCard extends LitElement {
         <div class="flood-left">
           <ha-icon class="flood-icon ${alerting ? 'flood-icon-alert' : ''}" 
                    icon="${leak ? 'mdi:water-alert' : tamper ? 'mdi:shield-alert' : 'mdi:shield-check'}"></ha-icon>
-          <span>${leak ? 'FUITE EAU DETECTÉE !' : tamper ? 'SABOTAGE DETECTÉ !' : 'Sécurité OK'}</span>
+          <span>${leak ? 'FUITE EAU DÉTECTÉE !' : tamper ? 'SABOTAGE DÉTECTÉ !' : 'Sécurité OK'}</span>
         </div>
         <div class="flood-right">
           ${bat !== null ? html`
@@ -685,6 +627,9 @@ class SpaCard extends LitElement {
       </div>`;
   }
 
+  // ═══════════════════════════════════════════════
+  //  ONGLET CHIMIE
+  // ═══════════════════════════════════════════════
   _renderChem() {
     const c = this.config;
     
@@ -739,35 +684,139 @@ class SpaCard extends LitElement {
     `;
   }
 
+  // ═══════════════════════════════════════════════
+  //  ONGLET CAMÉRA — NOUVEL AGENCEMENT SPLIT-SCREEN
+  // ═══════════════════════════════════════════════
   _renderCam() {
     const c = this.config;
     if (!this._exists(c.entity_camera)) {
       return html`<div class="empty-msg"><ha-icon icon="mdi:camera-off"></ha-icon><p>Aucune caméra configurée</p></div>`;
     }
 
-    const w  = c.cam_w_px ? `${c.cam_w_px}px` : '100%';
-    const h  = c.cam_h_px ? `${c.cam_h_px}px` : '210px';
-    const r  = c.cam_radius !== undefined ? `${c.cam_radius}px` : '12px';
+    const r  = c.cam_radius !== undefined ? `${c.cam_radius}px` : '14px';
     const x  = c.cam_x || 0;
     const y  = c.cam_y || 0;
 
     return html`
-      <div class="cam-view">
-        <div class="cam-container ${this._camExpanded ? 'cam-expanded' : ''}"
-             style="width:${this._camExpanded ? '100%' : w}; height:${this._camExpanded ? 'auto' : h}; border-radius:${r};"
-             @click=${() => this._camExpanded = !this._camExpanded}>
-          <img src="/api/camera_proxy/${c.entity_camera}" 
-               style="transform: translate(${x}px, ${y}px);" 
-               alt="Flux Spa" />
-          <div class="cam-overlay">
-            <ha-icon icon="${this._camExpanded ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
+      <div class="cam-split-view">
+        <div class="cam-block-left">
+          <div class="cam-container-split ${this._camExpanded ? 'cam-expanded' : ''}"
+               style="border-radius: ${r};"
+               @click=${() => this._camExpanded = !this._camExpanded}>
+            <img src="/api/camera_proxy/${c.entity_camera}" 
+                 style="transform: translate(${x}px, ${y}px);" 
+                 alt="Flux Spa" />
+            <div class="cam-overlay">
+              <ha-icon icon="${this._camExpanded ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
+            </div>
           </div>
         </div>
-        ${this._renderSchedule()}
+
+        <div class="sched-block-right">
+          ${this._renderPracticalSchedule()}
+        </div>
       </div>
     `;
   }
 
+  // Refonte complète de l'interface de programmation horaire (Pratique & Lisible)
+  _renderPracticalSchedule() {
+    const c = this.config;
+    const schedId = c.entity_lz_schedule;
+    if (!schedId || !this.hass?.states[schedId]) {
+      return html`
+        <div class="sched-empty">
+          <ha-icon icon="mdi:clock-alert-outline"></ha-icon>
+          <p>Entité de planification manquante.</p>
+        </div>`;
+    }
+
+    const raw    = this.hass.states[schedId].state; 
+    const parts  = raw.split(':');
+    const h      = parseInt(parts[0] ?? 0);
+    const m      = parseInt(parts[1] ?? 0);
+
+    const calc   = this._calcHeatingTime();
+    let startStr = '';
+    let readyStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    
+    if (calc && calc !== 0) {
+      const nowD    = new Date();
+      const readyD  = new Date(nowD);
+      readyD.setHours(h, m, 0, 0);
+      if (readyD < nowD) readyD.setDate(readyD.getDate() + 1); 
+      const startD  = new Date(readyD.getTime() - calc.timeH * 3600000);
+      startStr = `${String(startD.getHours()).padStart(2,'0')}:${String(startD.getMinutes()).padStart(2,'0')}`;
+    }
+
+    const changeTime = (dh, dm) => {
+      let nh = h + dh;
+      let nm = m + dm;
+      if (nm >= 60) { nm -= 60; nh += 1; }
+      if (nm < 0)   { nm += 60; nh -= 1; }
+      nh = ((nh % 24) + 24) % 24;
+      const timeStr = `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}:00`;
+      this.hass.callService('input_datetime', 'set_datetime', {
+        entity_id: schedId,
+        time: timeStr
+      });
+    };
+
+    const activate = () => {
+      this.hass.callService('persistent_notification', 'create', {
+        title: '🛁 Spa programmé',
+        message: `Prêt à ${readyStr} — La chauffe démarrera automatiquement à ${startStr || '…'}`,
+        notification_id: 'spa_schedule'
+      });
+    };
+
+    return html`
+      <div class="practical-sched-box">
+        <div class="sched-headline">
+          <ha-icon icon="mdi:clock-check-outline"></ha-icon>
+          <span>PLANIFICATION</span>
+        </div>
+
+        <div class="sched-display-main">
+          <div class="sched-lbl-top">HEURE SOUHAITÉE</div>
+          <div class="sched-time-big">${readyStr}</div>
+        </div>
+
+        <div class="sched-keypad">
+          <button class="keypad-btn" @click=${() => changeTime(-1, 0)}>-1h</button>
+          <button class="keypad-btn" @click=${() => changeTime(0, -15)}>-15m</button>
+          <button class="keypad-btn" @click=${() => changeTime(0, 15)}>+15m</button>
+          <button class="keypad-btn" @click=${() => changeTime(1, 0)}>+1h</button>
+        </div>
+
+        <div class="sched-info-feedback">
+          ${startStr ? html`
+            <div class="feedback-row">
+              <ha-icon icon="mdi:play-circle-outline" class="clr-green"></ha-icon>
+              <div>Démarrage estimé à : <strong class="clr-green">${startStr}</strong></div>
+            </div>
+            <div class="feedback-row">
+              <ha-icon icon="mdi:timer-sand" class="clr-blue"></ha-icon>
+              <div>Temps requis : <strong>${Math.floor(calc.timeH)}h${Math.round((calc.timeH - Math.floor(calc.timeH)) * 60).toString().padStart(2,'0')}</strong> (+${Math.round(calc.deltaT)}°C)</div>
+            </div>
+          ` : html`
+            <div class="feedback-row">
+              <ha-icon icon="mdi:information-outline" class="clr-amber"></ha-icon>
+              <div>Eau déjà chaude ou calcul indisponible.</div>
+            </div>
+          `}
+        </div>
+
+        <button class="sched-confirm-action-btn" @click=${activate}>
+          <ha-icon icon="mdi:check"></ha-icon> ACTIVER LA PROGRAMMATION
+        </button>
+      </div>
+    `;
+  }
+
+  // ═══════════════════════════════════════════════
+  //  ONGLET SWITCHES
+  // ═══════════════════════════════════════════════
   _renderSwitches() {
     const c = this.config;
     let found = false;
@@ -902,6 +951,7 @@ class SpaCard extends LitElement {
     .card-content-scroller::-webkit-scrollbar { width: 5px; }
     .card-content-scroller::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
 
+    /* ACCUEIL V33 */
     .home-view { display: flex; flex-direction: column; gap: 14px; }
 
     .lz-status {
@@ -917,7 +967,7 @@ class SpaCard extends LitElement {
     .lz-standby { background: rgba(251, 191, 36, 0.08); color: #fbbf24; border-color: rgba(251, 191, 36, 0.15); }
     .lz-disconnected { background: rgba(156, 163, 175, 0.12); color: #9ca3af; border-color: rgba(156, 163, 175, 0.2); }
 
-    @define-color pulse-border {
+    @keyframes pulse-border {
       0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.2); }
       70% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
       100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
@@ -1035,22 +1085,7 @@ class SpaCard extends LitElement {
     .pill-ok { background: rgba(255,255,255,0.06); color: var(--txt-s); }
     .pill-warn { background: rgba(251,191,36,0.2); color: var(--accent-amber); font-weight: 700; }
 
-    .sched-bar {
-      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border);
-      border-radius: 14px; margin-top: 10px;
-    }
-    .sched-icon { --mdc-icon-size: 18px; color: var(--accent-blue); }
-    .sched-col { flex: 1; display: flex; flex-direction: column; }
-    .sched-title { font-size: 12px; font-weight: 600; color: #fff; }
-    .sched-start { font-size: 10px; color: var(--accent-green); font-weight: 500; margin-top: 1px; }
-    .sched-time-ctrl { display: flex; align-items: center; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 2px; border: 1px solid rgba(255,255,255,0.05); }
-    .sched-btn { padding: 4px 6px; font-size: 10px; font-weight: 600; color: var(--txt-s); cursor: pointer; user-select: none; }
-    .sched-btn:hover { color: #fff; background: rgba(255,255,255,0.05); border-radius: 4px; }
-    .sched-val { padding: 0 6px; font-size: 12px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; border-left: 1px solid rgba(255,255,255,0.1); border-right: 1px solid rgba(255,255,255,0.1); }
-    .sched-set-btn { background: var(--accent-blue); border: none; border-radius: 8px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: #000; font-weight: 700; cursor: pointer; font-size: 11px; margin-left: 2px; }
-    .sched-set-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
-
+    /* CHIMIE V33 */
     .chem-view { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .chem-card {
       background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border);
@@ -1062,10 +1097,9 @@ class SpaCard extends LitElement {
     .chem-status-tag { font-size: 9px; padding: 2px 6px; border-radius: 8px; font-weight: 700; margin-left: auto; }
     .chem-value { font-size: 22px; font-weight: 800; color: #fff; margin: 2px 0; font-variant-numeric: tabular-nums; }
     
-    /* Retrait d'overflow:hidden pour ne pas couper les marqueurs visuels */
-    .chem-gauge-bg { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; position: relative; margin: 4px 0; }
+    .chem-gauge-bg { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; position: relative; overflow: hidden; margin: 2px 0; }
     .chem-gauge-fill { height: 100%; background: var(--accent-green); border-radius: 3px; }
-    .chem-marker { position: absolute; top: -2px; width: 2px; height: 9px; background: rgba(255,255,255,0.6); z-index: 2; }
+    .chem-marker { position: absolute; top:0; width: 1px; height: 100%; background: rgba(255,255,255,0.4); }
     .chem-range { font-size: 9px; color: var(--txt-s); font-weight: 500; }
 
     .chem-ok { border-color: rgba(74, 222, 128, 0.12); }
@@ -1077,21 +1111,190 @@ class SpaCard extends LitElement {
     .chem-warn .chem-status-tag { background: rgba(248, 113, 113, 0.15); color: #f87171; }
     .chem-warn .chem-gauge-fill { background: var(--accent-red); }
 
-    .cam-view { display: flex; flex-direction: column; }
-    .cam-container {
-      position: relative; overflow: hidden; background: #000;
-      border: 1px solid var(--glass-border); cursor: pointer;
+    /* ═══════════════════════════════════════════════
+       NOUVEAUX STYLES : ONGLET CAMÉRA AVEC NOUVEAU SPLIT
+       ═══════════════════════════════════════════════ */
+    .cam-split-view {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      align-items: start;
     }
-    .cam-container img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
+
+    /* Dès que la carte a de la place, on applique le rendu côte à côte réclamé */
+    @media (min-width: 480px) {
+      .cam-split-view {
+        grid-template-columns: 1.1fr 0.9fr;
+      }
+    }
+
+    .cam-block-left {
+      width: 100%;
+    }
+
+    .cam-container-split {
+      position: relative;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--glass-border);
+      cursor: pointer;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cam-container-split img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.2s;
+    }
     .cam-overlay {
-      position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5);
+      position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6);
       border-radius: 8px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
       opacity: 0; transition: opacity 0.2s; color: #fff;
     }
-    .cam-container:hover .cam-overlay { opacity: 1; }
-    .cam-container:hover img { filter: brightness(1.1); }
-    .cam-expanded { width: 100% !important; height: auto !important; max-height: 80vh; z-index: 99; }
+    .cam-container-split:hover .cam-overlay { opacity: 1; }
+    .cam-container-split:hover img { filter: brightness(1.08); }
+    
+    /* Gestion du mode plein écran de la caméra par-dessus la grille */
+    .cam-expanded {
+      position: fixed;
+      top: 10%; left: 5%; width: 90% !important; height: auto !important;
+      max-height: 80vh; z-index: 999;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+      aspect-ratio: auto;
+    }
 
+    /* Bloc de droite : Structure propre et lisible pour la prog */
+    .sched-block-right {
+      width: 100%;
+    }
+    .practical-sched-box {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .sched-headline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-blue);
+      letter-spacing: 0.8px;
+    }
+    .sched-headline ha-icon { --mdc-icon-size: 16px; }
+
+    .sched-display-main {
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .sched-lbl-top {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--txt-s);
+      letter-spacing: 0.5px;
+    }
+    .sched-time-big {
+      font-size: 32px;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -0.5px;
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 2px 10px rgba(56, 189, 248, 0.2);
+    }
+
+    /* Pavé numérique/tactile pratique */
+    .sched-keypad {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .keypad-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 8px 0;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .keypad-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--accent-blue);
+    }
+    .keypad-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Zone d'infos lue en un clin d'oeil */
+    .sched-info-feedback {
+      background: rgba(0,0,0,0.15);
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 11px;
+    }
+    .feedback-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--txt-s);
+    }
+    .feedback-row ha-icon { --mdc-icon-size: 14px; flex-shrink: 0; }
+    .feedback-row strong { color: #fff; }
+    
+    .clr-green { color: var(--accent-green) !important; }
+    .clr-blue { color: var(--accent-blue) !important; }
+    .clr-amber { color: var(--accent-amber) !important; }
+
+    /* Bouton d'action massif de validation */
+    .sched-confirm-action-btn {
+      background: linear-gradient(135deg, var(--accent-blue), #0284c7);
+      border: none;
+      border-radius: 10px;
+      padding: 10px;
+      color: #0a0f19;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
+    }
+    .sched-confirm-action-btn ha-icon { --mdc-icon-size: 16px; }
+    .sched-confirm-action-btn:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+    .sched-confirm-action-btn:active {
+      transform: translateY(0);
+    }
+
+    .sched-empty {
+      text-align: center; padding: 20px; color: var(--txt-s);
+    }
+    .sched-empty ha-icon { --mdc-icon-size: 24px; opacity: 0.5; }
+
+    /* SWITCHES STYLES */
     .sw-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
     .sw-item {
       background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border);
