@@ -708,387 +708,435 @@ class SpaCard extends LitElement {
   }
 }
 
-  // ═══════════════════════════════════════════════
-  //  CHIMIE (Spécifique Brome)
+// ═══════════════════════════════════════════════
+  //  ONGLET CHIMIE
   // ═══════════════════════════════════════════════
   _renderChem() {
     const c = this.config;
-    const n = v => (v!==undefined&&v!==null&&v!=='') ? Number(v) : undefined;
-
-    const DISPLAY = {
-      ph:   { lo: 6.0,  hi: 9.0,  dec: 1 },
-      orp:  { lo: 200,  hi: 900,  dec: 0 },
-      tds:  { lo: 0,    hi: 2500, dec: 0 },
-      salt: { lo: 0,    hi: 1000, dec: 0 }
-    };
-
-    const sensors = [
-      { id: c.entity_ph,   key: 'ph',   label: 'pH',  icon: 'mdi:flask',             min: n(c.ph_min??7.4),   max: n(c.ph_max??7.8),   u: '' },
-      { id: c.entity_orp,  key: 'orp',  label: 'ORP', icon: 'mdi:lightning-bolt',     min: n(c.orp_min??650),  max: n(c.orp_max??750),  u: 'mV' },
-      { id: c.entity_tds,  key: 'tds',  label: 'TDS', icon: 'mdi:water-percent',      min: n(c.tds_min??500),  max: n(c.tds_max??1499), u: 'ppm' },
-      { id: c.entity_salt, key: 'salt', label: 'SEL', icon: 'mdi:shaker-outline',     min: n(c.salt_min??300), max: n(c.salt_max??500),  u: 'ppm' }
-    ].filter(s => this._exists(s.id));
-
-    if (sensors.length === 0) {
-      return html`<div class="empty-view">Aucun capteur chimique configuré.</div>`;
-    }
+    const items = [
+      { id: c.entity_ph,   name: 'pH',  icon: 'mdi:ph',         min: c.ph_min??7.2,   max: c.ph_max??7.6,   dec: 1, u: '' },
+      { id: c.entity_orp,  name: 'ORP', icon: 'mdi:test-tube',   min: c.orp_min??650,  max: c.orp_max??800,  dec: 0, u: ' mV' },
+      { id: c.entity_tds,  name: 'TDS', icon: 'mdi:shaker',      min: c.tds_min??500,  max: c.tds_max??1500, dec: 0, u: ' ppm' },
+      { id: c.entity_salt, name: 'Sel', icon: 'mdi:snowflake',   min: c.salt_min??2500,max: c.salt_max??3500,dec: 0, u: ' ppm' }
+    ];
 
     return html`
-      <div class="chem-list">
-        ${sensors.map(s => this._chemGauge(s, DISPLAY[s.key]))}
-      </div>`;
-  }
+      <div class="chem-view">
+        ${items.map(item => {
+          if (!this._exists(item.id)) return '';
+          const val = parseFloat(this._state(item.id));
+          const ok = val >= item.min && val <= item.max;
+          const pct = Math.min(100, Math.max(0, ((val - (item.min * 0.8)) / ((item.max * 1.2) - (item.min * 0.8))) * 100));
 
-  _getChemActionMessage(key, tooLow, tooHigh) {
-    if (!tooLow && !tooHigh) return '';
-    if (key === 'ph')   return tooLow ? 'Action : Ajouter du pH Plus (+)' : 'Action : Ajouter du pH Moins (-)';
-    if (key === 'orp')  return tooLow ? 'Action : Ajouter 10g de Brome Choc ou Régénérateur (Oxygène Actif)' : 'Action : Trop de désinfectant, ouvrir la couverture';
-    if (key === 'tds')  return tooLow ? 'Action : Eau pure' : 'Action : Eau saturée. Vider 250L (la moitié) et remettre de l\'eau';
-    if (key === 'salt') return tooLow ? 'Action : Ajouter du sel' : 'Action : Taux trop élevé. Diluer l\'eau';
-    return '';
-  }
-
-  _chemGauge(s, d) {
-    const val = parseFloat(this._state(s.id));
-    const hasR = s.min!==undefined && s.max!==undefined && !isNaN(s.min) && !isNaN(s.max);
-    
-    const tooLow  = hasR && val < s.min;
-    const tooHigh = hasR && val > s.max;
-    const oor     = tooLow || tooHigh;
-
-    const toPos = v => Math.min(100, Math.max(0, ((v - d.lo) / (d.hi - d.lo)) * 100));
-    
-    const cp   = toPos(val);
-    const mnP  = hasR ? toPos(s.min) : 25;
-    const mxP  = hasR ? toPos(s.max) : 75;
-    const idealW = mxP - mnP;
-
-    const cc     = oor ? 'rgba(239, 68, 68, 0.85)' : 'rgba(0, 249, 249, 0.85)';
-    const slabel = tooLow ? 'TROP BAS' : tooHigh ? 'TROP HAUT' : 'CORRECT';
-    const actionMsg = this._getChemActionMessage(s.key, tooLow, tooHigh);
-
-    return html`
-      <div class="cg-row ${oor?'cg-oor':''}">
-        <div class="cg-top">
-          <div class="cg-left">
-            <ha-icon class="cg-icon ${oor?'cg-icon-warn':''}" icon="${s.icon}"></ha-icon>
-            <span class="cg-label">${s.label}</span>
-            <span class="cg-status-lbl" style="color: ${cc}">${slabel}</span>
-          </div>
-          <div class="cg-val">${val.toFixed(d.dec)} <span class="cg-unit">${s.u}</span></div>
-        </div>
-        <div class="cg-track-wrap">
-          <div class="cg-track">
-            ${hasR ? html`<div class="cg-ideal" style="left:${mnP}%; width:${idealW}%"></div>` : ''}
-            <div class="cg-cursor" style="left:${cp}%; background:${cc}"></div>
-          </div>
-          ${hasR ? html`
-            <div class="cg-limits">
-              <span style="left:${mnP}%">${s.min}</span>
-              <span style="left:${mxP}%">${s.max}</span>
-            </div>` : ''}
-        </div>
-        ${actionMsg ? html`<div class="cg-action-msg">${actionMsg}</div>` : ''}
-      </div>`;
-  }
-
-  // ═══════════════════════════════════════════════
-  //  CAMÉRA + PROGRAMMATION CHAUFFE INTÉGRÉE
-  // ═══════════════════════════════════════════════
-  _renderCam() {
-    const c = this.config;
-    if (!this._exists(c.entity_camera)) {
-      return html`<div class="empty-view">Aucune entité caméra configurée.</div>`;
-    }
-
-    const w      = c.cam_w_px ? `${c.cam_w_px}px` : '100%';
-    const h      = c.cam_h_px ? `${c.cam_h_px}px` : '240px';
-    const rad    = c.cam_radius ? `${c.cam_radius}px` : '12px';
-    const x      = c.cam_x ? `${c.cam_x}px` : '0px';
-    const y      = c.cam_y ? `${c.cam_y}px` : '0px';
-
-    const camStyle = this._camExpanded 
-      ? `width: 100%; height: auto; border-radius: 12px; transform: none; margin: 0; transition: all 0.3s ease;`
-      : `width: ${w}; height: ${h}; border-radius: ${rad}; transform: translate(${x}, ${y}); transition: all 0.3s ease;`;
-
-    return html`
-      <div class="cam-layout-wrapper ${this._camExpanded ? 'cam-expanded-fullscreen' : ''}">
-        <div class="cam-main-box">
-          <div class="cam-container" style="${camStyle}" @click=${() => this._camExpanded = !this._camExpanded}>
-            <ha-camera-stream
-              .hass=${this.hass}
-              .stateObj=${this.hass.states[c.entity_camera]}
-              show-controls
-            ></ha-camera-stream>
-            <div class="cam-overlay">
-              <ha-icon icon="${this._camExpanded ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
-            </div>
-          </div>
-        </div>
-
-        ${!this._camExpanded ? html`
-          <div class="cam-sidebar-controls">
-            <div class="sidebar-header">🛠️ PROGRAMMATION</div>
-            ${this._renderHeatingControl()}
-            <div class="sidebar-divider"></div>
-            ${this._renderSchedule(true)}
-          </div>
-        ` : ''}
-      </div>`;
-  }
-
-  // ═══════════════════════════════════════════════
-  //  INTERRUPTEURS / SWITCHES
-  // ═══════════════════════════════════════════════
-  _renderSwitches() {
-    const c = this.config;
-    const sws = Array.from({ length: 10 }, (_, i) => {
-      const id = c[`switch_${i + 1}`];
-      return id && this.hass?.states[id] ? { id, name: c[`name_switch_${i + 1}`] || this.hass.states[id].attributes?.friendly_name || `Bouton ${i + 1}` } : null;
-    }).filter(x => x !== null);
-
-    if (sws.length === 0) {
-      return html`<div class="empty-view">Aucun bouton configuré.</div>`;
-    }
-
-    return html`
-      <div class="sw-grid">
-        ${sws.map(s => {
-          const state = this._state(s.id);
-          const isOn = state === 'on';
-          const isLight = s.id.startsWith('light.');
-          const domain = s.id.split('.')[0];
           return html`
-            <button class="prog-action-btn ${isOn ? 'pab-on' : 'pab-off'}" @click=${() => this.hass.callService(domain, 'toggle', { entity_id: s.id })}>
-              <ha-icon icon="${isLight ? (isOn ? 'mdi:lightbulb' : 'mdi:lightbulb-off') : (isOn ? 'mdi:power-plug' : 'mdi:power-plug-off')}"></ha-icon>
-              <span>${s.name}</span>
-            </button>`;
+            <div class="chem-card ${ok ? 'chem-ok' : 'chem-warn'}">
+              <div class="chem-header">
+                <ha-icon icon="${item.icon}"></ha-icon>
+                <span class="chem-title">${item.name}</span>
+                <span class="chem-status-tag">${ok ? 'Idéal' : 'Ajuster'}</span>
+              </div>
+              <div class="chem-value">${val.toFixed(item.dec)}${item.u}</div>
+              <div class="chem-gauge-bg">
+                <div class="chem-gauge-fill ${!ok ? 'chem-fill-warn' : ''}" style="width:${pct}%"></div>
+                <div class="chem-marker" style="left:${((item.min - (item.min * 0.8)) / ((item.max * 1.2) - (item.min * 0.8))) * 100}%"></div>
+                <div class="chem-marker" style="left:${((item.max - (item.min * 0.8)) / ((item.max * 1.2) - (item.min * 0.8))) * 100}%"></div>
+              </div>
+              <div class="chem-range">Cible : ${item.min} – ${item.max}</div>
+            </div>`;
         })}
       </div>`;
   }
 
-  render() {
-    if (!this.hass || !this.config) return html``;
+  // ═══════════════════════════════════════════════
+  //  ONGLET CAMÉRA
+  // ═══════════════════════════════════════════════
+  _renderCam() {
     const c = this.config;
-    const title = c.card_title || 'SPA';
-    const h     = c.card_height || '590px';
-    const blur  = c.blur_amount !== undefined ? `${c.blur_amount}px` : '5px';
-    const bg    = c.background_image ? `url(${c.background_image})` : 'rgba(20, 30, 45, 0.85)';
+    if (!this._exists(c.entity_camera)) {
+      return html`<div class="empty-msg"><ha-icon icon="mdi:camera-off"></ha-icon><p>Aucune caméra configurée</p></div>`;
+    }
 
-    const content = {
-      home: this._renderHome(),
-      chem: this._renderChem(),
-      cam:  this._renderCam(),
-      sw:   this._renderSwitches()
-    };
+    const w  = c.cam_w_px ? `${c.cam_w_px}px` : '100%';
+    const h  = c.cam_h_px ? `${c.cam_h_px}px` : '210px';
+    const r  = c.cam_radius !== undefined ? `${c.cam_radius}px` : '12px';
+    const x  = c.cam_x || 0;
+    const y  = c.cam_y || 0;
 
     return html`
-      <ha-card class="spa-card" style="height: ${h}; background: ${bg}; --blur-amount: ${blur}">
-        <div class="main-container">
-          <div class="header">
-            <h1 class="title">${title}</h1>
+      <div class="cam-view">
+        <div class="cam-container ${this._camExpanded ? 'cam-expanded' : ''}"
+             style="width:${this._camExpanded?'100%':w}; height:${this._camExpanded?'auto':h}; border-radius:${r};"
+             @click=${() => this._camExpanded = !this._camExpanded}>
+          <img src="/api/camera_proxy/${c.entity_camera}" 
+               style="transform: translate(${x}px, ${y}px);" 
+               alt="Flux Spa" />
+          <div class="cam-overlay">
+            <ha-icon icon="${this._camExpanded ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
           </div>
-          
-          <div class="content-view">
-            ${content[this._tab]}
-          </div>
+        </div>
+        ${this._renderSchedule()}
+      </div>`;
+  }
 
-          <div class="nav">
-            <ha-icon icon="mdi:home" class="${this._tab==='home'?'active':''}" @click=${()=>this._tab='home'}></ha-icon>
-            <ha-icon icon="mdi:flask" class="${this._tab==='chem'?'active':''}" @click=${()=>this._tab='chem'}></ha-icon>
-            <ha-icon icon="mdi:video" class="${this._tab==='cam'?'active':''}" @click=${()=>this._tab='cam'}></ha-icon>
-            <ha-icon icon="mdi:toggle-switch" class="${this._tab==='sw'?'active':''}" @click=${()=>this._tab='sw'}></ha-icon>
+  // ═══════════════════════════════════════════════
+  //  ONGLET SWITCHES
+  // ═══════════════════════════════════════════════
+  _renderSwitches() {
+    const c = this.config;
+    let found = false;
+
+    const btns = Array.from({ length: 10 }, (_, i) => {
+      const ep = c[`switch_${i + 1}`];
+      const lbl = c[`name_switch_${i + 1}`] || `Bouton ${i + 1}`;
+      if (!this._exists(ep)) return null;
+      found = true;
+
+      const active = this._state(ep) === 'on';
+      const toggle = () => this.hass.callService('switch', 'toggle', { entity_id: ep });
+
+      let icon = 'mdi:power';
+      if (lbl.toLowerCase().includes('pompe'))   icon = 'mdi:pump';
+      if (lbl.toLowerCase().includes('bulle'))   icon = 'mdi:bubble';
+      if (lbl.toLowerCase().includes('jet'))     icon = 'mdi:hydro-power';
+      if (lbl.toLowerCase().includes('chauffe')) icon = 'mdi:radiator';
+      if (lbl.toLowerCase().includes('verrou'))  icon = active ? 'mdi:lock' : 'mdi:lock-open';
+      if (lbl.toLowerCase().includes('lumi'))    icon = 'mdi:lightbulb';
+
+      return html`
+        <div class="sw-item ${active ? 'sw-active' : ''}" @click=${toggle}>
+          <div class="sw-icon-box"><ha-icon icon="${icon}"></ha-icon></div>
+          <div class="sw-name">${lbl}</div>
+        </div>`;
+    });
+
+    if (!found) {
+      return html`<div class="empty-msg"><ha-icon icon="mdi:toggle-switch-off"></ha-icon><p>Aucun interrupteur configuré</p></div>`;
+    }
+
+    return html`<div class="sw-view">${btns}</div>`;
+  }
+
+  // ═══════════════════════════════════════════════
+  //  RENDU PRINCIPAL & STYLES
+  // ═══════════════════════════════════════════════
+  render() {
+    if (!this.config || !this.hass) return html``;
+    const title  = this.config.card_title || 'SPA';
+    const bgImg  = this.config.background_image ? `url(${this.config.background_image})` : 'none';
+    const h      = this.config.card_height || '640px';
+    const blur   = this.config.blur_amount !== undefined ? `${this.config.blur_amount}px` : '15px';
+
+    return html`
+      <ha-card style="height: ${h};">
+        <div class="glass-bg" style="background-image: ${bgImg};"></div>
+        <div class="glass-overlay" style="backdrop-filter: blur(${blur}); -webkit-backdrop-filter: blur(${blur});"></div>
+
+        <div class="card-header-main">
+          <h1>${title}</h1>
+          <div class="nav-pills">
+            <button class="pill ${this._tab==='home'?'on':''}" @click=${()=>this._tab='home'}><ha-icon icon="mdi:home-heart"></ha-icon></button>
+            <button class="pill ${this._tab==='chem'?'on':''}" @click=${()=>this._tab='chem'}><ha-icon icon="mdi:flask-round-bottom"></ha-icon></button>
+            <button class="pill ${this._tab==='cam'?'on':''}"  @click=${()=>this._tab='cam'}><ha-icon icon="mdi:cctv"></ha-icon></button>
+            <button class="pill ${this._tab==='sw'?'on':''}"   @click=${()=>this._tab='sw'}><ha-icon icon="mdi:tune"></ha-icon></button>
           </div>
+        </div>
+
+        <div class="card-content-scroller">
+          ${this._tab === 'home' ? this._renderHome() : ''}
+          ${this._tab === 'chem' ? this._renderChem() : ''}
+          ${this._tab === 'cam'  ? this._renderCam()  : ''}
+          ${this._tab === 'sw'   ? this._renderSwitches() : ''}
         </div>
       </ha-card>`;
   }
 
   static styles = css`
-    :host { display:block; margin: 0 auto; overflow: hidden; }
-    
-    .spa-card {
-      position: relative; overflow: hidden; border-radius: 24px;
-      background-size: cover !important; background-position: center !important;
-      color: #fff; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+    :host {
+      display: block;
+      --glass-bg: rgba(255, 255, 255, 0.06);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --glass-glow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+      --txt-p: #ffffff;
+      --txt-s: rgba(255, 255, 255, 0.65);
+      --accent-blue: #38bdf8;
+      --accent-green: #4ade80;
+      --accent-amber: #fbbf24;
+      --accent-red: #f87171;
     }
-    .main-container {
-      position: relative; height: 100%; display: flex; flex-direction: column;
-      background: rgba(10, 18, 30, 0.6); backdrop-filter: blur(var(--blur-amount));
-      -webkit-backdrop-filter: blur(var(--blur-amount)); padding: 12px 14px; box-sizing: border-box;
-    }
-    .header { text-align: center; margin-bottom: 4px; }
-    .title { font-size: 16px; font-weight: 700; letter-spacing: 1px; margin: 0; opacity: 0.9; text-transform: uppercase; }
-    .content-view { flex: 1; overflow-y: auto; overflow-x: hidden; }
-    
-    .content-view::-webkit-scrollbar { width: 0px; background: transparent; }
 
-    /* ── Vue Accueil (Sans scroll) ── */
-    .home-view { display: flex; flex-direction: column; gap: 6px; height: 100%; justify-content: space-between; overflow: hidden; }
-    .flex-row-center { display: flex; align-items: center; justify-content: space-between; margin: 2px 0; }
-    .side-col { width: 100px; display: flex; flex-direction: column; gap: 4px; align-items: center; }
-    .side-info { text-align: center; background: rgba(255,255,255,0.05); padding: 4px 2px; border-radius: 10px; width: 100%; border: 1px solid rgba(255,255,255,0.08); }
-    .val-big { font-size: 15px; font-weight: 700; color: #00f9f9; }
-    .label-tiny { font-size: 8px; opacity: 0.5; font-weight: 600; letter-spacing: 0.5px; margin-top: 1px; }
-    .hum-pill { font-size: 9px; background: rgba(255,255,255,0.08); padding: 2px 5px; border-radius: 20px; white-space: nowrap; color: rgba(255,255,255,0.8); }
-    
-   /* Jauge circulaire agrandie */
-    .center-gauge { 
-      position: relative; 
-      width: 130px;   /* Augmenté de 100px à 130px */
-      height: 130px;  /* Augmenté de 100px à 130px */
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
+    ha-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid var(--glass-border) !important;
+      background: rgba(10, 15, 25, 0.4) !important;
+      box-shadow: var(--glass-glow);
+      display: flex;
+      flex-direction: column;
+      color: var(--txt-p);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-    
-    .inner-circle {
-      width: 114px;   /* Augmenté de 86px à 114px (pour garder l'épaisseur de l'anneau) */
-      height: 114px;  /* Augmenté de 86px à 114px */
-      border-radius: 50%; 
-      background: rgba(255,255,255,0.04);
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      justify-content: center; 
-      border: 1px solid rgba(255,255,255,0.1);
+
+    .glass-bg, .glass-overlay {
+      position: absolute; top:0; left:0; width:100%; height:100%; z-index: 0; pointer-events: none;
     }
-    .water-label { font-size: 8px; opacity: 0.5; font-weight: 700; }
-    .water-val { font-size: 24px; font-weight: 800; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }
-    .target-box { font-size: 8px; background: rgba(0,249,249,0.15); color: #00f9f9; padding: 1px 4px; border-radius: 6px; font-weight: 600; }
+    .glass-bg { background-size: cover; background-position: center; filter: brightness(0.55); }
+
+    .card-header-main {
+      position: relative; z-index: 1;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 8px; flex-shrink: 0;
+    }
+    .card-header-main h1 {
+      margin: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #fff 30%, var(--accent-blue));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    .nav-pills {
+      display: flex; gap: 6px; padding: 4px;
+      background: rgba(255, 255, 255, 0.05); border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .pill {
+      background: transparent; border: none; width: 34px; height: 34px;
+      border-radius: 10px; color: var(--txt-s); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .pill ha-icon { --mdc-icon-size: 18px; }
+    .pill:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .pill.on { background: #fff; color: #111827; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+    .card-content-scroller {
+      position: relative; z-index: 1; flex: 1;
+      overflow-y: auto; overflow-x: hidden; padding: 8px 16px 20px;
+    }
+    .card-content-scroller::-webkit-scrollbar { width: 5px; }
+    .card-content-scroller::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+
+    /* ACCUEIL V33 */
+    .home-view { display: flex; flex-direction: column; gap: 14px; }
+
+    /* Bandeau Statut LayZSpa */
+    .lz-status {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 14px;
+      border: 1px solid var(--glass-border); font-size: 13px; font-weight: 500;
+    }
+    .lz-icon { --mdc-icon-size: 18px; }
+    .lz-wifi { --mdc-icon-size: 14px; margin-left: auto; opacity: 0.7; }
+    
+    .lz-heating { background: rgba(248, 113, 113, 0.12); color: #f87171; border-color: rgba(248, 113, 113, 0.2); }
+    .lz-ready { background: rgba(74, 222, 128, 0.12); color: #4ade80; border-color: rgba(74, 222, 128, 0.2); animation: pulse-border 2s infinite; }
+    .lz-standby { background: rgba(251, 191, 36, 0.08); color: #fbbf24; border-color: rgba(251, 191, 36, 0.15); }
+    .lz-disconnected { background: rgba(156, 163, 175, 0.12); color: #9ca3af; border-color: rgba(156, 163, 175, 0.2); }
+
+    @keyframes pulse-border {
+      0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.2); }
+      70% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+    }
+
+    /* Contrôle chauffage épuré */
+    .heat-ctrl {
+      display: flex; background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--glass-border); border-radius: 16px; padding: 6px; gap: 8px;
+    }
+    .heat-btn {
+      flex: 1; border: none; border-radius: 12px; display: flex; align-items: center;
+      justify-content: center; gap: 8px; font-weight: 600; font-size: 13px; cursor: pointer;
+      transition: all 0.2s; padding: 10px;
+    }
+    .heat-btn ha-icon { --mdc-icon-size: 18px; }
+    .heat-off { background: rgba(255,255,255,0.05); color: var(--txt-s); }
+    .heat-off:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .heat-on { background: linear-gradient(135deg, #ef4444, #f87171); color: #fff; box-shadow: 0 4px 12px rgba(239,68,68,0.25); }
+
+    .heat-temps { display: flex; align-items: center; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 0 4px; }
+    .heat-target { min-width: 46px; text-align: center; font-size: 15px; font-weight: 700; color: #fff; }
+    .heat-t-btn {
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; opacity: 0.7; transition: opacity 0.15s;
+    }
+    .heat-t-btn:hover { opacity: 1; }
+    .heat-t-btn ha-icon { --mdc-icon-size: 16px; }
+
+    /* Jauge & Blocs Latéraux */
+    .flex-row-center { display: flex; align-items: center; justify-content: space-between; margin: 6px 0; gap: 8px; }
+    .side-col { width: 75px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .side-info { text-align: center; }
+    .val-big { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+    .label-tiny { font-size: 9px; font-weight: 600; color: var(--txt-s); letter-spacing: 0.5px; margin-top: 2px; }
+    .hum-pill { background: rgba(255,255,255,0.05); padding: 3px 7px; border-radius: 20px; font-size: 9px; color: var(--accent-blue); font-weight: 600; border: 1px solid rgba(56,189,248,0.15); }
+
+    .gauge-container { display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .temp-btn {
-      width: 24px; height: 24px; background: rgba(255,255,255,0.08); border-radius: 50%;
-      display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.12);
+      width: 36px; height: 36px; background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s; color: var(--txt-s);
     }
-    .temp-btn ha-icon { --mdc-icon-size: 14px; }
+    .temp-btn:hover { background: rgba(255,255,255,0.15); color: #fff; transform: scale(1.05); }
+    .temp-btn ha-icon { --mdc-icon-size: 20px; }
+
+    .center-gauge {
+      width: 130px; height: 130px; position: relative; display: flex; align-items: center; justify-content: center;
+    }
+    .outer-ring {
+      position: absolute; width: 100%; height: 100%; border-radius: 50%;
+      border: 3px dashed rgba(56, 189, 248, 0.25);
+      animation: rotate-ring 25s linear infinite;
+    }
+    @keyframes rotate-ring { to { transform: rotate(360deg); } }
+
+    .inner-circle {
+      width: 112px; height: 112px; border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.15); box-shadow: inset 0 4px 12px rgba(0,0,0,0.2);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .water-label { font-size: 10px; font-weight: 700; color: var(--accent-blue); letter-spacing: 1px; }
+    .water-val { font-size: 30px; font-weight: 900; color: #fff; line-height: 32px; letter-spacing: -0.5px; margin: 2px 0; }
+    .target-box { font-size: 9px; font-weight: 600; color: var(--txt-s); background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
+
+    /* Footer Conso / Énergie */
+    .footer-row { display: flex; justify-content: center; gap: 8px; margin-top: 2px; }
+    .footer-pill {
+      background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255,255,255,0.06);
+      padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 600; color: var(--txt-s);
+    }
+    .footer-pill ha-icon { --mdc-icon-size: 13px; color: var(--accent-blue); }
+    .anim-pulse { animation: pulse-glow 1.8s infinite ease-in-out; }
+    @keyframes pulse-glow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; transform: scale(1.05); } }
+
+    /* Maintenance filtre / chlore */
+    .maint-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .maint-item {
+      background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border);
+      border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .maint-head { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--txt-s); }
+    .maint-head ha-icon { --mdc-icon-size: 15px; color: var(--accent-blue); }
+    .maint-badge { font-size: 8px; background: var(--accent-amber); color: #000; padding: 1px 4px; border-radius: 6px; font-weight: 700; margin-left: auto; }
+    .maint-warn { border-color: rgba(251, 191, 36, 0.3); background: rgba(251, 191, 36, 0.02); }
+    .maint-warn .maint-head ha-icon { color: var(--accent-amber); }
     
-    /* Chauffage */
-    .heat-ctrl { display: flex; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 3px; border: 1px solid rgba(255,255,255,0.08); justify-content: space-between; align-items: center; }
-    .heat-btn { border: none; border-radius: 9px; display: flex; align-items: center; gap: 5px; padding: 5px 10px; font-weight: 700; cursor: pointer; font-size: 11px; font-family: inherit; transition: all 0.2s; }
-    .heat-on { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); }
-    .heat-off { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.1); }
-    .heat-temps { display: flex; align-items: center; gap: 6px; padding-right: 2px; }
-    .heat-t-btn { width: 22px; height: 22px; background: rgba(255,255,255,0.06); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }
-    .heat-t-btn ha-icon { --mdc-icon-size: 12px; }
-    .heat-target { font-size: 12px; font-weight: 700; min-width: 26px; text-align: center; }
+    .maint-reset-btn {
+      margin-left: auto; background: rgba(255,255,255,0.08); border: none; border-radius: 6px;
+      color: #fff; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; cursor: pointer; transition: background 0.2s; padding: 0;
+    }
+    .maint-reset-btn:hover { background: var(--accent-green); color: #000; }
 
-    /* Statuts LayZSpa */
-    .lz-status { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); font-size: 11px; font-weight: 600; }
-    .lz-icon { --mdc-icon-size: 14px; }
-    .lz-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .lz-ready { background: rgba(16, 185, 129, 0.12); color: #10b981; border-color: rgba(16, 185, 129, 0.25); }
-    .lz-heating { background: rgba(245, 158, 11, 0.12); color: #f59e0b; border-color: rgba(245, 158, 11, 0.25); }
-    .lz-standby { background: rgba(255, 255, 255, 0.04); color: rgba(255,255,255,0.6); }
-    .lz-disconnected { background: rgba(239, 68, 68, 0.12); color: #ef4444; border-color: rgba(239, 68, 68, 0.25); }
-    .lz-wifi { --mdc-icon-size: 12px; opacity: 0.6; }
-
-    /* Horloge */
-    .sched-bar { display: flex; align-items: center; gap: 6px; padding: 5px 8px; background: rgba(107,142,255,0.08); border: 1px solid rgba(107,142,255,0.2); border-radius: 10px; font-size: 11px; 
-    width: 50%; /* Force à prendre toute la largeur */
-  box-sizing: border-box;    /* Évite que le padding ne dépasse */
-  justify-content: space-between; /* Écarte les infos à gauche et les contrôles à droite */
-} }
-    .sched-info-group { display: flex; align-items: center; gap: 6px; flex: 1; }
-    .sched-icon { color: #6b8eff; --mdc-icon-size: 14px; }
-    .sched-col { display: flex; flex-direction: column; }
-    .sched-title { font-weight: 700; color: rgba(255,255,255,0.9); }
-    .sched-start { font-size: 9px; color: #6b8eff; opacity: 0.9; margin-top: 1px; }
-    .sched-time-ctrl { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.04); padding: 4px 6px; border-radius: 6px; }
-    .sched-btn { padding: 4px 8px; background: rgba(255,255,255,0.06); border-radius: 4px; cursor: pointer; font-size: 9px; font-weight: bold; }
-    .sched-btn:hover { background: rgba(255,255,255,0.15); }
-    .sched-val { font-weight: 700; padding: 0 2px; color: #6b8eff; font-size: 13px; }
-    .sched-set-btn { background: #6b8eff; border: none; color: #fff; border-radius: 4px; padding: 4px 10px; font-weight: bold; cursor: pointer; font-size: 10px; }
-
-    /* ── Vue Caméra Découpée en Colonnes (Intégration Droite) ── */
-    .cam-layout-wrapper { display: flex; gap: 10px; padding: 4px 0; height: 100%; align-items: stretch; }
-    .cam-main-box { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-    .cam-sidebar-controls { width: 230px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 8px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box; }
-    .sidebar-header { font-size: 9px; font-weight: 800; opacity: 0.4; letter-spacing: 0.5px; text-align: center; }
-    .sidebar-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0; }
-    .sidebar-sched { flex-direction: column; align-items: stretch; gap: 6px; padding: 6px; background: transparent; border: none; }
-    .sidebar-sched .sched-info-group { justify-content: center; margin-bottom: 2px; }
-    .sidebar-sched .sched-time-ctrl { justify-content: center; width: 100%; padding: 4px 2px; }
-    .sidebar-sched .sched-set-btn { width: 100%; padding: 4px; margin-top: 2px; }
-    
-    .cam-container { position: relative; overflow: hidden; background: #000; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 6px 20px rgba(0,0,0,0.5); cursor: pointer; box-sizing: border-box; }
-    .cam-container ha-camera-stream { width: 100%; height: 100%; display: block; }
-    .cam-overlay { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.5); padding: 4px; border-radius: 6px; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
-    .cam-container:hover .cam-overlay { opacity: 1; }
-    .cam-overlay ha-icon { --mdc-icon-size: 14px; color: #fff; }
-    .cam-expanded-fullscreen .cam-main-box { width: 100%; }
-
-    /* Maintenance & Pied */
-    .maint-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-    .maint-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 5px 6px; border-radius: 10px; }
-    .maint-head { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; opacity: 0.8; position: relative; }
-    .maint-head ha-icon { --mdc-icon-size:12px; }
-    .maint-bar { height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; margin: 3px 0; }
-    .maint-fill { height: 100%; background: #00f9f9; }
-    .maint-fill-warn { background: #ef4444 !important; }
-    .maint-warn { border-color: rgba(239, 68, 68, 0.25); background: rgba(239, 68, 68, 0.02); }
-    .maint-reset-btn { position: absolute; right: 0; background: rgba(255,255,255,0.1); border: none; color: #fff; border-radius: 3px; padding: 0px 3px; cursor: pointer; font-size: 8px; }
-    .maint-val { font-size: 8px; opacity: 0.4; text-align: right; }
-
-    .footer-row { display: flex; gap: 6px; justify-content: center; }
-    .footer-pill { background: rgba(255,255,255,0.04); padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; border: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 4px; }
-    .footer-pill ha-icon { --mdc-icon-size: 11px; color: #f59e0b; }
+    .maint-bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+    .maint-fill { height: 100%; background: var(--accent-blue); border-radius: 2px; }
+    .maint-fill-warn { background: linear-gradient(90deg, var(--accent-amber), var(--accent-red)); }
+    .maint-val { font-size: 10px; color: var(--txt-s); text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; }
 
     /* Inondation */
-    .flood-bar { display: flex; align-items: center; justify-content: space-between; padding: 3px 6px; border-radius: 8px; font-size: 9px; font-weight: 600; }
-    .flood-ok { background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.12); color: rgba(255,255,255,0.5); }
-    .flood-alert { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; animation: pulse-border 1.5s infinite; }
-    .flood-left { display: flex; align-items: center; gap: 4px; }
-    .flood-icon { --mdc-icon-size: 12px; color: #10b981; }
-    .flood-icon-alert { color: #ef4444; }
-    .flood-right { display: flex; gap: 3px; }
-    .flood-pill { display: flex; align-items: center; gap: 2px; padding: 1px 3px; border-radius: 4px; font-size: 8px; }
-    .pill-ok { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); }
-    .pill-warn { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
-
-    /* ── Vue Chimie ── */
-    .chem-list { display: flex; flex-direction: column; gap: 8px; padding: 2px; }
-    .cg-row { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 12px; }
-    .cg-oor { border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.02); }
-    .cg-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-    .cg-left { display: flex; align-items: center; gap: 6px; }
-    .cg-icon { --mdc-icon-size: 14px; color: #8b5cf6; }
-    .cg-icon-warn { color: #ef4444; }
-    .cg-label { font-size: 11px; font-weight: 700; }
-    .cg-status-lbl { font-size: 8px; font-weight: 700; background: rgba(255,255,255,0.04); padding: 1px 4px; border-radius: 5px; text-transform: uppercase; }
-    .cg-val { font-size: 12px; font-weight: 700; }
-    .cg-unit { font-size: 9px; opacity: 0.5; }
-    .cg-track-wrap { position: relative; padding-bottom: 8px; }
-    .cg-track { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; position: relative; }
-    .cg-ideal { position: absolute; height: 100%; background: rgba(16, 185, 129, 0.25); border-left: 1px solid rgba(16, 185, 129, 0.4); border-right: 1px solid rgba(16, 185, 129, 0.4); }
-    .cg-cursor { position: absolute; width: 4px; height: 11px; top: -3px; border-radius: 2px; box-shadow: 0 0 4px currentColor; margin-left: -2px; }
-    .cg-limits { position: absolute; width: 100%; top: 7px; font-size: 8px; opacity: 0.3; font-weight: 600; }
-    .cg-limits span { position: absolute; transform: translateX(-50%); }
-    .cg-action-msg { font-size: 9px; color: #ef4444; font-weight: 700; margin-top: 4px; padding-top: 2px; border-top: 1px dashed rgba(239,68,68,0.2); text-transform: uppercase; letter-spacing: 0.2px; }
-
-    /* ── Vue Switches ── */
-    .sw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 2px; }
-    .prog-action-btn {
-      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 8px 10px;
-      display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
-      transition: all .2s; font-family: inherit; --mdc-icon-size: 14px; width: 100%; cursor: pointer;
+    .flood-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; border-radius: 14px; border: 1px solid var(--glass-border);
+      font-size: 12px; font-weight: 600; transition: all 0.3s;
     }
-    .pab-on    { background: rgba(251,146,60,.15); border-color: rgba(251,146,60,.4); color: #fb923c; }
-    .pab-off   { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.1); color: rgba(255,255,255,.4); }
-    .prog-action-btn:hover { background: rgba(255,255,255,0.08); }
-    .prog-action-btn:active { transform: scale(.97); }
+    .flood-left { display: flex; align-items: center; gap: 8px; }
+    .flood-icon { --mdc-icon-size: 16px; }
+    .flood-ok { background: rgba(74, 222, 128, 0.04); color: rgba(255,255,255,0.7); border-color: rgba(74, 222, 128, 0.15); }
+    .flood-ok .flood-icon { color: var(--accent-green); }
+    
+    .flood-alert { background: rgba(248, 113, 113, 0.15); color: #fff; border-color: #f87171; animation: flood-flash 1.5s infinite alternate; }
+    .flood-icon-alert { color: #f87171; animation: pulse-glow 0.8s infinite alternate; }
+    @keyframes flood-flash { 0% { background: rgba(248,113,113,0.1); } 100% { background: rgba(248,113,113,0.25); box-shadow: inset 0 0 10px rgba(248,113,113,0.2); } }
 
-    .empty-view { text-align: center; padding: 30px 10px; opacity: 0.5; font-size: 11px; font-style: italic; }
+    .flood-right { display: flex; align-items: center; }
+    .flood-pill { display: flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 500; }
+    .flood-pill ha-icon { --mdc-icon-size: 13px; }
+    .pill-ok { background: rgba(255,255,255,0.06); color: var(--txt-s); }
+    .pill-warn { background: rgba(251,191,36,0.2); color: var(--accent-amber); font-weight: 700; }
 
-    /* ── Navigation Globale ── */
-    .nav { display: flex; justify-content: space-around; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.1); margin-top: 4px; }
-    .nav ha-icon { opacity: .3; cursor: pointer; --mdc-icon-size: 20px; transition: opacity .2s, color .2s; }
-    .nav ha-icon:hover { opacity: .6; }
-    .nav ha-icon.active { opacity: 1; color: #00f9f9; filter: drop-shadow(0 0 5px rgba(0,249,249,0.4)); }
+    /* Programmation horaire */
+    .sched-bar {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border);
+      border-radius: 14px; margin-top: 10px;
+    }
+    .sched-icon { --mdc-icon-size: 18px; color: var(--accent-blue); }
+    .sched-col { flex: 1; display: flex; flex-direction: column; }
+    .sched-title { font-size: 12px; font-weight: 600; color: #fff; }
+    .sched-start { font-size: 10px; color: var(--accent-green); font-weight: 500; margin-top: 1px; }
+    .sched-time-ctrl { display: flex; align-items: center; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 2px; border: 1px solid rgba(255,255,255,0.05); }
+    .sched-btn { padding: 4px 6px; font-size: 10px; font-weight: 600; color: var(--txt-s); cursor: pointer; user-select: none; }
+    .sched-btn:hover { color: #fff; background: rgba(255,255,255,0.05); border-radius: 4px; }
+    .sched-val { padding: 0 6px; font-size: 12px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; border-left: 1px solid rgba(255,255,255,0.1); border-right: 1px solid rgba(255,255,255,0.1); }
+    .sched-set-btn { background: var(--accent-blue); border: none; border-radius: 8px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: #000; font-weight: 700; cursor: pointer; font-size: 11px; margin-left: 2px; }
+    .sched-set-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
 
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    .anim-pulse { animation: pulse 1.8s infinite; }
-    @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
-    @keyframes pulse-border { 0% { border-color: rgba(239, 68, 68, 0.4); } 50% { border-color: rgba(239, 68, 68, 0.8); } 100% { border-color: rgba(239, 68, 68, 0.4); } }
+    /* CHIMIE V33 */
+    .chem-view { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .chem-card {
+      background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border);
+      border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px;
+    }
+    .chem-header { display: flex; align-items: center; gap: 6px; }
+    .chem-header ha-icon { --mdc-icon-size: 16px; }
+    .chem-title { font-size: 13px; font-weight: 600; color: var(--txt-s); }
+    .chem-status-tag { font-size: 9px; padding: 2px 6px; border-radius: 8px; font-weight: 700; margin-left: auto; }
+    .chem-value { font-size: 22px; font-weight: 800; color: #fff; margin: 2px 0; font-variant-numeric: tabular-nums; }
+    
+    .chem-gauge-bg { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; position: relative; overflow: hidden; margin: 2px 0; }
+    .chem-gauge-fill { height: 100%; background: var(--accent-green); border-radius: 3px; }
+    .chem-marker { position: absolute; top:0; width: 1px; height: 100%; background: rgba(255,255,255,0.4); }
+    .chem-range { font-size: 9px; color: var(--txt-s); font-weight: 500; }
+
+    .chem-ok { border-color: rgba(74, 222, 128, 0.12); }
+    .chem-ok .chem-header ha-icon { color: var(--accent-green); }
+    .chem-ok .chem-status-tag { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
+    
+    .chem-warn { border-color: rgba(248, 113, 113, 0.25); background: rgba(248, 113, 113, 0.01); }
+    .chem-warn .chem-header ha-icon { color: var(--accent-red); }
+    .chem-warn .chem-status-tag { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+    .chem-warn .chem-gauge-fill { background: var(--accent-red); }
+
+    /* CAMÉRA */
+    .cam-view { display: flex; flex-direction: column; }
+    .cam-container {
+      position: relative; overflow: hidden; background: #000;
+      border: 1px solid var(--glass-border); cursor: pointer;
+    }
+    .cam-container img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
+    .cam-overlay {
+      position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5);
+      border-radius: 8px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.2s; color: #fff;
+    }
+    .cam-container:hover .cam-overlay { opacity: 1; }
+    .cam-container:hover img { filter: brightness(1.1); }
+    .cam-expanded { width: 100% !important; height: auto !important; max-height: 80vh; z-index: 99; }
+
+    /* SWITCHES */
+    .sw-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+    .sw-item {
+      background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border);
+      border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px;
+      cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .sw-icon-box {
+      width: 32px; height: 32px; border-radius: 10px; background: rgba(255,255,255,0.05);
+      display: flex; align-items: center; justify-content: center; color: var(--txt-s); transition: all 0.2s;
+    }
+    .sw-icon-box ha-icon { --mdc-icon-size: 16px; }
+    .sw-name { font-size: 11px; font-weight: 600; color: var(--txt-p); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .sw-item:hover { background: rgba(255,255,255,0.06); transform: translateY(-1px); }
+    .sw-active { background: rgba(56, 189, 248, 0.08); border-color: rgba(56, 189, 248, 0.25); }
+    .sw-active .sw-icon-box { background: var(--accent-blue); color: #0a0f19; box-shadow: 0 2px 8px rgba(56,189,248,0.3); }
+    .sw-active .sw-name { color: #fff; font-weight: 700; }
+
+    /* DIVERS */
+    .empty-msg { text-align: center; padding: 40px 20px; color: var(--txt-s); }
+    .empty-msg ha-icon { --mdc-icon-size: 32px; opacity: 0.5; margin-bottom: 8px; }
+    .empty-msg p { margin: 0; font-size: 13px; }
   `;
 }
 customElements.define('spa-card', SpaCard);
