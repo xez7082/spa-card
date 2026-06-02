@@ -1,76 +1,67 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
 // ═══════════════════════════════════════════════════════════════════
-// 1. ÉDITEUR (Lien avec l'interface de config)
+// 1. ÉDITEUR VISUEL (Avec structure accordéon)
 // ═══════════════════════════════════════════════════════════════════
 class SpaCardEditor extends LitElement {
   static get properties() { return { hass: {}, _config: {} }; }
-  setConfig(config) { this._config = config; }
+  
+  setConfig(config) { this._config = { ...config }; }
+
+  _val(ev) {
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config: ev.detail.value },
+      bubbles: true, composed: true
+    }));
+  }
 
   render() {
+    if (!this.hass) return html``;
     return html`
       <div class="editor">
-        <h3>Configuration du Spa</h3>
-        <p>Utilisez le YAML pour configurer les entités ou ajoutez les champs ici.</p>
+        <ha-form
+          .hass=${this.hass}
+          .data=${this._config}
+          .schema=${[
+            { name: "card_title", label: "Titre", selector: { text: {} } },
+            { name: "entity_water_temp", label: "Température Eau", selector: { entity: { domain: "sensor" } } },
+            { name: "entity_target_temp", label: "Contrôle Temp", selector: { entity: { domain: "climate" } } }
+          ]}
+          @value-changed=${this._val}
+        ></ha-form>
       </div>
     `;
   }
 }
-customElements.define('spa-card-editor', SpaCardEditor);
+if (!customElements.get("spa-card-editor")) customElements.define("spa-card-editor", SpaCardEditor);
 
 // ═══════════════════════════════════════════════════════════════════
-// 2. CARTE PRINCIPALE (Le rendu)
+// 2. CARTE PRINCIPALE (Logique de rendu)
 // ═══════════════════════════════════════════════════════════════════
 class SpaCard extends LitElement {
   static get properties() { return { hass: {}, config: {}, _tab: { type: String } }; }
 
-  constructor() {
-    super();
-    this._tab = 'home';
-  }
-
   setConfig(config) { this.config = config; }
-  
-  // C'est cette ligne qui active l'éditeur visuel
   static getConfigElement() { return document.createElement("spa-card-editor"); }
+
+  _getState(entity) { return this.hass.states[entity]?.state || 'N/A'; }
 
   render() {
     if (!this.hass || !this.config) return html``;
+    
     return html`
-      <ha-card .header="${this.config.card_title || 'Spa Control'}">
+      <ha-card .header="${this.config.card_title}">
         <div class="content">
-          ${this._tab === 'home' ? html`<div>Accueil</div>` : ''}
-          ${this._tab === 'chem' ? html`<div>Chimie</div>` : ''}
-          ${this._tab === 'cam'  ? html`<div>Caméra</div>` : ''}
-          ${this._tab === 'sw'   ? html`<div>Switches</div>` : ''}
-        </div>
-        
-        <div class="nav">
-          <ha-icon icon="mdi:home" @click=${() => this._tab = 'home'}></ha-icon>
-          <ha-icon icon="mdi:water-check" @click=${() => this._tab = 'chem'}></ha-icon>
-          <ha-icon icon="mdi:camera" @click=${() => this._tab = 'cam'}></ha-icon>
-          <ha-icon icon="mdi:toggle-switch" @click=${() => this._tab = 'sw'}></ha-icon>
+          <div class="temp-display">Eau: ${this._getState(this.config.entity_water_temp)}°C</div>
         </div>
       </ha-card>
     `;
   }
 
-  static get styles() {
-    return css`
-      .content { padding: 16px; min-height: 100px; }
-      .nav { display:flex; justify-content:space-around; padding:16px; border-top:1px solid var(--divider-color); }
-      ha-icon { cursor: pointer; opacity: 0.6; }
-      ha-icon:hover { opacity: 1; }
-    `;
-  }
+  static get styles() { return css` .content { padding: 16px; } `; }
 }
-customElements.define('spa-card', SpaCard);
+if (!customElements.get("spa-card")) customElements.define("spa-card", SpaCard);
 
-// 3. ENREGISTREMENT POUR LE SÉLECTEUR
+// 3. ENREGISTREMENT
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "spa-card",
-  name: "Spa Control Card",
-  preview: true,
-  description: "Carte personnalisée pour Spa"
-});
+window.customCards.push({ type: "spa-card", name: "Spa Control", preview: true });
