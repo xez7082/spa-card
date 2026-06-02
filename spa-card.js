@@ -817,7 +817,7 @@ class SpaCard extends LitElement {
   }
 
   static styles = css`
-    :host { display:block; margin: 0 auto; overflow: hidden;max-width: 480px; }
+    :host { display:block; margin: 0 auto; overflow: hidden; }
     
     .spa-card {
       position: relative; overflow: hidden; border-radius: 24px;
