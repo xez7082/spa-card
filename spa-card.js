@@ -766,8 +766,8 @@ class SpaCard extends LitElement {
     `;
   }
 
-// ═══════════════════════════════════════════════
-  //  ONGLET CAMÉRA (Mise en page Split 50/50)
+  // ═══════════════════════════════════════════════
+  //  ONGLET CAMÉRA
   // ═══════════════════════════════════════════════
   _renderCam() {
     const c = this.config;
@@ -776,32 +776,27 @@ class SpaCard extends LitElement {
     }
 
     const w  = c.cam_w_px ? `${c.cam_w_px}px` : '100%';
-    const h  = c.cam_h_px ? `${c.cam_h_px}px` : '100%';
-    const r  = c.cam_radius !== undefined ? `${c.cam_radius}px` : '16px';
+    const h  = c.cam_h_px ? `${c.cam_h_px}px` : '210px';
+    const r  = c.cam_radius !== undefined ? `${c.cam_radius}px` : '12px';
     const x  = c.cam_x || 0;
     const y  = c.cam_y || 0;
 
     return html`
-      <div class="cam-split-layout">
-        <div class="cam-column-video">
-          <div class="cam-container ${this._camExpanded ? 'cam-expanded' : ''}"
-               style="width:${this._camExpanded ? '100%' : w}; height:${this._camExpanded ? '100%' : h}; border-radius:${r};"
-               @click=${() => this._camExpanded = !this._camExpanded}>
-            <ha-camera-stream
-              .hass=${this.hass}
-              .entityId=${c.entity_camera}
-              style="transform: translate(${x}px, ${y}px);"
-              controls
-            ></ha-camera-stream>
-            <div class="cam-overlay">
-              <ha-icon icon="${this._camExpanded ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
-            </div>
+      <div class="cam-view">
+        <div class="cam-container ${this._camExpanded ? 'cam-expanded' : ''}"
+             style="width:${this._camExpanded ? '100%' : w}; height:${this._camExpanded ? 'auto' : h}; border-radius:${r};"
+             @click=${() => this._camExpanded = !this._camExpanded}>
+          <ha-camera-stream
+            .hass=${this.hass}
+            .entityId=${c.entity_camera}
+            style="transform: translate(${x}px, ${y}px);"
+            controls
+          ></ha-camera-stream>
+          <div class="cam-overlay">
+            <ha-icon icon="${this._camExpanded ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
           </div>
         </div>
-        
-        <div class="cam-column-sched">
-          ${this._renderSchedule()}
-        </div>
+        ${this._renderSchedule()}
       </div>
     `;
   }
