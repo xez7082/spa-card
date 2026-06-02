@@ -342,7 +342,7 @@ class SpaCard extends LitElement {
     return html`
       <div class="home-view">
         
-        ${this._renderLayzspaStatus()}
+       
 
         <div class="flex-row-center">
           <div class="side-col">
