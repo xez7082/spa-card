@@ -766,7 +766,7 @@ class SpaCard extends LitElement {
     `;
   }
 
-  // ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════
   //  ONGLET CAMÉRA (Mise en page Split 50/50)
   // ═══════════════════════════════════════════════
   _renderCam() {
@@ -787,9 +787,12 @@ class SpaCard extends LitElement {
           <div class="cam-container ${this._camExpanded ? 'cam-expanded' : ''}"
                style="width:${this._camExpanded ? '100%' : w}; height:${this._camExpanded ? '100%' : h}; border-radius:${r};"
                @click=${() => this._camExpanded = !this._camExpanded}>
-            <img src="/api/camera_proxy/${c.entity_camera}" 
-                 style="transform: translate(${x}px, ${y}px);" 
-                 alt="Flux Spa" />
+            <ha-camera-stream
+              .hass=${this.hass}
+              .entityId=${c.entity_camera}
+              style="transform: translate(${x}px, ${y}px);"
+              controls
+            ></ha-camera-stream>
             <div class="cam-overlay">
               <ha-icon icon="${this._camExpanded ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
             </div>
