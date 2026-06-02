@@ -341,7 +341,7 @@ class SpaCard extends LitElement {
 
     return html`
       <div class="home-view">
-        ${this._renderHeatingControl()}
+        
         ${this._renderLayzspaStatus()}
 
         <div class="flex-row-center">
