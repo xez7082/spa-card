@@ -150,11 +150,11 @@ class SpaCardEditor extends LitElement {
 render() {
     if (!this.hass || !this._config) return html``;
     const TABS = [
-      { id:'gen',  s:'background:rgba(107,142,255,.18);color:#6b8eff;', i:'GEN', l:'Général'   },
-      { id:'sens', s:'background:rgba(52,211,153,.15);color:#10b981;',  i:'T°',  l:'Capteurs' },
-      { id:'chem', s:'background:rgba(167,139,250,.15);color:#8b5cf6;', i:'pH',  l:'Chimie'    },
-      { id:'cam',  s:'background:rgba(56,189,248,.15);color:#0ea5e9;',  i:'CAM', l:'Caméra'    },
-      { id:'sw',   s:'background:rgba(251,146,60,.15);color:#f97316;',  i:'SW',  l:'Switches'  }
+      { id:'gen',  s:'background:rgba(107,142,255,.18);color:#6b8eff;', i:'🛁', l:'Général'   },
+      { id:'sens', s:'background:rgba(52,211,153,.15);color:#10b981;',  i:'🌡️', l:'Capteurs' },
+      { id:'chem', s:'background:rgba(167,139,250,.15);color:#8b5cf6;', i:'🧪', l:'Chimie'    },
+      { id:'cam',  s:'background:rgba(56,189,248,.15);color:#0ea5e9;',  i:'📷', l:'Caméra'    },
+      { id:'sw',   s:'background:rgba(251,146,60,.15);color:#f97316;',  i:'⚡', l:'Switches'  }
     ];
     const content = {
       gen:  this._renderGen(),
@@ -163,62 +163,56 @@ render() {
       cam:  this._renderCam(),
       sw:   this._renderSw()
     };
-// Dans votre méthode render()
-return html`
-  <div class="editor-wrap">
-    <div class="tabs">
-      ${TABS.map(t => html`
-        <button class="tab ${this._tab === t.id ? 'on' : ''}" @click=${() => { this._tab = t.id; }}>
-          <div class="tab-inner">
-            <div class="tbox" style="${t.s}">${t.i}</div>
-            <span class="tlbl">${t.l}</span>
-          </div>
-        </button>
-      `)}
-    </div>
-    <div class="sections">${content[this._tab]}</div>
-  </div>
-`;
+    return html`
+      <div class="editor-wrap">
+        <div class="tabs">
+          ${TABS.map(t => html`
+            <button class="tab ${this._tab===t.id?'on':''}" @click=${()=>{ this._tab=t.id; }}>
+              <div class="tab-inner">
+                <div class="tbox" style="${t.s}">${t.i}</div>
+                <span class="tlbl">${t.l}</span>
+              </div>
+            </button>`)}
+        </div>
+        <div class="sections">${content[this._tab]}</div>
+      </div>`;
   }
 
 static styles = css`
     :host { display: block; }
     .tabs {
-      display:flex; gap:3px;
-      background:var(--secondary-background-color,rgba(0,0,0,.05));
-      border-radius:14px; padding:5px; margin-bottom:12px;
+      display: flex; gap: 4px;
+      background: var(--secondary-background-color, rgba(0,0,0,.05));
+      border-radius: 14px; padding: 5px; margin-bottom: 12px;
+    }
     .tab {
-      flex: 1; 
-      display: flex; 
-      align-items: center; /* Centrage vertical */
-      justify-content: center; /* Centrage horizontal */
-      padding: 8px; 
-      cursor: pointer; 
-      border: none;
-      background: transparent;
-      border-radius: 9px;
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 8px; cursor: pointer; border: none;
+      background: transparent; border-radius: 9px; transition: background .18s;
     }
-    .tab:hover { background:rgba(0,0,0,.04); }
-    .tab.on    { background:var(--card-background-color,#fff); box-shadow:0 1px 4px rgba(0,0,0,.1); }
+    .tab:hover { background: rgba(0,0,0,.04); }
+    .tab.on { background: var(--card-background-color,#fff); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
     
-    /* Conteneur pour aligner l'icône et le texte */
-    .tab-inner {
-      display: flex;
-      flex-direction: row; 
-      align-items: center;
-      gap: 8px; 
-    }
-
+    .tab-inner { display: flex; flex-direction: row; align-items: center; gap: 8px; }
+    
     .tbox {
-      width:24px; height:24px; border-radius:6px;
-      display:flex; align-items:center; justify-content:center;
-      font-size:11px; font-weight:700; letter-spacing:-.3px;
+      width: 24px; height: 24px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700;
     }
     .tlbl {
-      font-size:11px; color:var(--secondary-text-color,#888);
-      white-space:nowrap; transition:color .18s;
+      font-size: 11px; color: var(--secondary-text-color,#888);
+      white-space: nowrap; transition: color .18s;
     }
-    .tab.on .tlbl { color:var(--primary-text-color,#212121); font-weight:500; }
+    .tab.on .tlbl { color: var(--primary-text-color,#212121); font-weight: 500; }
+
+    /* Reste de vos styles */
+    .sections { display:flex; flex-direction:column; }
+    .acc { border:1px solid var(--divider-color,rgba(0,0,0,.12)); border-radius:12px; margin-bottom:8px; overflow:hidden; }
+    .ach { display:flex; align-items:center; gap:10px; padding:11px 13px; cursor:pointer; background:var(--secondary-background-color,rgba(0,0,0,.03)); }
+    .aibox { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+    .ach-title { flex:1; font-size:13px; font-weight:500; color:var(--primary-text-color,#212121); }
+  `;
 
     /* Reste de vos styles inchangés */
     .sections { display:flex; flex-direction:column; }
