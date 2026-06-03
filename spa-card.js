@@ -166,11 +166,14 @@ render() {
     return html`
       <div class="editor-wrap">
         <div class="tabs">
-          ${TABS.map(t => html`
-            <button class="tab ${this._tab===t.id?'on':''}" @click=${()=>{ this._tab=t.id; }}>
-              <div class="tbox" style="${t.s}">${t.i}</div>
-              <span class="tlbl">${t.l}</span>
-            </button>`)}
+    // Remplacez votre boucle actuelle par celle-ci
+    ${TABS.map(t => html`
+      <button class="tab ${this._tab===t.id?'on':''}" @click=${()=>{ this._tab=t.id; }}>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="tbox" style="${t.s}">${t.i}</div>
+          <span style="font-size: 11px; color: var(--secondary-text-color);">${t.l}</span>
+        </div>
+      </button>`)}
         </div>
         <div class="sections">${content[this._tab]}</div>
       </div>`;
@@ -182,16 +185,16 @@ static styles = css`
       display:flex; gap:3px;
       background:var(--secondary-background-color,rgba(0,0,0,.05));
       border-radius:14px; padding:5px; margin-bottom:12px;
-    }
     .tab {
-      flex:1; 
-      display:flex; 
-      justify-content:center; /* Centre le contenu horizontalement */
-      align-items:center;     /* Centre le contenu verticalement */
+      flex: 1; 
+      display: flex; 
+      align-items: center; /* Centrage vertical */
+      justify-content: center; /* Centrage horizontal */
       padding: 8px; 
-      cursor:pointer; border:none;
-      background:transparent; border-radius:9px; transition:background .18s;
-      font-family:var(--paper-font-body1_-_font-family,sans-serif);
+      cursor: pointer; 
+      border: none;
+      background: transparent;
+      border-radius: 9px;
     }
     .tab:hover { background:rgba(0,0,0,.04); }
     .tab.on    { background:var(--card-background-color,#fff); box-shadow:0 1px 4px rgba(0,0,0,.1); }
