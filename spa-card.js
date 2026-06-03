@@ -139,64 +139,52 @@ _renderChem() {
   }
 
 render() {
-  if (!this.hass || !this.config) return html``;
-  const c = this.config;
-  const bg = c.background_image
-    ? `background-image:url('${c.background_image}'); background-size:cover; background-position:center;`
-    : 'background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);';
-  const blur = c.blur_amount !== undefined ? c.blur_amount : 15;
-  const height = c.card_height || '640px';
+    if (!this.hass || !this.config) return html``;
+    const c = this.config;
+    const bg = c.background_image
+      ? `background-image:url('${c.background_image}'); background-size:cover; background-position:center;`
+      : 'background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);';
+    const blur = c.blur_amount !== undefined ? c.blur_amount : 15;
+    const height = c.card_height || '640px';
 
-  // Ajout des onglets Chimie et Switches ici
-  const TABS = [
-    { id: 'home', icon: 'mdi:hot-tub',    label: c.card_title || 'SPA' },
-    { id: 'cam',  icon: 'mdi:cctv',       label: 'Caméra' },
-    { id: 'chem', icon: 'mdi:flask',      label: 'Chimie' },
-    { id: 'sw',   icon: 'mdi:toggle-switch', label: 'Switches' }
-  ];
+    // AJOUTEZ VOS ONGLETS ICI
+    const TABS = [
+      { id: 'home', icon: 'mdi:hot-tub',    label: c.card_title || 'SPA' },
+      { id: 'cam',  icon: 'mdi:cctv',       label: 'Caméra' },
+      { id: 'chem', icon: 'mdi:flask',      label: 'Chimie' },
+      { id: 'sw',   icon: 'mdi:toggle-switch', label: 'Switches' }
+    ];
 
-  return html`
-    <ha-card style="height:${height}; overflow:hidden; position:relative; border-radius:16px;">
-      <div style="position:absolute; inset:0; ${bg} filter:blur(${blur}px); transform:scale(1.05);"></div>
-      <div style="position:absolute; inset:0; background:rgba(0,0,0,0.35);"></div>
-      <div style="position:relative; z-index:1; height:100%; display:flex; flex-direction:column; overflow:hidden;">
+    return html`
+      <ha-card style="height:${height}; overflow:hidden; position:relative; border-radius:16px;">
+        <div style="position:absolute; inset:0; ${bg} filter:blur(${blur}px); transform:scale(1.05);"></div>
+        <div style="position:absolute; inset:0; background:rgba(0,0,0,0.35);"></div>
+        <div style="position:relative; z-index:1; height:100%; display:flex; flex-direction:column; overflow:hidden;">
 
-        <div style="display:flex; gap:6px; padding:10px 10px 0; flex-shrink:0;">
-          ${TABS.map(t => html`
-       <button
-        style="flex: 1; 
-               display: flex; 
-               align-items: center; 
-               justify-content: center; 
-               gap: 8px; 
-               padding: 8px 12px; 
-               border: none; 
-               background: ${this._tab === t.id ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.06)'};
-               color: white; 
-               border-radius: 10px;
-               cursor: pointer;
-               min-width: 0; /* Important pour que le flex fonctionne bien */"
-        @click=${() => { this._tab = t.id; }}>
-        
-        <ha-icon icon="${t.icon}" style="--mdc-icon-size:18px;"></ha-icon>
-        
-        <span style="font-size: 12px; font-weight: 500; white-space: nowrap;">
-          ${t.label}
-        </span>
-      </button>
-          `)}
+          <div style="display:flex; gap:6px; padding:10px 10px 0; flex-shrink:0;">
+            ${TABS.map(t => html`
+              <button
+                style="flex:1; padding:7px 0; border:none; border-radius:10px; cursor:pointer; font-size:11px; font-weight:600;
+                       background:${this._tab === t.id ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.06)'};
+                       color:#fff; display:flex; align-items:center; justify-content:center; gap:4px;
+                       border:1px solid ${this._tab === t.id ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.08)'};"
+                @click=${() => { this._tab = t.id; }}>
+                <ha-icon icon="${t.icon}" style="--mdc-icon-size:16px;"></ha-icon>
+                ${t.label}
+              </button>
+            `)}
+          </div>
+
+          <div style="flex:1; overflow-y:auto; padding:10px;">
+            ${this._tab === 'home' ? this._renderHome() : ''}
+            ${this._tab === 'cam'  ? this._renderCam()  : ''}
+            ${this._tab === 'chem' ? this._renderChem() : ''}
+            ${this._tab === 'sw'   ? this._renderSw()   : ''}
+          </div>
         </div>
-
-        <div style="flex:1; overflow-y:auto; padding:10px;">
-          ${this._tab === 'home' ? this._renderHome() : ''}
-          ${this._tab === 'cam'  ? this._renderCam()  : ''}
-          ${this._tab === 'chem' ? this._renderChem() : ''}
-          ${this._tab === 'sw'   ? this._renderSw()   : ''}
-        </div>
-      </div>
-    </ha-card>
-  `;
-}
+      </ha-card>
+    `;
+  }
 
   static styles = css`
     :host { display: block; }
