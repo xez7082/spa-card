@@ -683,6 +683,51 @@ class SpaCard extends LitElement {
     `;
   }
 
+
+  render() {
+    if (!this.hass || !this.config) return html``;
+    const c = this.config;
+    const bg = c.background_image
+      ? `background-image:url('${c.background_image}'); background-size:cover; background-position:center;`
+      : 'background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);';
+    const blur = c.blur_amount !== undefined ? c.blur_amount : 15;
+    const height = c.card_height || '640px';
+
+    const TABS = [
+      { id: 'home', icon: 'mdi:hot-tub',       label: c.card_title || 'SPA' },
+      { id: 'cam',  icon: 'mdi:cctv',           label: 'Caméra' },
+    ];
+
+    return html\`
+      <ha-card style="height:${height}; overflow:hidden; position:relative; border-radius:16px;">
+        <div style="position:absolute; inset:0; ${bg} filter:blur(${blur}px); transform:scale(1.05);"></div>
+        <div style="position:absolute; inset:0; background:rgba(0,0,0,0.35);"></div>
+        <div style="position:relative; z-index:1; height:100%; display:flex; flex-direction:column; overflow:hidden;">
+
+          <!-- Tabs nav -->
+          <div style="display:flex; gap:6px; padding:10px 10px 0; flex-shrink:0;">
+            ${TABS.map(t => html\`
+              <button
+                style="flex:1; padding:7px 0; border:none; border-radius:10px; cursor:pointer; font-size:12px; font-weight:600;
+                       background:${this._tab === t.id ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)'};
+                       color:#fff; display:flex; align-items:center; justify-content:center; gap:5px;
+                       border:1px solid ${this._tab === t.id ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'};"
+                @click=${() => { this._tab = t.id; }}>
+                <ha-icon icon="${t.icon}" style="--mdc-icon-size:15px;"></ha-icon>
+                <span>${t.label}</span>
+              </button>
+            \`)}
+          </div>
+
+          <!-- Content -->
+          <div style="flex:1; overflow-y:auto; overflow-x:hidden;">
+            ${this._tab === 'home' ? this._renderHome() : this._renderCam()}
+          </div>
+        </div>
+      </ha-card>
+    \`;
+  }
+
   static styles = css`
     :host { display: block; --glass-border: rgba(255,255,255,0.12); --txt-p: #ffffff; --txt-s: rgba(255,255,255,0.65); }
     .home-view, .cam-view { display: flex; flex-direction: column; gap: 14px; padding: 10px; }
@@ -768,3 +813,12 @@ class SpaCard extends LitElement {
   `;
 }
 customElements.define('spa-card', SpaCard);
+
+// ── Déclaration pour le sélecteur de cartes HA ──────────────────────
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type:        'spa-card',
+  name:        'Spa Card',
+  description: 'Carte de contrôle LayZSpa / spa avec températures, maintenance, caméra et programmation.',
+  preview:     true,
+});
