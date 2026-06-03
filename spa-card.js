@@ -698,7 +698,7 @@ class SpaCard extends LitElement {
       { id: 'cam',  icon: 'mdi:cctv',           label: 'Caméra' },
     ];
 
-    return html\`
+    return html`
       <ha-card style="height:${height}; overflow:hidden; position:relative; border-radius:16px;">
         <div style="position:absolute; inset:0; ${bg} filter:blur(${blur}px); transform:scale(1.05);"></div>
         <div style="position:absolute; inset:0; background:rgba(0,0,0,0.35);"></div>
@@ -706,7 +706,7 @@ class SpaCard extends LitElement {
 
           <!-- Tabs nav -->
           <div style="display:flex; gap:6px; padding:10px 10px 0; flex-shrink:0;">
-            ${TABS.map(t => html\`
+            ${TABS.map(t => html`
               <button
                 style="flex:1; padding:7px 0; border:none; border-radius:10px; cursor:pointer; font-size:12px; font-weight:600;
                        background:${this._tab === t.id ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)'};
@@ -716,7 +716,7 @@ class SpaCard extends LitElement {
                 <ha-icon icon="${t.icon}" style="--mdc-icon-size:15px;"></ha-icon>
                 <span>${t.label}</span>
               </button>
-            \`)}
+            `)}
           </div>
 
           <!-- Content -->
@@ -725,7 +725,7 @@ class SpaCard extends LitElement {
           </div>
         </div>
       </ha-card>
-    \`;
+    `;
   }
 
   static styles = css`
