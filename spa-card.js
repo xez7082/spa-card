@@ -163,15 +163,27 @@ render() {
 
         <div style="display:flex; gap:6px; padding:10px 10px 0; flex-shrink:0;">
           ${TABS.map(t => html`
-            <button
-              style="flex:1; padding:7px 0; border:none; border-radius:10px; cursor:pointer; font-size:11px; font-weight:600;
-                     background:${this._tab === t.id ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.06)'};
-                     color:#fff; display:flex; align-items:center; justify-content:center; gap:4px;
-                     border:1px solid ${this._tab === t.id ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.08)'};"
-              @click=${() => { this._tab = t.id; }}>
-              <ha-icon icon="${t.icon}" style="--mdc-icon-size:16px;"></ha-icon>
-              ${t.label}
-            </button>
+       <button
+        style="flex: 1; 
+               display: flex; 
+               align-items: center; 
+               justify-content: center; 
+               gap: 8px; 
+               padding: 8px 12px; 
+               border: none; 
+               background: ${this._tab === t.id ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.06)'};
+               color: white; 
+               border-radius: 10px;
+               cursor: pointer;
+               min-width: 0; /* Important pour que le flex fonctionne bien */"
+        @click=${() => { this._tab = t.id; }}>
+        
+        <ha-icon icon="${t.icon}" style="--mdc-icon-size:18px;"></ha-icon>
+        
+        <span style="font-size: 12px; font-weight: 500; white-space: nowrap;">
+          ${t.label}
+        </span>
+      </button>
           `)}
         </div>
 
