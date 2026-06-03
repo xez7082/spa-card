@@ -4,6 +4,14 @@ import {
   css
 } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
+// ─── Shared accent-colour styles (editor tabs & accordion headers) ───
+const STYLE_INDIGO = 'background:rgba(107,142,255,.18);color:#6b8eff;';
+const STYLE_GREEN  = 'background:rgba(52,211,153,.15);color:#10b981;';
+const STYLE_YELLOW = 'background:rgba(251,191,36,.15);color:#f59e0b;';
+const STYLE_PURPLE = 'background:rgba(167,139,250,.15);color:#8b5cf6;';
+const STYLE_BLUE   = 'background:rgba(56,189,248,.15);color:#0ea5e9;';
+const STYLE_ORANGE = 'background:rgba(251,146,60,.15);color:#f97316;';
+
 // ═══════════════════════════════════════════════════════════════════
 //  ÉDITEUR  —  V36
 // ═══════════════════════════════════════════════════════════════════
@@ -54,7 +62,7 @@ class SpaCardEditor extends LitElement {
 
   _renderGen() {
     return html`
-      ${this._acc('a-disp','background:rgba(107,142,255,.18);color:#6b8eff;','GEN','Apparence générale',[
+      ${this._acc('a-disp',STYLE_INDIGO,'GEN','Apparence générale',[
         { name:'card_title',       label:'Titre du spa',                selector:{ text:{} } },
         { name:'background_image', label:'Image de fond (URL)',          selector:{ text:{} } },
         { name:'card_height',      label:'Hauteur totale (ex : 580px)', selector:{ text:{} } },
@@ -64,7 +72,7 @@ class SpaCardEditor extends LitElement {
 
   _renderSens() {
     return html`
-      ${this._acc('a-temps','background:rgba(52,211,153,.15);color:#10b981;','T°','Températures',[
+      ${this._acc('a-temps',STYLE_GREEN,'T°','Températures',[
         { name:'entity_water_temp',   label:'Temp. eau (actuelle)',  selector:{ entity:{ domain:'sensor' } } },
         { name:'entity_target_temp',  label:'Entité consigne',       selector:{ entity:{} } },
         { name:'target_temp_min',      label:'Consigne min (°C)',      selector:{ number:{ mode:'box', step:0.5 } } },
@@ -72,7 +80,7 @@ class SpaCardEditor extends LitElement {
         { name:'entity_ext_temp',      label:'Temp. extérieure',       selector:{ entity:{ domain:'sensor' } } },
         { name:'entity_spa_air_temp', label:'Temp. air spa',          selector:{ entity:{ domain:'sensor' } } }
       ])}
-      ${this._acc('a-layzspa','background:rgba(251,191,36,.15);color:#f59e0b;','SPA','LayZSpa — états & maintenance',[
+      ${this._acc('a-layzspa',STYLE_YELLOW,'SPA','LayZSpa — états & maintenance',[
         { name:'entity_lz_ready',     label:'Prêt (binary_sensor.layzspa_ready)',       selector:{ entity:{ domain:'binary_sensor' } } },
         { name:'entity_lz_heater',    label:'Chauffage actif (binary_sensor…heater)',   selector:{ entity:{ domain:'binary_sensor' } } },
         { name:'entity_lz_filter',    label:'Âge filtre — jours (sensor…filter_age)',  selector:{ entity:{ domain:'sensor' } } },
@@ -88,12 +96,12 @@ class SpaCardEditor extends LitElement {
         { name:'entity_lz_reset_chlore',  label:'Bouton reset chlore (button.layzspa_reset_chlorine_timer)',       selector:{ entity:{ domain:'button' } } },
         { name:'entity_lz_schedule',      label:'Programmation — helper heure (input_datetime.spa_ready_at)',    selector:{ entity:{ domain:'input_datetime' } } }
       ])}
-      ${this._acc('a-hum','background:rgba(52,211,153,.15);color:#10b981;','~','Humidité & Énergie',[
+      ${this._acc('a-hum',STYLE_GREEN,'~','Humidité & Énergie',[
         { name:'entity_ext_hum',   label:'Humidité extérieure',    selector:{ entity:{ domain:'sensor' } } },
         { name:'entity_spa_hum',   label:'Humidité spa',             selector:{ entity:{ domain:'sensor' } } },
         { name:'main_cons_entity', label:'Sonde conso (W ou kWh)', selector:{ entity:{} } }
       ])}
-      ${this._acc('a-flood','background:rgba(56,189,248,.15);color:#0ea5e9;','💧',"Capteur d'inondation",[
+      ${this._acc('a-flood',STYLE_BLUE,'💧',"Capteur d'inondation",[
         { name:'entity_water_leak', label:'Détecteur fuite eau',   selector:{ entity:{ domain:'binary_sensor' } } },
         { name:'entity_tamper',      label:'Alerte sabotage',       selector:{ entity:{ domain:'binary_sensor' } } },
         { name:'entity_flood_bat',  label:'Batterie capteur (%)',  selector:{ entity:{ domain:'sensor' } } }
@@ -126,17 +134,18 @@ _renderChem() {
 
   _renderCam() {
     return html`
-      ${this._acc('a-cdim','background:rgba(56,189,248,.15);color:#0ea5e9;','CAM','Caméra & dimensions',[
+      ${this._acc('a-cdim',STYLE_BLUE,'CAM','Caméra & dimensions',[
         { name:'entity_camera', label:'Entité caméra',         selector:{ entity:{ domain:'camera' } } },
         { name:'cam_w_px',      label:'Largeur caméra (px) — vide = 50% auto', selector:{ number:{ mode:'box', min:40, max:800 } } },
         { name:'cam_h_px',      label:'Hauteur caméra (px) — vide = hauteur auto', selector:{ number:{ mode:'box', min:40, max:800 } } },
         { name:'cam_radius',    label:'Arrondi des coins (px)', selector:{ number:{ mode:'slider', min:0, max:50 } } }
       ])}
-      ${this._acc('a-cpos','background:rgba(56,189,248,.15);color:#0ea5e9;','XY','Position',[
+      ${this._acc('a-cpos',STYLE_BLUE,'XY','Position',[
         { name:'cam_x', label:'Décalage horizontal X (px)', selector:{ number:{ mode:'box', min:-500, max:500 } } },
         { name:'cam_y', label:'Décalage vertical Y (px)',   selector:{ number:{ mode:'box', min:-500, max:500 } } }
       ])}`;
   }
+
 
 render() {
   if (!this.hass || !this.config) return html``;
@@ -147,7 +156,6 @@ render() {
   const blur = c.blur_amount !== undefined ? c.blur_amount : 15;
   const height = c.card_height || '640px';
 
-  // Ajout des onglets Chimie et Switches ici
   const TABS = [
     { id: 'home', icon: 'mdi:hot-tub',    label: c.card_title || 'SPA' },
     { id: 'cam',  icon: 'mdi:cctv',       label: 'Caméra' },
@@ -226,7 +234,6 @@ render() {
     }
     .tab.on .tlbl { color:var(--primary-text-color,#212121); font-weight:500; }
 
-    /* Reste de vos styles inchangés */
     .sections { display:flex; flex-direction:column; }
     .acc { border:1px solid var(--divider-color,rgba(0,0,0,.12)); border-radius:12px; margin-bottom:8px; overflow:hidden; }
     .ach {
@@ -353,6 +360,19 @@ class SpaCard extends LitElement {
     return this._state(id);
   }
 
+  _renderSideCol(tempEntity, tempLabel, humEntity) {
+    return html`
+      <div class="side-col">
+        ${this._exists(tempEntity) ? html`
+          <div class="side-info">
+            <div class="val-big">${this._state(tempEntity)}°</div>
+            <div class="label-tiny">${tempLabel}</div>
+          </div>` : ''}
+        ${this._exists(humEntity) ? html`
+          <div class="hum-pill">${this._state(humEntity)}% HR</div>` : ''}
+      </div>`;
+  }
+
   _renderHome() {
     const c = this.config;
     const wTemp  = this._waterTemp();
@@ -363,15 +383,7 @@ class SpaCard extends LitElement {
         ${this._renderHeatingControl()}
 
         <div class="flex-row-center">
-          <div class="side-col">
-            ${this._exists(c.entity_ext_temp) ? html`
-              <div class="side-info">
-                <div class="val-big">${this._state(c.entity_ext_temp)}°</div>
-                <div class="label-tiny">EXTÉRIEUR</div>
-              </div>` : ''}
-            ${this._exists(c.entity_ext_hum) ? html`
-              <div class="hum-pill">${this._state(c.entity_ext_hum)}% HR</div>` : ''}
-          </div>
+          ${this._renderSideCol(c.entity_ext_temp, 'EXTÉRIEUR', c.entity_ext_hum)}
 
           <div class="gauge-container">
             ${this._exists(c.entity_target_temp) ? html`
@@ -396,15 +408,7 @@ class SpaCard extends LitElement {
               </div>` : ''}
           </div>
 
-          <div class="side-col">
-            ${this._exists(c.entity_spa_air_temp) ? html`
-              <div class="side-info">
-                <div class="val-big">${this._state(c.entity_spa_air_temp)}°</div>
-                <div class="label-tiny">AIR SPA</div>
-              </div>` : ''}
-            ${this._exists(c.entity_spa_hum) ? html`
-              <div class="hum-pill">${this._state(c.entity_spa_hum)}% HR</div>` : ''}
-          </div>
+          ${this._renderSideCol(c.entity_spa_air_temp, 'AIR SPA', c.entity_spa_hum)}
         </div>
 
         ${this._renderFooterRow()}
@@ -569,64 +573,48 @@ class SpaCard extends LitElement {
       </div>`;
   }
 
+  _renderMaintenanceItem({ age, max, icon, label, warnLabel, resetTitle, resetEntity }) {
+    if (age === null) return html``;
+    const warn = age > max;
+    const pct  = Math.min(100, age / max * 100);
+    return html`
+      <div class="maint-item ${warn ? 'maint-warn' : ''}">
+        <div class="maint-head">
+          <ha-icon icon="${icon}"></ha-icon>
+          <span>${label}</span>
+          ${warn ? html`<span class="maint-badge">${warnLabel}</span>` : ''}
+          ${resetEntity ? html`
+            <button class="maint-reset-btn" title="${resetTitle}"
+              @click=${() => this.hass.callService('button', 'press', { entity_id: resetEntity })}>
+              ✓
+            </button>` : ''}
+        </div>
+        <div class="maint-bar">
+          <div class="maint-fill ${warn?'maint-fill-warn':''}"
+               style="width:${pct}%"></div>
+        </div>
+        <div class="maint-val">${Math.round(age)} j / ${max} j</div>
+      </div>`;
+  }
+
   _renderMaintenance() {
     const c = this.config;
-    const filterAge  = this._exists(c.entity_lz_filter)   ? parseFloat(this._state(c.entity_lz_filter))   : null;
-    const chloreAge  = this._exists(c.entity_lz_chlorine) ? parseFloat(this._state(c.entity_lz_chlorine)) : null;
-    const filterMax  = Number(c.lz_filter_max  ?? 60);
-    const chloreMax  = Number(c.lz_chlorine_max ?? 14);
-
-    const hasResetF = !!c.entity_lz_reset_filter;
-    const hasResetC = !!c.entity_lz_reset_chlore;
-
+    const filterAge = this._exists(c.entity_lz_filter)   ? parseFloat(this._state(c.entity_lz_filter))   : null;
+    const chloreAge = this._exists(c.entity_lz_chlorine) ? parseFloat(this._state(c.entity_lz_chlorine)) : null;
     if (filterAge === null && chloreAge === null) return html``;
-
-    const filterWarn = filterAge !== null && filterAge > filterMax;
-    const chloreWarn = chloreAge !== null && chloreAge > chloreMax;
-    const filterPct  = filterAge !== null ? Math.min(100, filterAge / filterMax * 100) : 0;
-    const chlorePct  = chloreAge !== null ? Math.min(100, chloreAge / chloreMax * 100) : 0;
-
-    const pressReset = (entityId) => {
-      this.hass.callService('button', 'press', { entity_id: entityId });
-    };
 
     return html`
       <div class="maint-row">
-        ${filterAge !== null ? html`
-          <div class="maint-item ${filterWarn ? 'maint-warn' : ''}">
-            <div class="maint-head">
-              <ha-icon icon="mdi:air-filter"></ha-icon>
-              <span>Filtre</span>
-              ${filterWarn ? html`<span class="maint-badge">À changer</span>` : ''}
-              ${hasResetF ? html`
-                <button class="maint-reset-btn" title="Filtre changé — remettre à zéro"
-                  @click=${() => pressReset(c.entity_lz_reset_filter)}>
-                  ✓
-                </button>` : ''}
-            </div>
-            <div class="maint-bar">
-              <div class="maint-fill ${filterWarn?'maint-fill-warn':''}"
-                   style="width:${filterPct}%"></div>
-            </div>
-            <div class="maint-val">${Math.round(filterAge)} j / ${filterMax} j</div>
-          </div>` : ''}
-        ${chloreAge !== null ? html`
-          <div class="maint-item ${chloreWarn ? 'maint-warn' : ''}">
-            <div class="maint-head">
-              <ha-icon icon="mdi:flask-outline"></ha-icon>
-              <span>Chlore</span>
-              ${chloreWarn ? html`<span class="maint-badge">À renouveler</span>` : ''}
-              ${hasResetC ? html`
-                <button class="maint-reset-btn" title="Chlore renouvelé — remettre à zéro"
-                  @click=${() => pressReset(c.entity_lz_reset_chlore)}>                  ✓
-                </button>` : ''}
-            </div>
-            <div class="maint-bar">
-              <div class="maint-fill ${chloreWarn?'maint-fill-warn':''}"
-                   style="width:${chlorePct}%"></div>
-            </div>
-            <div class="maint-val">${Math.round(chloreAge)} j / ${chloreMax} j</div>
-          </div>` : ''}
+        ${this._renderMaintenanceItem({
+          age: filterAge, max: Number(c.lz_filter_max ?? 60),
+          icon: 'mdi:air-filter', label: 'Filtre', warnLabel: 'À changer',
+          resetTitle: 'Filtre changé — remettre à zéro', resetEntity: c.entity_lz_reset_filter
+        })}
+        ${this._renderMaintenanceItem({
+          age: chloreAge, max: Number(c.lz_chlorine_max ?? 14),
+          icon: 'mdi:flask-outline', label: 'Chlore', warnLabel: 'À renouveler',
+          resetTitle: 'Chlore renouvelé — remettre à zéro', resetEntity: c.entity_lz_reset_chlore
+        })}
       </div>`;
   }
 
