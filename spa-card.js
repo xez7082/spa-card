@@ -163,20 +163,22 @@ render() {
       cam:  this._renderCam(),
       sw:   this._renderSw()
     };
-    return html`
-      <div class="editor-wrap">
-        <div class="tabs">
-    // Remplacez votre boucle actuelle par celle-ci
-    ${TABS.map(t => html`
-      <button class="tab ${this._tab===t.id?'on':''}" @click=${()=>{ this._tab=t.id; }}>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <div class="tbox" style="${t.s}">${t.i}</div>
-          <span style="font-size: 11px; color: var(--secondary-text-color);">${t.l}</span>
-        </div>
-      </button>`)}
-        </div>
-        <div class="sections">${content[this._tab]}</div>
-      </div>`;
+// Dans votre méthode render()
+return html`
+  <div class="editor-wrap">
+    <div class="tabs">
+      ${TABS.map(t => html`
+        <button class="tab ${this._tab === t.id ? 'on' : ''}" @click=${() => { this._tab = t.id; }}>
+          <div class="tab-inner">
+            <div class="tbox" style="${t.s}">${t.i}</div>
+            <span class="tlbl">${t.l}</span>
+          </div>
+        </button>
+      `)}
+    </div>
+    <div class="sections">${content[this._tab]}</div>
+  </div>
+`;
   }
 
 static styles = css`
