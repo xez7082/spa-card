@@ -104,10 +104,12 @@ _renderChem() {
     const c = this.config;
     return html`
       <div style="color:#fff; padding:10px;">
-        <h3>Chimie</h3>
-        <p>pH: ${this._state(c.entity_ph) ?? 'N/A'}</p>
-        <p>ORP: ${this._state(c.entity_orp) ?? 'N/A'}</p>
-        <p>TDS: ${this._state(c.entity_tds) ?? 'N/A'}</p>
+        <h3 style="margin-top:0;">Chimie</h3>
+        <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px;">
+           <p>pH : <strong>${this._state(c.entity_ph) ?? 'N/A'}</strong></p>
+           <p>ORP : <strong>${this._state(c.entity_orp) ?? 'N/A'}</strong></p>
+           <p>TDS : <strong>${this._state(c.entity_tds) ?? 'N/A'}</strong></p>
+        </div>
       </div>`;
   }
 
@@ -115,10 +117,10 @@ _renderChem() {
     const c = this.config;
     return html`
       <div style="color:#fff; padding:10px;">
-        <h3>Interrupteurs</h3>
+        <h3 style="margin-top:0;">Interrupteurs</h3>
         ${[1,2,3,4,5,6].map(i => this._exists(c['switch_'+i]) ? html`
-          <div style="margin-bottom:10px;">
-            ${c['name_switch_'+i] || 'Switch '+i} : 
+          <div style="margin-bottom:10px; padding:10px; background:rgba(255,255,255,0.05); border-radius:10px; display:flex; justify-content:space-between;">
+            <span>${c['name_switch_'+i] || 'Switch '+i}</span>
             <strong>${this._state(c['switch_'+i])}</strong>
           </div>` : '')}
       </div>`;
