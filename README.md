@@ -20,8 +20,8 @@
 
 ### 🧪 Suivi chimique avancé
 - Monitoring du **pH, ORP, TDS** et du niveau de **sel**
-- Historique et tendances des paramètres
-- Alertes de dérive chimique
+- Plages de normalité configurables
+- Alertes visuelles claires
 
 ### 🔧 Maintenance simplifiée
 - **Suivi du filtre** : âge, alertes de changement, réinitialisation
@@ -68,321 +68,261 @@ wget https://raw.githubusercontent.com/xez7082/spa-card/main/spa-card.js
 
 ### 2️⃣ Ajoutez à Home Assistant
 
-Dans votre fichier **`ui-lovelace.yaml`** ou directement via l'interface :
+Dans votre tableau de bord Home Assistant, ajoutez la ressource :
 
+**Via l'interface** → Menu (⋮) → Éditer le tableau de bord → Ressources :
 ```yaml
-resources:
-  - url: /local/spa-card/spa-card.js
-    type: module
+- url: /local/spa-card/spa-card.js
+  type: module
 ```
 
-### 3️⃣ Configurez votre carte
+### 3️⃣ Créez votre carte
+
+**Ajouter une carte** → Personnalisée → `spa-card`
+
+---
+
+## ⚙️ Configuration complète
 
 ```yaml
 type: custom:spa-card
-card_title: "Mon Spa"
-background_image: "https://votre-image.jpg"
-blur_amount: 15
-card_height: "680px"
 
-# 🌡️ Températures
-entity_water_temp: sensor.layzspa_temp_c
-entity_target_temp: climate.layzspa_temperature_control
+# 🎨 Apparence générale
+card_title: "MY LAYZSPA"
+card_height: "640px"              # Hauteur (défaut: 640px)
+blur_amount: 15                   # Flou du fond (0-30)
+background_image: ""              # URL image de fond (optionnel)
+
+# 🌡️ Gestion température
+entity_water_temp: "sensor.layzspa_temp_c"
+entity_target_temp: "climate.layzspa_temperature_control"
 target_temp_min: 20
 target_temp_max: 40
-entity_ext_temp: sensor.outdoor_temp
-entity_spa_air_temp: sensor.spa_air_temp
 
-# 🧪 Chimie
-entity_ph: sensor.layzspa_ph
-entity_orp: sensor.layzspa_orp
-entity_tds: sensor.layzspa_tds
+# 🌡️ Températures complémentaires
+entity_ext_temp: "sensor.outdoor_temp"        # Optionnel
+entity_ext_hum: "sensor.outdoor_humidity"     # Optionnel
+entity_spa_air_temp: "sensor.spa_air_temp"    # Optionnel
+entity_spa_hum: "sensor.spa_humidity"         # Optionnel
 
-# 🔧 Maintenance
-entity_lz_filter: sensor.layzspa_filter_age
-lz_filter_max: 60
-entity_lz_reset_filter: button.layzspa_reset_filter_change_timer
-entity_lz_chlorine: sensor.layzspa_chlorine_age
-lz_chlorine_max: 14
-entity_lz_reset_chlore: button.layzspa_reset_chlorine_timer
+# 🔋 État du spa
+entity_lz_ready: "binary_sensor.layzspa_ready"
+entity_lz_heater: "binary_sensor.layzspa_heater"
 
-# ⚡ Énergie
-entity_lz_energy: sensor.layzspa_energy
-main_cons_entity: sensor.layzspa_power
+# 📐 Paramètres calcul chauffage
+lz_volume: 500                    # Volume en litres
+lz_power_w: 1942                  # Puissance en watts
+lz_heat_loss: 30                  # Perte thermique (%)
 
-# 💧 Sécurité
-entity_water_leak: binary_sensor.innondation_spa_water_leak
-entity_tamper: binary_sensor.innondation_spa_tamper
-entity_flood_bat: sensor.innondation_spa_battery
+# 🔧 Maintenance filtre
+entity_lz_filter: "sensor.layzspa_filter_age"
+entity_lz_reset_filter: "button.layzspa_reset_filter_change_timer"
+lz_filter_max: 60                 # Durée max filtre (jours)
 
-# 📷 Caméra
-entity_camera: camera.spa_camera
-cam_w_px: 300
-cam_h_px: 200
-cam_radius: 12
-cam_x: 0
-cam_y: 0
+# 🧴 Maintenance chlore
+entity_lz_chlorine: "sensor.layzspa_chlorine_age"
+entity_lz_reset_chlore: "button.layzspa_reset_chlorine_timer"
+lz_chlorine_max: 14               # Durée max chlore (jours)
 
-# 🔘 Interrupteurs (jusqu'à 6)
-switch_1: switch.layzspa_pump
+# 🧪 Chimie - pH
+entity_ph: "sensor.layzspa_ph"
+ph_min: 7.2
+ph_max: 7.6
+
+# 🧪 Chimie - ORP
+entity_orp: "sensor.layzspa_orp"
+orp_min: 650
+orp_max: 800
+
+# 🧪 Chimie - TDS
+entity_tds: "sensor.layzspa_tds"
+tds_min: 500
+tds_max: 1500
+
+# 🧪 Chimie - Sel
+entity_salt: "sensor.layzspa_salt"
+salt_min: 2500
+salt_max: 3500
+
+# ⚙️ Interrupteur 1 - Pompe
+switch_1: "switch.layzspa_pump"
 name_switch_1: "Pompe"
-switch_2: switch.layzspa_jets
+
+# ⚙️ Interrupteur 2 - Jets
+switch_2: "switch.layzspa_jets"
 name_switch_2: "Jets"
-switch_3: switch.layzspa_airbubbles
+
+# ⚙️ Interrupteur 3 - Bulles
+switch_3: "switch.layzspa_airbubbles"
 name_switch_3: "Bulles"
-switch_4: switch.layzspa_heat_regulation
-name_switch_4: "Chauffage"
-switch_5: switch.layzspa_power_switch
+
+# ⚙️ Interrupteur 4 - Chauffage
+switch_4: "switch.layzspa_heat_regulation"
+name_switch_4: "Chauffe"
+
+# ⚙️ Interrupteur 5 - Alimentation
+switch_5: "switch.layzspa_power_switch"
 name_switch_5: "Alimentation"
-switch_6: switch.layzspa_lock
+
+# ⚙️ Interrupteur 6 - Verrouillage
+switch_6: "switch.layzspa_lock"
 name_switch_6: "Verrouillage"
+
+# 🎥 Caméra
+entity_camera: "camera.spa_rtsp"
+cam_w_px: 280                     # Largeur (défaut: 100%)
+cam_h_px: 210                     # Hauteur (défaut: 210px)
+cam_radius: 12                    # Arrondi des coins (px)
+cam_x: 0                          # Décalage horizontal (px)
+cam_y: 0                          # Décalage vertical (px)
+
+# 📅 Programmation
+entity_lz_schedule: "input_datetime.spa_ready_at"
+
+# ⚡ Consommation énergétique
+entity_lz_energy: "sensor.layzspa_energy"
+main_cons_entity: "sensor.layzspa_power"
+entity_lz_rssi: "sensor.layzspa_rssi"
+
+# 🚨 Sécurité - Détecteurs d'inondation
+entity_water_leak: "binary_sensor.innondation_spa_water_leak"
+entity_tamper: "binary_sensor.innondation_spa_tamper"
+entity_flood_bat: "sensor.innondation_spa_battery"
 ```
 
 ---
 
-## 📋 Configuration complète des entités
+## 🎯 5 Onglets du menu
 
-### 🌡️ Température
-| Paramètre | Type | Description |
-|-----------|------|-------------|
-| `entity_water_temp` | `sensor` | Température actuelle de l'eau |
-| `entity_target_temp` | `climate` ou `input_number` | Température cible |
-| `target_temp_min` | `number` | Température minimale (°C) |
-| `target_temp_max` | `number` | Température maximale (°C) |
-| `entity_ext_temp` | `sensor` | Température extérieure |
-| `entity_spa_air_temp` | `sensor` | Température de l'air dans le spa |
+| Onglet | Icône | Contenu |
+|--------|-------|---------|
+| **Général** | 🏠 | Température, Thermostat, Maintenance, Sécurit�� |
+| **Programmation** | 📅 | Planification de l'activation du chauffage |
+| **Chimie** | ⚗️ | pH, ORP, TDS, Sel avec plages d'alerte |
+| **Caméra** | 🎥 | Flux vidéo en direct + Mode plein écran |
+| **Interrupteurs** | ⚙️ | Contrôle des 6 commandes principales |
 
-### 🧪 Chimie
-| Paramètre | Type | Description |
-|-----------|------|-------------|
-| `entity_ph` | `sensor` | Valeur pH |
-| `entity_orp` | `sensor` | Valeur ORP (potentiel redox) |
-| `entity_tds` | `sensor` | TDS (solides dissous totaux) |
+---
 
-### 🛁 État du spa (LayZSpa)
-| Paramètre | Type | Description |
-|-----------|------|-------------|
-| `entity_lz_ready` | `binary_sensor` | Spa prêt/pas prêt |
-| `entity_lz_heater` | `binary_sensor` | Chauffage actif/inactif |
-| `lz_volume` | `number` | Volume eau (litres) |
-| `lz_power_w` | `number` | Puissance chauffe (W) |
-| `lz_heat_loss` | `number` | Pertes thermiques (%) |
+## 📱 Responsive Design
 
-### 🔧 Maintenance
-| Paramètre | Type | Description |
-|-----------|------|-------------|
-| `entity_lz_filter` | `sensor` | Âge du filtre (jours) |
-| `lz_filter_max` | `number` | Alerte filtre après (jours) |
-| `entity_lz_reset_filter` | `button` | Bouton reset filtre |
-| `entity_lz_chlorine` | `sensor` | Âge du chlore (jours) |
-| `lz_chlorine_max` | `number` | Alerte chlore après (jours) |
-| `entity_lz_reset_chlore` | `button` | Bouton reset chlore |
-| `entity_lz_energy` | `sensor` | Énergie totale (kWh) |
-| `entity_lz_rssi` | `sensor` | Signal WiFi (RSSI) |
+- ✅ **Desktop** : Affichage complet avec tous les détails
+- ✅ **Tablette** : Optimisé pour portrait et paysage
+- ✅ **Mobile** : Menu compressé, scroll vertical, tactile
 
-### 💧 Sécurité
-| Paramètre | Type | Description |
-|-----------|------|-------------|
-| `entity_water_leak` | `binary_sensor` | Détecteur de fuite |
-| `entity_tamper` | `binary_sensor` | Alerte sabotage |
-| `entity_flood_bat` | `sensor` | Batterie du capteur (%) |
+---
 
-### 📷 Caméra
-| Paramètre | Type | Description |
-|-----------|------|-------------|
-| `entity_camera` | `camera` | Entité caméra |
-| `cam_w_px` | `number` | Largeur (px) |
-| `cam_h_px` | `number` | Hauteur (px) |
-| `cam_radius` | `number` | Arrondi des coins (px) |
-| `cam_x` | `number` | Décalage horizontal (px) |
-| `cam_y` | `number` | Décalage vertical (px) |
+## 🧩 Entités LayZSpa requises
+
+Assurez-vous que votre intégration **LayZSpa** fournit ces entités :
+
+| Entité | Type | Description |
+|--------|------|-------------|
+| `sensor.layzspa_temp_c` | Capteur | Température de l'eau actuelle |
+| `climate.layzspa_temperature_control` | Climate | Contrôle température cible |
+| `binary_sensor.layzspa_ready` | Binary | État prêt du spa |
+| `binary_sensor.layzspa_heater` | Binary | État du chauffeur |
+| `sensor.layzspa_filter_age` | Capteur | Âge du filtre (jours) |
+| `sensor.layzspa_chlorine_age` | Capteur | Âge du chlore (jours) |
+| `sensor.layzspa_ph` | Capteur | Valeur pH |
+| `sensor.layzspa_orp` | Capteur | Valeur ORP (oxydation) |
+| `sensor.layzspa_tds` | Capteur | Valeur TDS (minéralité) |
+| `sensor.layzspa_salt` | Capteur | Niveau de sel |
+| `sensor.layzspa_power` | Capteur | Puissance instantanée (W) |
+| `sensor.layzspa_energy` | Capteur | Énergie totale (kWh) |
 
 ---
 
 ## 🎨 Personnalisation
 
-### Modifier l'apparence
-```yaml
-# Image de fond
-background_image: "https://example.com/spa-bg.jpg"
-
-# Intensité du flou (0-25px)
-blur_amount: 12
-
-# Hauteur de la carte
-card_height: "680px"
-
-# Titre personnalisé
-card_title: "🛁 Mon Magnifique Spa"
+### Modifier les couleurs
+Éditez les variables CSS dans le fichier `spa-card.js` section `static styles` :
+```css
+:host {
+  --glass-border: rgba(255,255,255,0.12);
+  --txt-p: #ffffff;
+  --txt-s: rgba(255,255,255,0.65);
+}
 ```
 
-### Exemple d'intégration minimale
+### Ajouter une image de fond
 ```yaml
-type: custom:spa-card
-card_title: "Spa"
-entity_water_temp: sensor.spa_temperature
-entity_target_temp: climate.spa_heater
-entity_camera: camera.spa
+background_image: "https://votre-image.jpg"
+blur_amount: 20  # Plus de flou = moins visible l'image
 ```
 
 ---
 
-## 🔥 Cas d'usage courants
+## 🐛 Dépannage
 
-### 💡 Alertes intelligentes
-Configurez des automatisations basées sur la température :
-```yaml
-automation:
-  - alias: "Spa trop chaud"
-    trigger:
-      platform: numeric_state
-      entity_id: sensor.spa_temp
-      above: 40
-    action:
-      service: notify.mobile_app_phone
-      data:
-        message: "Attention : Spa à {{ states('sensor.spa_temp') }}°C"
+### ❌ La carte ne s'affiche pas
+1. Vérifiez le chemin du fichier : `/config/www/spa-card/spa-card.js`
+2. Videz le cache du navigateur (Ctrl+Shift+Del)
+3. Redémarrez Home Assistant
+4. Vérifiez la console du navigateur (F12) pour les erreurs
+
+### ❌ Les entités ne remontent pas
+1. Vérifiez que l'intégration LayZSpa est bien installée
+2. Confirmer les IDs des entités correspondent exactement
+3. Testez chaque entité individuellement dans Home Assistant
+
+### ❌ Caméra ne s'affiche pas
+1. Vérifiez que `entity_camera` existe et fonctionne
+2. Testez le flux vidéo directement dans HA
+3. Vérifiez les permissions d'accès à la caméra
+
+### ❌ Performance lente
+1. Réduisez le nombre de capteurs affichés
+2. Augmentez l'intervalle de rafraîchissement dans HA
+3. Videz le cache du navigateur
+
+---
+
+## 💡 Conseils & Astuces
+
+✨ **Pour une meilleure expérience :**
+- Configurez **tous les capteurs** LayZSpa avant d'ajouter la carte
+- Utilisez des **noms courts** pour les entités
+- Testez la **caméra** séparément avant intégration
+- Adaptez les **seuils chimiques** à votre spa
+- Sauvegardez votre configuration dans **GitHub** 🚀
+
+---
+
+## 📄 Fichiers du projet
+
 ```
-
-### 📊 Historiques et graphiques
-Utilisez History Stats pour tracker les usages :
-```yaml
-template:
-  - sensor:
-      - name: "Spa - Heures chauffe/jour"
-        unique_id: spa_heating_hours
-        unit_of_measurement: "h"
-```
-
-### 🏠 Scènes de contrôle
-```yaml
-scene:
-  - name: "Spa Détente"
-    entities:
-      switch.spa_pump: "on"
-      switch.spa_jets: "on"
-      climate.spa_heater:
-        temperature: 38
+spa-card/
+├── spa-card.js          # Composant principal
+├── README.md            # Cette documentation
+└── LICENSE              # Licence MIT
 ```
 
 ---
 
-## 🛠️ Troubleshooting
+## 🤝 Contributions
 
-### La carte n'apparaît pas
-- Vérifiez que le fichier est dans `/config/www/spa-card/`
-- Redémarrez Home Assistant
-- Videz le cache du navigateur (Ctrl+Shift+Del)
-
-### Entités manquantes
-- Assurez-vous que toutes les entités existent dans Home Assistant
-- Utilisez l'éditeur visuel pour les selectionner automatiquement
-
-### Erreurs de console
-Ouvrez les outils de développement (F12) et vérifiez que :
-- Les imports Lit Element chargent correctement
-- Pas d'erreurs CORS
-
----
-
-## 📝 Exemple de configuration complète
-
-```yaml
-type: custom:spa-card
-card_title: "🛁 SPA LAYZSPA"
-background_image: "https://example.com/spa-banner.jpg"
-blur_amount: 15
-card_height: "700px"
-
-# 🌡️ Température
-entity_water_temp: sensor.layzspa_temp_c
-entity_target_temp: climate.layzspa_temperature_control
-target_temp_min: 20
-target_temp_max: 40
-entity_ext_temp: sensor.outdoor_temperature
-entity_spa_air_temp: sensor.spa_air_temperature
-entity_ext_hum: sensor.outdoor_humidity
-entity_spa_hum: sensor.spa_humidity
-
-# 🧪 Chimie
-entity_ph: sensor.spa_ph
-entity_orp: sensor.spa_orp
-entity_tds: sensor.spa_tds
-
-# 🛁 État
-entity_lz_ready: binary_sensor.layzspa_ready
-entity_lz_heater: binary_sensor.layzspa_heater
-lz_volume: 500
-lz_power_w: 1942
-lz_heat_loss: 30
-
-# 🔧 Maintenance
-entity_lz_filter: sensor.layzspa_filter_age
-lz_filter_max: 60
-entity_lz_reset_filter: button.layzspa_reset_filter
-entity_lz_chlorine: sensor.layzspa_chlorine_age
-lz_chlorine_max: 14
-entity_lz_reset_chlore: button.layzspa_reset_chlorine
-entity_lz_energy: sensor.layzspa_energy_kwh
-entity_lz_rssi: sensor.layzspa_rssi
-main_cons_entity: sensor.layzspa_power
-
-# 💧 Sécurité
-entity_water_leak: binary_sensor.flood_sensor_water_leak
-entity_tamper: binary_sensor.flood_sensor_tamper
-entity_flood_bat: sensor.flood_sensor_battery
-
-# 📷 Caméra
-entity_camera: camera.spa_video_feed
-cam_w_px: 320
-cam_h_px: 240
-cam_radius: 12
-
-# 🔘 Interrupteurs
-switch_1: switch.layzspa_pump
-name_switch_1: "Pompe"
-switch_2: switch.layzspa_jets
-name_switch_2: "Jets"
-switch_3: switch.layzspa_airbubbles
-name_switch_3: "Bulles"
-switch_4: switch.layzspa_heater
-name_switch_4: "Chauffage"
-switch_5: switch.layzspa_power
-name_switch_5: "Alimentation"
-switch_6: switch.layzspa_lock
-name_switch_6: "Verrouillage"
-```
-
----
-
-## 🤝 Contribution
-
-Les contributions sont bienvenues ! N'hésitez pas à :
-- Signaler des bugs 🐛
-- Proposer des améliorations 💡
-- Partager vos configurations 📸
+Les contributions sont bienvenues !
+- 🐛 Signalez les bugs via **Issues**
+- 💡 Proposez des améliorations via **Discussions**
+- 🔧 Soumettez du code via **Pull Requests**
 
 ---
 
 ## 📄 Licence
 
-MIT License - Libre d'utilisation et de modification
+**MIT License** - Libre d'utilisation et de modification
+
+Créé avec ❤️ pour la communauté Home Assistant
 
 ---
 
-## 🙋 Support
+## 🙏 Crédits
 
-Besoin d'aide ?
-- 📖 Consultez la [documentation Home Assistant](https://www.home-assistant.io/)
-- 💬 Posez vos questions dans les issues GitHub
-- 🔍 Vérifiez les configurations existantes
+- **Home Assistant** : https://www.home-assistant.io
+- **Lit Element** : https://lit.dev
+- **LayZSpa Integration** : https://github.com/spaceman006/layzspa
 
 ---
 
-<div align="center">
-
-**Fait avec ❤️ pour les amoureux de spa et de Home Assistant**
-
-⭐ Si vous aimez ce projet, n'hésitez pas à laisser une star !
-
-</div>
+**Profitez de votre spa ! 🏊‍♂️🧖‍♀️**
