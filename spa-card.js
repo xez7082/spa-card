@@ -100,28 +100,28 @@ class SpaCardEditor extends LitElement {
       ])}`;
   }
 
-  _renderChem() {
+_renderChem() {
+    const c = this.config;
     return html`
-      ${this._acc('a-ph',  'background:rgba(167,139,250,.15);color:#8b5cf6;','pH', 'pH',[
-        { name:'entity_ph', label:'Entité pH',  selector:{ entity:{ domain:'sensor' } } },
-        { name:'ph_min',    label:'pH Minimum', selector:{ number:{ step:0.1, mode:'box' } } },
-        { name:'ph_max',    label:'pH Maximum', selector:{ number:{ step:0.1, mode:'box' } } }
-      ])}
-      ${this._acc('a-orp', 'background:rgba(167,139,250,.15);color:#8b5cf6;','ORP','ORP (mV)',[
-        { name:'entity_orp', label:'Entité ORP',  selector:{ entity:{ domain:'sensor' } } },
-        { name:'orp_min',    label:'ORP Minimum', selector:{ number:{ mode:'box' } } },
-        { name:'orp_max',    label:'ORP Maximum', selector:{ number:{ mode:'box' } } }
-      ])}
-      ${this._acc('a-tds', 'background:rgba(167,139,250,.15);color:#8b5cf6;','TDS','TDS (ppm)',[
-        { name:'entity_tds', label:'Entité TDS',  selector:{ entity:{ domain:'sensor' } } },
-        { name:'tds_min',    label:'TDS Minimum', selector:{ number:{ mode:'box' } } },
-        { name:'tds_max',    label:'TDS Maximum', selector:{ number:{ mode:'box' } } }
-      ])}
-      ${this._acc('a-salt','background:rgba(167,139,250,.15);color:#8b5cf6;','SEL','Sel (ppm)',[
-        { name:'entity_salt', label:'Entité sel',  selector:{ entity:{ domain:'sensor' } } },
-        { name:'salt_min',    label:'Sel Minimum', selector:{ number:{ mode:'box' } } },
-        { name:'salt_max',    label:'Sel Maximum', selector:{ number:{ mode:'box' } } }
-      ])}`;
+      <div style="color:#fff; padding:10px;">
+        <h3>Chimie</h3>
+        <p>pH: ${this._state(c.entity_ph) ?? 'N/A'}</p>
+        <p>ORP: ${this._state(c.entity_orp) ?? 'N/A'}</p>
+        <p>TDS: ${this._state(c.entity_tds) ?? 'N/A'}</p>
+      </div>`;
+  }
+
+  _renderSw() {
+    const c = this.config;
+    return html`
+      <div style="color:#fff; padding:10px;">
+        <h3>Interrupteurs</h3>
+        ${[1,2,3,4,5,6].map(i => this._exists(c['switch_'+i]) ? html`
+          <div style="margin-bottom:10px;">
+            ${c['name_switch_'+i] || 'Switch '+i} : 
+            <strong>${this._state(c['switch_'+i])}</strong>
+          </div>` : '')}
+      </div>`;
   }
 
   _renderCam() {
@@ -136,15 +136,6 @@ class SpaCardEditor extends LitElement {
         { name:'cam_x', label:'Décalage horizontal X (px)', selector:{ number:{ mode:'box', min:-500, max:500 } } },
         { name:'cam_y', label:'Décalage vertical Y (px)',   selector:{ number:{ mode:'box', min:-500, max:500 } } }
       ])}`;
-  }
-
-  _renderSw() {
-    const schema = Array.from({ length:10 }, (_,i) => [
-      { name:`switch_${i+1}`,      label:`Entité bouton ${i+1}`, selector:{ entity:{} } },
-      { name:`name_switch_${i+1}`, label:`Nom bouton ${i+1}`,    selector:{ text:{} } }
-    ]).flat();
-    return html`
-      ${this._acc('a-sw','background:rgba(251,146,60,.15);color:#f97316;','SW','10 interrupteurs configurables',schema)}`;
   }
 
 render() {
