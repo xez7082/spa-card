@@ -1,8 +1,21 @@
-import {
-  LitElement,
-  html,
-  css
-} from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+// Resolve LitElement from Home Assistant's own bundle to avoid
+// loading an external CDN dependency (supply-chain risk).
+const LitElement = customElements.get('hui-masonry-view')
+  ? Object.getPrototypeOf(customElements.get('hui-masonry-view'))
+  : customElements.get('hui-view')
+    ? Object.getPrototypeOf(customElements.get('hui-view'))
+    : customElements.get('hc-lovelace')
+      ? Object.getPrototypeOf(customElements.get('hc-lovelace'))
+      : null;
+
+if (!LitElement) {
+  throw new Error(
+    'spa-card: could not resolve LitElement from Home Assistant. '
+    + 'Make sure Home Assistant is fully loaded before this card.'
+  );
+}
+
+const { html, css } = LitElement.prototype.constructor;
 
 // ═══════════════════════════════════════════════════════════════════
 //  ÉDITEUR  —  V36
@@ -308,6 +321,15 @@ class SpaCard extends LitElement {
   _state(id) { return this._exists(id) ? this.hass.states[id].state : null; }
   _attr(id, a) { return this.hass?.states[id]?.attributes?.[a] ?? null; }
 
+  _safeNum(val, fallback = 0) {
+    const n = Number(val);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  _validEntity(id) {
+    return typeof id === 'string' && /^[a-z_]+\.[a-z0-9_]+$/.test(id);
+  }
+
   _changeTemp(offset) {
     const id = this.config.entity_target_temp;
     if (!this._exists(id)) return;
@@ -320,9 +342,9 @@ class SpaCard extends LitElement {
     const val = Math.min(mx, Math.max(mn, Math.round((cur+offset)*2)/2));
     const domain = id.split('.')[0];
     if (domain==='climate') {
-      this.hass.callService('climate','set_temperature',{ entity_id:id, temperature:val });
+      if (this._validEntity(id)) this.hass.callService('climate','set_temperature',{ entity_id:id, temperature:val });
     } else {
-      this.hass.callService('input_number','set_value',{ entity_id:id, value:val });
+      if (this._validEntity(id)) this.hass.callService('input_number','set_value',{ entity_id:id, value:val });
     }
   }
 
@@ -436,10 +458,12 @@ class SpaCard extends LitElement {
       if (nm < 0)   { nm += 60; nh -= 1; }
       nh = ((nh % 24) + 24) % 24;
       const timeStr = `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}:00`;
-      this.hass.callService('input_datetime', 'set_datetime', {
-        entity_id: schedId,
-        time: timeStr
-      });
+      if (this._validEntity(schedId)) {
+        this.hass.callService('input_datetime', 'set_datetime', {
+          entity_id: schedId,
+          time: timeStr
+        });
+      }
     };
 
     const activate = () => {
@@ -490,10 +514,12 @@ class SpaCard extends LitElement {
     const atTemp  = curTemp >= tgtTemp - 0.5;
 
     const toggle = () => {
-      this.hass.callService('climate', 'set_hvac_mode', {
-        entity_id: id,
-        hvac_mode: isOn ? 'off' : 'heat'
-      });
+      if (this._validEntity(id)) {
+        this.hass.callService('climate', 'set_hvac_mode', {
+          entity_id: id,
+          hvac_mode: isOn ? 'off' : 'heat'
+        });
+      }
     };
 
     return html`
@@ -581,7 +607,9 @@ class SpaCard extends LitElement {
     const chlorePct  = chloreAge !== null ? Math.min(100, chloreAge / chloreMax * 100) : 0;
 
     const pressReset = (entityId) => {
-      this.hass.callService('button', 'press', { entity_id: entityId });
+      if (this._validEntity(entityId)) {
+        this.hass.callService('button', 'press', { entity_id: entityId });
+      }
     };
 
     return html`
@@ -658,11 +686,11 @@ class SpaCard extends LitElement {
       return html`<div class="empty-msg"><ha-icon icon="mdi:camera-off"></ha-icon><p>Aucune caméra configurée</p></div>`;
     }
 
-    const w  = c.cam_w_px ? `${c.cam_w_px}px` : '100%';
-    const h  = c.cam_h_px ? `${c.cam_h_px}px` : '210px';
-    const r  = c.cam_radius !== undefined ? `${c.cam_radius}px` : '12px';
-    const x  = c.cam_x || 0;
-    const y  = c.cam_y || 0;
+    const w  = c.cam_w_px ? `${this._safeNum(c.cam_w_px, 200)}px` : '100%';
+    const h  = c.cam_h_px ? `${this._safeNum(c.cam_h_px, 210)}px` : '210px';
+    const r  = c.cam_radius !== undefined ? `${this._safeNum(c.cam_radius, 12)}px` : '12px';
+    const x  = this._safeNum(c.cam_x, 0);
+    const y  = this._safeNum(c.cam_y, 0);
 
     return html`
       <div class="cam-view">
