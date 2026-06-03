@@ -147,38 +147,53 @@ class SpaCardEditor extends LitElement {
       ${this._acc('a-sw','background:rgba(251,146,60,.15);color:#f97316;','SW','10 interrupteurs configurables',schema)}`;
   }
 
-  render() {
-    if (!this.hass || !this._config) return html``;
-    const TABS = [
-      { id:'gen',  s:'background:rgba(107,142,255,.18);color:#6b8eff;', i:'GEN', l:'Général'   },
-      { id:'sens', s:'background:rgba(52,211,153,.15);color:#10b981;',  i:'T°',  l:'Capteurs' },
-      { id:'chem', s:'background:rgba(167,139,250,.15);color:#8b5cf6;', i:'pH',  l:'Chimie'    },
-      { id:'cam',  s:'background:rgba(56,189,248,.15);color:#0ea5e9;',  i:'CAM', l:'Caméra'    },
-      { id:'sw',   s:'background:rgba(251,146,60,.15);color:#f97316;',  i:'SW',  l:'Switches'  }
-    ];
-    const content = {
-      gen:  this._renderGen(),
-      sens: this._renderSens(),
-      chem: this._renderChem(),
-      cam:  this._renderCam(),
-      sw:   this._renderSw()
-    };
-    return html`
-  <div class="editor-wrap">
-    <div class="tabs">
-      ${TABS.map(t => html`
-        <button class="tab ${this._tab === t.id ? 'on' : ''}" @click=${() => { this._tab = t.id; }}>
-          <div class="tab-inner">
-            <div class="tbox" style="${t.s}">${t.i}</div>
-            <span class="tlbl">${t.l}</span>
-          </div>
-        </button>
-      `)}
-    </div>
-    <div class="sections">${content[this._tab]}</div>
-  </div>
-`;
-  }
+render() {
+  if (!this.hass || !this.config) return html``;
+  const c = this.config;
+  const bg = c.background_image
+    ? `background-image:url('${c.background_image}'); background-size:cover; background-position:center;`
+    : 'background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);';
+  const blur = c.blur_amount !== undefined ? c.blur_amount : 15;
+  const height = c.card_height || '640px';
+
+  // Ajout des onglets Chimie et Switches ici
+  const TABS = [
+    { id: 'home', icon: 'mdi:hot-tub',    label: c.card_title || 'SPA' },
+    { id: 'cam',  icon: 'mdi:cctv',       label: 'Caméra' },
+    { id: 'chem', icon: 'mdi:flask',      label: 'Chimie' },
+    { id: 'sw',   icon: 'mdi:toggle-switch', label: 'Switches' }
+  ];
+
+  return html`
+    <ha-card style="height:${height}; overflow:hidden; position:relative; border-radius:16px;">
+      <div style="position:absolute; inset:0; ${bg} filter:blur(${blur}px); transform:scale(1.05);"></div>
+      <div style="position:absolute; inset:0; background:rgba(0,0,0,0.35);"></div>
+      <div style="position:relative; z-index:1; height:100%; display:flex; flex-direction:column; overflow:hidden;">
+
+        <div style="display:flex; gap:6px; padding:10px 10px 0; flex-shrink:0;">
+          ${TABS.map(t => html`
+            <button
+              style="flex:1; padding:7px 0; border:none; border-radius:10px; cursor:pointer; font-size:11px; font-weight:600;
+                     background:${this._tab === t.id ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.06)'};
+                     color:#fff; display:flex; align-items:center; justify-content:center; gap:4px;
+                     border:1px solid ${this._tab === t.id ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.08)'};"
+              @click=${() => { this._tab = t.id; }}>
+              <ha-icon icon="${t.icon}" style="--mdc-icon-size:16px;"></ha-icon>
+              ${t.label}
+            </button>
+          `)}
+        </div>
+
+        <div style="flex:1; overflow-y:auto; padding:10px;">
+          ${this._tab === 'home' ? this._renderHome() : ''}
+          ${this._tab === 'cam'  ? this._renderCam()  : ''}
+          ${this._tab === 'chem' ? this._renderChem() : ''}
+          ${this._tab === 'sw'   ? this._renderSw()   : ''}
+        </div>
+      </div>
+    </ha-card>
+  `;
+}
 
   static styles = css`
     :host { display: block; }
