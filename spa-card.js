@@ -147,14 +147,14 @@ class SpaCardEditor extends LitElement {
       ${this._acc('a-sw','background:rgba(251,146,60,.15);color:#f97316;','SW','10 interrupteurs configurables',schema)}`;
   }
 
-  render() {
+render() {
     if (!this.hass || !this._config) return html``;
     const TABS = [
-      { id:'gen',  s:'background:rgba(107,142,255,.18);color:#6b8eff;', i:'GEN', l:'Général'  },
+      { id:'gen',  s:'background:rgba(107,142,255,.18);color:#6b8eff;', i:'GEN', l:'Général'   },
       { id:'sens', s:'background:rgba(52,211,153,.15);color:#10b981;',  i:'T°',  l:'Capteurs' },
-      { id:'chem', s:'background:rgba(167,139,250,.15);color:#8b5cf6;', i:'pH',  l:'Chimie'   },
-      { id:'cam',  s:'background:rgba(56,189,248,.15);color:#0ea5e9;',  i:'CAM', l:'Caméra'   },
-      { id:'sw',   s:'background:rgba(251,146,60,.15);color:#f97316;',  i:'SW',  l:'Switches' }
+      { id:'chem', s:'background:rgba(167,139,250,.15);color:#8b5cf6;', i:'pH',  l:'Chimie'    },
+      { id:'cam',  s:'background:rgba(56,189,248,.15);color:#0ea5e9;',  i:'CAM', l:'Caméra'    },
+      { id:'sw',   s:'background:rgba(251,146,60,.15);color:#f97316;',  i:'SW',  l:'Switches'  }
     ];
     const content = {
       gen:  this._renderGen(),
@@ -176,7 +176,7 @@ class SpaCardEditor extends LitElement {
       </div>`;
   }
 
-  static styles = css`
+static styles = css`
     :host { display: block; }
     .tabs {
       display:flex; gap:3px;
@@ -184,23 +184,38 @@ class SpaCardEditor extends LitElement {
       border-radius:14px; padding:5px; margin-bottom:12px;
     }
     .tab {
-      flex:1; display:flex; flex-direction:column; align-items:center;
-      gap:4px; padding:5px 2px 7px; cursor:pointer; border:none;
+      flex:1; 
+      display:flex; 
+      justify-content:center; /* Centre le contenu horizontalement */
+      align-items:center;     /* Centre le contenu verticalement */
+      padding: 8px; 
+      cursor:pointer; border:none;
       background:transparent; border-radius:9px; transition:background .18s;
       font-family:var(--paper-font-body1_-_font-family,sans-serif);
     }
     .tab:hover { background:rgba(0,0,0,.04); }
     .tab.on    { background:var(--card-background-color,#fff); box-shadow:0 1px 4px rgba(0,0,0,.1); }
+    
+    /* Conteneur pour aligner l'icône et le texte */
+    .tab-inner {
+      display: flex;
+      flex-direction: row; 
+      align-items: center;
+      gap: 8px; 
+    }
+
     .tbox {
-      width:32px; height:32px; border-radius:9px;
+      width:24px; height:24px; border-radius:6px;
       display:flex; align-items:center; justify-content:center;
-      font-size:11px; font-weight:700; letter-spacing:-.3px; transition:.18s;
+      font-size:11px; font-weight:700; letter-spacing:-.3px;
     }
     .tlbl {
-      font-size:10px; color:var(--secondary-text-color,#888);
-      letter-spacing:.2px; transition:color .18s; white-space:nowrap;
+      font-size:11px; color:var(--secondary-text-color,#888);
+      white-space:nowrap; transition:color .18s;
     }
     .tab.on .tlbl { color:var(--primary-text-color,#212121); font-weight:500; }
+
+    /* Reste de vos styles inchangés */
     .sections { display:flex; flex-direction:column; }
     .acc { border:1px solid var(--divider-color,rgba(0,0,0,.12)); border-radius:12px; margin-bottom:8px; overflow:hidden; }
     .ach {
@@ -222,7 +237,6 @@ class SpaCardEditor extends LitElement {
     .acb > div { overflow:hidden; }
     .acbi { padding:6px 6px 14px; }
   `;
-}
 customElements.define('spa-card-editor', SpaCardEditor);
 
 
