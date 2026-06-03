@@ -147,7 +147,7 @@ class SpaCardEditor extends LitElement {
       ${this._acc('a-sw','background:rgba(251,146,60,.15);color:#f97316;','SW','10 interrupteurs configurables',schema)}`;
   }
 
-render() {
+  render() {
     if (!this.hass || !this._config) return html``;
     const TABS = [
       { id:'gen',  s:'background:rgba(107,142,255,.18);color:#6b8eff;', i:'GEN', l:'Général'   },
@@ -163,8 +163,7 @@ render() {
       cam:  this._renderCam(),
       sw:   this._renderSw()
     };
-// Dans votre méthode render()
-return html`
+    return html`
   <div class="editor-wrap">
     <div class="tabs">
       ${TABS.map(t => html`
@@ -181,7 +180,7 @@ return html`
 `;
   }
 
-static styles = css`
+  static styles = css`
     :host { display: block; }
     .tabs {
       display:flex; gap:3px;
@@ -243,6 +242,7 @@ static styles = css`
     .acb > div { overflow:hidden; }
     .acbi { padding:6px 6px 14px; }
   `;
+}
 customElements.define('spa-card-editor', SpaCardEditor);
 
 
