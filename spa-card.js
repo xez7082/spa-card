@@ -19,7 +19,12 @@ class SpaCardEditor extends LitElement {
     this._open = new Set(['a-disp', 'a-temps', 'a-layzspa', 'a-ph', 'a-cdim']);
   }
 
-  setConfig(config) { this._config = { ...config }; }
+  setConfig(config) {
+    if (!config || typeof config !== 'object') {
+      throw new Error('SpaCardEditor: invalid or missing configuration object');
+    }
+    this._config = { ...config };
+  }
 
   _val(ev) {
     if (!this._config || !this.hass) return;
@@ -295,7 +300,24 @@ class SpaCard extends LitElement {
   }
 
   constructor() { super(); this._tab = 'home'; this._camExpanded = false; }
-  setConfig(config) { this.config = config; }
+  setConfig(config) {
+    if (!config || typeof config !== 'object') {
+      throw new Error('SpaCard: invalid or missing configuration object');
+    }
+    this.config = config;
+  }
+
+  async _callService(domain, service, data) {
+    try {
+      await this.hass.callService(domain, service, data);
+    } catch (err) {
+      console.error(`SpaCard: service call ${domain}.${service} failed:`, err);
+      this.dispatchEvent(new CustomEvent('hass-notification', {
+        detail: { message: `Erreur : ${domain}.${service} \u2014 ${err.message || err}` },
+        bubbles: true, composed: true
+      }));
+    }
+  }
   getCardSize() { return Math.ceil((parseInt(this.config?.card_height)||640)/50); }
 
   _exists(id) {
@@ -320,9 +342,9 @@ class SpaCard extends LitElement {
     const val = Math.min(mx, Math.max(mn, Math.round((cur+offset)*2)/2));
     const domain = id.split('.')[0];
     if (domain==='climate') {
-      this.hass.callService('climate','set_temperature',{ entity_id:id, temperature:val });
+      this._callService('climate','set_temperature',{ entity_id:id, temperature:val });
     } else {
-      this.hass.callService('input_number','set_value',{ entity_id:id, value:val });
+      this._callService('input_number','set_value',{ entity_id:id, value:val });
     }
   }
 
@@ -413,9 +435,13 @@ class SpaCard extends LitElement {
     if (!schedId || !this.hass?.states[schedId]) return html``;
 
     const raw    = this.hass.states[schedId].state;
-    const parts  = raw.split(':');
-    const h      = parseInt(parts[0] ?? 0);
-    const m      = parseInt(parts[1] ?? 0);
+    const parts  = String(raw).split(':');
+    const h      = parseInt(parts[0], 10);
+    const m      = parseInt(parts[1], 10);
+    if (isNaN(h) || isNaN(m)) {
+      console.warn('SpaCard: invalid schedule time format:', raw);
+      return html``;
+    }
 
     const calc   = this._calcHeatingTime();
     let startStr = '';
@@ -436,14 +462,14 @@ class SpaCard extends LitElement {
       if (nm < 0)   { nm += 60; nh -= 1; }
       nh = ((nh % 24) + 24) % 24;
       const timeStr = `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}:00`;
-      this.hass.callService('input_datetime', 'set_datetime', {
+      this._callService('input_datetime', 'set_datetime', {
         entity_id: schedId,
         time: timeStr
       });
     };
 
     const activate = () => {
-      this.hass.callService('persistent_notification', 'create', {
+      this._callService('persistent_notification', 'create', {
         title: '🛁 Spa programmé',
         message: `Prêt à ${readyStr} — chauffe démarrera à ${startStr || '…'}`,
         notification_id: 'spa_schedule'
@@ -490,7 +516,7 @@ class SpaCard extends LitElement {
     const atTemp  = curTemp >= tgtTemp - 0.5;
 
     const toggle = () => {
-      this.hass.callService('climate', 'set_hvac_mode', {
+      this._callService('climate', 'set_hvac_mode', {
         entity_id: id,
         hvac_mode: isOn ? 'off' : 'heat'
       });
@@ -537,6 +563,10 @@ class SpaCard extends LitElement {
 
     const whNeeded      = volume * 1.163 * deltaT;
     const effectivePower = powerW * efficiency;
+    if (!effectivePower || effectivePower <= 0) {
+      console.warn('SpaCard: effective heating power is zero or negative, cannot estimate time');
+      return null;
+    }
     const timeH          = whNeeded / effectivePower;
 
     return { timeH, deltaT, curTemp, tgtTemp, powerW, efficiency };
@@ -558,7 +588,7 @@ class SpaCard extends LitElement {
         ${hasEnergy ? html`
           <div class="footer-pill">
             <ha-icon icon="mdi:flash"></ha-icon>
-            <span>${parseFloat(this._state(c.entity_lz_energy)).toFixed(2)} kWh</span>
+            <span>${(val => isNaN(val) ? '\u2014' : val.toFixed(2))(parseFloat(this._state(c.entity_lz_energy)))} kWh</span>
           </div>` : ''}
       </div>`;
   }
@@ -581,7 +611,11 @@ class SpaCard extends LitElement {
     const chlorePct  = chloreAge !== null ? Math.min(100, chloreAge / chloreMax * 100) : 0;
 
     const pressReset = (entityId) => {
-      this.hass.callService('button', 'press', { entity_id: entityId });
+      if (!entityId) {
+        console.error('SpaCard: pressReset called without a valid entity_id');
+        return;
+      }
+      this._callService('button', 'press', { entity_id: entityId });
     };
 
     return html`
@@ -685,7 +719,10 @@ class SpaCard extends LitElement {
 
 
   render() {
-    if (!this.hass || !this.config) return html``;
+    if (!this.hass || !this.config) {
+      return html`<ha-card><div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px;color:#ef4444;font-size:13px;text-align:center;">Waiting for Home Assistant...</div></ha-card>`;
+    }
+    try {
     const c = this.config;
     const bg = c.background_image
       ? `background-image:url('${c.background_image}'); background-size:cover; background-position:center;`
@@ -726,6 +763,16 @@ class SpaCard extends LitElement {
         </div>
       </ha-card>
     `;
+    } catch (err) {
+      console.error('SpaCard: render failed:', err);
+      return html`<ha-card>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px;color:#ef4444;font-size:13px;text-align:center;">
+          <ha-icon icon="mdi:alert-circle" style="--mdc-icon-size:28px;"></ha-icon>
+          <strong>Erreur de rendu</strong>
+          <span>${err.message}</span>
+        </div>
+      </ha-card>`;
+    }
   }
 
   static styles = css`
