@@ -35,6 +35,10 @@ class SpaCard extends LitElement {
       entity_water_leak: 'binary_sensor.innondation_spa_water_leak',
       entity_tamper:     'binary_sensor.innondation_spa_tamper',
       entity_flood_bat:  'sensor.innondation_spa_battery',
+      entity_ph: 'sensor.layzspa_ph',
+      entity_orp: 'sensor.layzspa_orp',
+      entity_tds: 'sensor.layzspa_tds',
+      entity_salt: 'sensor.layzspa_salt',
       ph_min:7.2, ph_max:7.6,
       orp_min:650, orp_max:800,
       tds_min:500, tds_max:1500,
@@ -52,7 +56,7 @@ class SpaCard extends LitElement {
     return { hass:{}, config:{}, _tab:{ type:String }, _camExpanded:{ type:Boolean } };
   }
 
-  constructor() { super(); this._tab = 'general'; this._camExpanded = false; }
+  constructor() { super(); this._tab = 'gen'; this._camExpanded = false; }
   setConfig(config) { this.config = config; }
   getCardSize() { return Math.ceil((parseInt(this.config?.card_height)||640)/50); }
 
@@ -105,7 +109,7 @@ class SpaCard extends LitElement {
     return this._state(id);
   }
 
-  _renderGeneral() {
+  _renderHome() {
     const c = this.config;
     const wTemp  = this._waterTemp();
     const tTemp  = this._targetTemp();
@@ -232,38 +236,6 @@ class SpaCard extends LitElement {
         <button class="sched-confirm-action" @click=${activate}>
           <ha-icon icon="mdi:calendar-check"></ha-icon> Activer la programmation
         </button>
-      </div>`;
-  }
-
-  _renderProgramming() {
-    return this._renderSchedule();
-  }
-
-  _renderChemistry() {
-    const c = this.config;
-    return html`
-      <div class="chem-view">
-        <h3>Chimie de l'eau</h3>
-        <div class="chem-grid">
-          ${this._exists(c.entity_ph) ? html`
-            <div class="chem-card">
-              <div class="chem-label">pH</div>
-              <div class="chem-value">${this._state(c.entity_ph)}</div>
-              <div class="chem-range">${c.ph_min} - ${c.ph_max}</div>
-            </div>` : ''}
-          ${this._exists(c.entity_orp) ? html`
-            <div class="chem-card">
-              <div class="chem-label">ORP</div>
-              <div class="chem-value">${this._state(c.entity_orp)}</div>
-              <div class="chem-range">${c.orp_min} - ${c.orp_max}</div>
-            </div>` : ''}
-          ${this._exists(c.entity_tds) ? html`
-            <div class="chem-card">
-              <div class="chem-label">TDS</div>
-              <div class="chem-value">${this._state(c.entity_tds)}</div>
-              <div class="chem-range">${c.tds_min} - ${c.tds_max}</div>
-            </div>` : ''}
-        </div>
       </div>`;
   }
 
@@ -443,7 +415,66 @@ class SpaCard extends LitElement {
       </div>`;
   }
 
-  _renderCamera() {
+  _renderChemistry() {
+    const c = this.config;
+    return html`
+      <div class="chem-view">
+        <h3 class="section-title">⚗️ Chimie de l'eau</h3>
+        <div class="chem-grid">
+          ${this._exists(c.entity_ph) ? html`
+            <div class="chem-card">
+              <div class="chem-icon">pH</div>
+              <div class="chem-val">${this._state(c.entity_ph)}</div>
+              <div class="chem-label">Acidité</div>
+              <div class="chem-range">${c.ph_min ?? 7.2} - ${c.ph_max ?? 7.6}</div>
+            </div>` : ''}
+          ${this._exists(c.entity_orp) ? html`
+            <div class="chem-card">
+              <div class="chem-icon">ORP</div>
+              <div class="chem-val">${this._state(c.entity_orp)}</div>
+              <div class="chem-label">Oxydation</div>
+              <div class="chem-range">${c.orp_min ?? 650} - ${c.orp_max ?? 800}</div>
+            </div>` : ''}
+          ${this._exists(c.entity_tds) ? html`
+            <div class="chem-card">
+              <div class="chem-icon">TDS</div>
+              <div class="chem-val">${this._state(c.entity_tds)}</div>
+              <div class="chem-label">Minéralité</div>
+              <div class="chem-range">${c.tds_min ?? 500} - ${c.tds_max ?? 1500}</div>
+            </div>` : ''}
+          ${this._exists(c.entity_salt) ? html`
+            <div class="chem-card">
+              <div class="chem-icon">💧</div>
+              <div class="chem-val">${this._state(c.entity_salt)}</div>
+              <div class="chem-label">Sel</div>
+              <div class="chem-range">${c.salt_min ?? 2500} - ${c.salt_max ?? 3500}</div>
+            </div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  _renderSwitches() {
+    const c = this.config;
+    const switches = [1,2,3,4,5,6].filter(i => this._exists(c['switch_'+i]));
+    if (switches.length === 0) return html`<div class="empty-msg"><ha-icon icon="mdi:toggle-switch-off"></ha-icon><p>Aucun interrupteur configuré</p></div>`;
+
+    return html`
+      <div class="switch-view">
+        <h3 class="section-title">⚙️ Commandes</h3>
+        <div class="switch-grid">
+          ${switches.map(i => html`
+            <div class="switch-card">
+              <div class="switch-label">${c['name_switch_'+i] || 'Switch '+i}</div>
+              <div class="switch-state ${this._state(c['switch_'+i]) === 'on' ? 'state-on' : 'state-off'}">
+                ${this._state(c['switch_'+i]) === 'on' ? '✓ ON' : '○ OFF'}
+              </div>
+            </div>
+          `)}
+        </div>
+      </div>`;
+  }
+
+  _renderCam() {
     const c = this.config;
     if (!this._exists(c.entity_camera)) {
       return html`<div class="empty-msg"><ha-icon icon="mdi:camera-off"></ha-icon><p>Aucune caméra configurée</p></div>`;
@@ -469,25 +500,9 @@ class SpaCard extends LitElement {
             <ha-icon icon="${this._camExpanded ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
           </div>
         </div>
+        ${this._renderSchedule()}
       </div>
     `;
-  }
-
-  _renderSwitches() {
-    const c = this.config;
-    return html`
-      <div class="sw-view">
-        <h3>Interrupteurs</h3>
-        <div class="sw-grid">
-          ${[1,2,3,4,5,6].map(i => this._exists(c['switch_'+i]) ? html`
-            <div class="sw-card">
-              <div class="sw-label">${c['name_switch_'+i] || 'Switch '+i}</div>
-              <div class="sw-state ${this._state(c['switch_'+i]) === 'on' ? 'sw-on' : 'sw-off'}">
-                ${this._state(c['switch_'+i]) === 'on' ? 'ON' : 'OFF'}
-              </div>
-            </div>` : '')}
-        </div>
-      </div>`;
   }
 
   render() {
@@ -500,11 +515,11 @@ class SpaCard extends LitElement {
     const height = c.card_height || '640px';
 
     const TABS = [
-      { id: 'general', icon: 'mdi:hot-tub',       label: 'Général' },
-      { id: 'programming', icon: 'mdi:clock-outline', label: 'Programmation' },
-      { id: 'chemistry', icon: 'mdi:flask',       label: 'Chimie' },
-      { id: 'camera', icon: 'mdi:cctv',           label: 'Caméra' },
-      { id: 'switches', icon: 'mdi:toggle-switch', label: 'Interrupteurs' }
+      { id: 'gen', icon: 'mdi:home-thermometer', label: 'Général' },
+      { id: 'prog', icon: 'mdi:clock-outline', label: 'Programmation' },
+      { id: 'chem', icon: 'mdi:flask-outline', label: 'Chimie' },
+      { id: 'cam', icon: 'mdi:cctv', label: 'Caméra' },
+      { id: 'sw', icon: 'mdi:toggle-switch', label: 'Interrupteurs' }
     ];
 
     return html`
@@ -513,25 +528,24 @@ class SpaCard extends LitElement {
         <div style="position:absolute; inset:0; background:rgba(0,0,0,0.35);"></div>
         <div style="position:relative; z-index:1; height:100%; display:flex; flex-direction:column; overflow:hidden;">
 
-          <!-- Menu Tabs -->
-          <div class="menu-tabs">
+          <!-- Menu Tabs avec labels -->
+          <div class="tabs-menu">
             ${TABS.map(t => html`
-              <button
-                class="menu-btn ${this._tab === t.id ? 'menu-btn-active' : ''}"
-                @click=${() => { this._tab = t.id; this.requestUpdate(); }}>
+              <button class="tab-btn ${this._tab === t.id ? 'tab-active' : ''}"
+                      @click=${() => { this._tab = t.id; }}>
                 <ha-icon icon="${t.icon}"></ha-icon>
                 <span>${t.label}</span>
               </button>
             `)}
           </div>
 
-          <!-- Content -->
-          <div class="menu-content">
-            ${this._tab === 'general' ? this._renderGeneral() : ''}
-            ${this._tab === 'programming' ? this._renderProgramming() : ''}
-            ${this._tab === 'chemistry' ? this._renderChemistry() : ''}
-            ${this._tab === 'camera' ? this._renderCamera() : ''}
-            ${this._tab === 'switches' ? this._renderSwitches() : ''}
+          <!-- Contenu -->
+          <div class="content-area">
+            ${this._tab === 'gen' ? this._renderHome() : ''}
+            ${this._tab === 'prog' ? this._renderSchedule() : ''}
+            ${this._tab === 'chem' ? this._renderChemistry() : ''}
+            ${this._tab === 'cam' ? this._renderCam() : ''}
+            ${this._tab === 'sw' ? this._renderSwitches() : ''}
           </div>
         </div>
       </ha-card>
@@ -539,93 +553,157 @@ class SpaCard extends LitElement {
   }
 
   static styles = css`
-    :host { 
-      display: block; 
-      --glass-border: rgba(255,255,255,0.12); 
-      --txt-p: #ffffff; 
-      --txt-s: rgba(255,255,255,0.65);
-    }
-
-    .menu-tabs {
+    :host { display: block; --glass-border: rgba(255,255,255,0.12); --txt-p: #ffffff; --txt-s: rgba(255,255,255,0.65); }
+    
+    /* Tabs Menu */
+    .tabs-menu {
       display: flex;
       gap: 4px;
-      padding: 10px;
+      padding: 8px 6px;
       flex-shrink: 0;
-      background: rgba(0,0,0,0.2);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--glass-border);
       overflow-x: auto;
+      scrollbar-width: none;
     }
-
-    .menu-btn {
+    .tabs-menu::-webkit-scrollbar { display: none; }
+    
+    .tab-btn {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 8px 12px;
-      border: none;
+      gap: 3px;
+      padding: 6px 10px;
+      border: 1px solid rgba(255,255,255,0.12);
       border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      color: var(--txt-s);
+      font-size: 10px;
+      font-weight: 600;
       cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    
+    .tab-btn:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.2);
+    }
+    
+    .tab-btn.tab-active {
+      background: linear-gradient(135deg, rgba(107,142,255,0.3), rgba(52,211,153,0.3));
+      border-color: rgba(107,142,255,0.5);
+      color: var(--txt-p);
+      box-shadow: 0 0 12px rgba(107,142,255,0.2);
+    }
+    
+    .tab-btn ha-icon { --mdc-icon-size: 18px; }
+    
+    /* Content Area */
+    .content-area { flex: 1; overflow-y: auto; padding: 10px; }
+    
+    /* Views */
+    .home-view, .cam-view, .switch-view, .chem-view { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 14px; 
+    }
+    
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--txt-p);
+      margin: 0;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    /* Chemistry */
+    .chem-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    
+    .chem-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .chem-icon {
+      font-size: 14px;
+      font-weight: 700;
+      color: #6b8eff;
+    }
+    
+    .chem-val {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--txt-p);
+    }
+    
+    .chem-label {
+      font-size: 9px;
+      color: var(--txt-s);
+      font-weight: 600;
+    }
+    
+    .chem-range {
+      font-size: 8px;
+      color: rgba(255,255,255,0.4);
+    }
+    
+    /* Switches */
+    .switch-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    
+    .switch-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .switch-label {
       font-size: 12px;
       font-weight: 600;
       color: var(--txt-p);
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.08);
+    }
+    
+    .switch-state {
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px;
+      border-radius: 8px;
       transition: all 0.3s ease;
-      flex-shrink: 0;
-      white-space: nowrap;
     }
-
-    .menu-btn:hover {
-      background: rgba(255,255,255,0.12);
-      border-color: rgba(255,255,255,0.15);
+    
+    .state-on {
+      background: rgba(16,185,129,0.2);
+      color: #10b981;
     }
-
-    .menu-btn-active {
-      background: rgba(255,255,255,0.2);
-      border-color: rgba(255,255,255,0.3);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    
+    .state-off {
+      background: rgba(107,142,255,0.1);
+      color: #6b8eff;
     }
-
-    .menu-btn ha-icon {
-      --mdc-icon-size: 18px;
-    }
-
-    .menu-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px;
-    }
-
-    .home-view, .cam-view, .chem-view, .sw-view {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    h3 {
-      color: var(--txt-p);
-      margin: 0 0 10px 0;
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .flex-row-center {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      width: 100%;
-    }
-
-    .side-col {
-      width: 75px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
-
+    
+    /* Flex */
+    .flex-row-center { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
+    .side-col { width: 75px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .side-info { text-align: center; }
     .val-big { font-size: 20px; font-weight: 700; color: var(--txt-p); text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
     .label-tiny { font-size: 9px; font-weight: 600; color: var(--txt-s); letter-spacing: 0.5px; margin-top: 2px; }
@@ -638,11 +716,11 @@ class SpaCard extends LitElement {
     .water-label { font-size: 9px; font-weight: 700; color: var(--txt-s); letter-spacing: 1px; }
     .water-val { font-size: 32px; font-weight: 800; color: var(--txt-p); line-height: 36px; letter-spacing: -0.5px; }
     .target-box { font-size: 9px; font-weight: 600; color: #10b981; background: rgba(16,185,129,0.12); padding: 2px 7px; border-radius: 20px; margin-top: 2px; border: 1px solid rgba(16,185,129,0.25); }
-    .temp-btn { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; color: var(--txt-p); }
-    .temp-btn:hover { background: rgba(255,255,255,0.15); }
+    .temp-btn { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center; color: var(--txt-s); cursor: pointer; transition: 0.2s; }
+    .temp-btn:hover { background: rgba(255,255,255,0.15); color: var(--txt-p); }
     
-    .heat-ctrl { display: flex; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 14px; padding: 6px; align-items: center; justify-content: space-between; gap: 10px; }
-    .heat-btn { border: none; outline: none; border-radius: 10px; padding: 8px 14px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.3s; color: #fff; }
+    .heat-ctrl { display: flex; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 14px; padding: 6px; align-items: center; justify-content: space-between; }
+    .heat-btn { border: none; outline: none; border-radius: 10px; padding: 8px 14px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.3s; }
     .heat-off { background: rgba(255,255,255,0.05); color: var(--txt-s); border: 1px solid transparent; }
     .heat-on { background: linear-gradient(135deg, #ff9800, #f44336); color: #fff; box-shadow: 0 3px 10px rgba(244,67,54,0.3); border: 1px solid rgba(255,255,255,0.1); }
     .heat-temps { display: flex; align-items: center; gap: 12px; padding-right: 6px; }
@@ -651,7 +729,7 @@ class SpaCard extends LitElement {
     .heat-t-btn:hover { opacity: 1; transform: scale(1.1); }
     
     .footer-row { display: flex; gap: 8px; justify-content: center; }
-    .footer-pill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 10px; padding: 5px 10px; font-size: 11px; color: var(--txt-p); }
+    .footer-pill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 10px; padding: 5px 10px; font-size: 11px; color: var(--txt-s); }
     .footer-pill ha-icon { --mdc-icon-size: 13px; }
     .anim-pulse { animation: pulse 2s infinite ease-in-out; }
     @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; color: #ffeb3b; } }
@@ -664,8 +742,8 @@ class SpaCard extends LitElement {
     .maint-fill { height: 100%; background: #10b981; border-radius: 2px; }
     .maint-fill-warn { background: #ef4444 !important; }
     .maint-val { font-size: 10px; color: var(--txt-p); font-weight: 500; text-align: right; }
-    .maint-badge { font-size: 8px; font-weight: 700; text-transform: uppercase; padding: 1px 4px; border-radius: 4px; background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
-    .maint-reset-btn { position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--txt-p); cursor: pointer; font-size: 10px; transition: 0.2s; }
+    .maint-badge { font-size: 8px; font-weight: 700; text-transform: uppercase; padding: 1px 4px; border-radius: 4px; background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .maint-reset-btn { position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--txt-s); font-size: 10px; cursor: pointer; transition: all 0.2s; }
     .maint-reset-btn:hover { background: #10b981; color: #fff; border-color: transparent; }
     .maint-warn { border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.01); }
 
@@ -689,91 +767,20 @@ class SpaCard extends LitElement {
     .sched-sub-info { font-size: 10px; color: var(--txt-s); margin-top: 1px; }
     .sched-sub-info strong { color: #6b8eff; font-weight: 600; }
     .sched-grid-ctrl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-    .sched-ctrl-btn { border: none; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; padding: 6px 0; color: var(--txt-p); font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .sched-ctrl-btn { border: none; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; padding: 6px 0; color: var(--txt-p); font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
     .sched-ctrl-btn:hover { background: rgba(255,255,255,0.12); }
     .text-accent { color: #6b8eff !important; }
-    .sched-confirm-action { border: none; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; border-radius: 10px; padding: 8px 0; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+    .sched-confirm-action { border: none; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; border-radius: 10px; padding: 8px 0; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
     .sched-confirm-action:hover { opacity: 0.9; transform: translateY(-0.5px); }
     .sched-confirm-action ha-icon { --mdc-icon-size: 13px; }
 
-    .cam-container { position: relative; background: #000; overflow: hidden; border: 1px solid var(--glass-border); box-sizing: border-box; margin: 0 auto; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 12px; }
-    .cam-overlay { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.5); color: #fff; padding: 4px; border-radius: 6px; display: flex; align-items: center; justify-content: center; opacity: 0.7; transition: opacity 0.3s; cursor: pointer; }
+    .cam-container { position: relative; background: #000; overflow: hidden; border: 1px solid var(--glass-border); box-sizing: border-box; margin: 0 auto; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .cam-overlay { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.5); color: #fff; padding: 4px; border-radius: 6px; display: flex; align-items: center; justify-content: center; opacity: 0.7; transition: opacity 0.2s; cursor: pointer; }
     .cam-container:hover .cam-overlay { opacity: 1; }
     .cam-overlay ha-icon { --mdc-icon-size: 16px; }
     .cam-expanded { position: fixed !important; top: 10vh; left: 5vw; width: 90vw !important; height: auto !important; max-height: 80vh; z-index: 99; }
-    .empty-msg { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; color: var(--txt-s); font-size: 12px; gap: 8px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid var(--glass-border); }
+    .empty-msg { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; color: var(--txt-s); font-size: 12px; gap: 8px; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid var(--glass-border); }
     .empty-msg ha-icon { --mdc-icon-size: 24px; }
-
-    .chem-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-      gap: 10px;
-    }
-
-    .chem-card {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--glass-border);
-      border-radius: 12px;
-      padding: 12px;
-      text-align: center;
-    }
-
-    .chem-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--txt-s);
-      margin-bottom: 6px;
-    }
-
-    .chem-value {
-      font-size: 24px;
-      font-weight: 700;
-      color: #6b8eff;
-      margin-bottom: 4px;
-    }
-
-    .chem-range {
-      font-size: 9px;
-      color: var(--txt-s);
-    }
-
-    .sw-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-      gap: 10px;
-    }
-
-    .sw-card {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--glass-border);
-      border-radius: 12px;
-      padding: 12px;
-      text-align: center;
-    }
-
-    .sw-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--txt-s);
-      margin-bottom: 8px;
-    }
-
-    .sw-state {
-      font-size: 14px;
-      font-weight: 700;
-      padding: 8px;
-      border-radius: 8px;
-    }
-
-    .sw-on {
-      background: rgba(16,185,129,0.2);
-      color: #10b981;
-    }
-
-    .sw-off {
-      background: rgba(239,68,68,0.2);
-      color: #ef4444;
-    }
   `;
 }
 customElements.define('spa-card', SpaCard);
@@ -783,6 +790,6 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type:        'spa-card',
   name:        'Spa Card',
-  description: 'Carte de contrôle LayZSpa / spa avec températures, maintenance, caméra et programmation.',
+  description: 'Carte de contrôle LayZSpa complète avec température, chimie, caméra et programmation',
   preview:     true,
 });
