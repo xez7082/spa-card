@@ -626,7 +626,6 @@ class SpaCard extends LitElement {
             <ha-icon icon="${this._camExpanded?'mdi:fullscreen-exit':'mdi:fullscreen'}"></ha-icon>
           </div>
         </div>
-        ${this._renderSchedule()}
       </div>`;
   }
 
