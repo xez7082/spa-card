@@ -604,26 +604,32 @@ class SpaCard extends LitElement {
   // ═══════════════════════════════════════════════
   _renderCam() {
     const c = this.config;
-    if (!this._exists(c.entity_camera)) {
+    if (!c.entity_camera || !this.hass?.states[c.entity_camera]) {
       return html`<div class="empty-msg"><ha-icon icon="mdi:camera-off"></ha-icon><p>Aucune caméra configurée</p></div>`;
     }
     const w = c.cam_w_px ? `${c.cam_w_px}px` : '100%';
-    const h = c.cam_h_px ? `${c.cam_h_px}px` : '210px';
+    const h = c.cam_h_px ? `${c.cam_h_px}px` : '300px';
     const r = c.cam_radius !== undefined ? `${c.cam_radius}px` : '12px';
     const x = c.cam_x || 0;
     const y = c.cam_y || 0;
+
+    const ts   = Math.floor(Date.now() / 5000);
+    const base = this.hass.states[c.entity_camera]?.attributes?.entity_picture ?? '';
+    const src  = base ? `${base}${base.includes('?') ? '&' : '?'}_t=${ts}` : '';
+
+    if (!src) {
+      return html`<div class="empty-msg"><ha-icon icon="mdi:camera-off"></ha-icon><p>Flux caméra indisponible</p></div>`;
+    }
+
     return html`
       <div class="cam-view">
-        <div class="cam-container ${this._camExpanded?'cam-expanded':''}"
-             style="width:${this._camExpanded?'100%':w}; height:${this._camExpanded?'auto':h}; border-radius:${r}; min-height:150px;">
-          <ha-camera-stream
-            .hass=${this.hass}
-            .entityId=${c.entity_camera}
-            style="transform:translate(${x}px,${y}px); width:100%; height:100%; display:block;"
-            controls
-          ></ha-camera-stream>
-          <div class="cam-overlay" @click=${()=>this._camExpanded=!this._camExpanded}>
-            <ha-icon icon="${this._camExpanded?'mdi:fullscreen-exit':'mdi:fullscreen'}"></ha-icon>
+        <div class="cam-container ${this._camExpanded ? 'cam-expanded' : ''}"
+             style="width:${this._camExpanded ? '100%' : w}; height:${this._camExpanded ? '80vh' : h}; border-radius:${r};">
+          <img src="${src}" alt="Caméra spa"
+               style="width:100%; height:100%; object-fit:cover; border-radius:${r}; transform:translate(${x}px,${y}px); display:block;"
+               @error=${(e) => { e.target.style.opacity = '0.3'; }}>
+          <div class="cam-overlay" @click=${() => { this._camExpanded = !this._camExpanded; this.requestUpdate(); }}>
+            <ha-icon icon="${this._camExpanded ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
           </div>
         </div>
       </div>`;
