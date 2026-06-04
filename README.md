@@ -55,7 +55,7 @@
 
 | Général | Programmation | Chimie | Caméra | Interrupteurs |
 | :---: | :---: | :---: | :---: | :---: |
-| ![Général](https://github.com/xez7082/spa-card/blob/main/Img/spa.png?raw=true) | ![Programmation](https://github.com/xez7082/spa-card/blob/main/Img/spa1.png?raw=true) | ![Chimie](Capture%20d'écran%202026-06-04%20081539.jpg) | ![Caméra](Capture%20d'écran%202026-06-04%20081616.jpg) | ![Interrupteurs](Capture%20d'écran%202026-06-04%20081657.jpg) |
+| ![Général](https://github.com/xez7082/spa-card/blob/main/Img/spa.png?raw=true) | ![Programmation](https://github.com/xez7082/spa-card/blob/main/Img/spa1.png?raw=true) | ![Chimie](https://github.com/xez7082/spa-card/blob/main/Img/spa2.png?raw=true) | ![Caméra](Capture%20d'écran%202026-06-04%20081616.jpg) | ![Interrupteurs](Capture%20d'écran%202026-06-04%20081657.jpg) |
 
 
 ## 🚀 Installation rapide
