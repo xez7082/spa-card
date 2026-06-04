@@ -53,6 +53,11 @@
 
 ---
 
+| Général | Programmation | Chimie | Caméra | Interrupteurs |
+| :---: | :---: | :---: | :---: | :---: |
+| ![Général](Capture%20d'écran%202026-06-04%20081436.jpg) | ![Programmation](Capture%20d'écran%202026-06-04%20081506.jpg) | ![Chimie](Capture%20d'écran%202026-06-04%20081539.jpg) | ![Caméra](Capture%20d'écran%202026-06-04%20081616.jpg) | ![Interrupteurs](Capture%20d'écran%202026-06-04%20081657.jpg) |
+
+
 ## 🚀 Installation rapide
 
 ### 1️⃣ Téléchargez le fichier
