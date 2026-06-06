@@ -144,6 +144,11 @@ class SpaCardEditor extends LitElement {
       ${this._acc('a-sw','#f97316','⚙️','10 interrupteurs configurables', schema)}`;
   }
 
+  ${this.hass.states['automation.spa_demarrage_programme_intelligent'].state === 'on' 
+  ? html`<div class="status-ok"><ha-icon icon="mdi:check-circle"></ha-icon> Programmation active</div>` 
+  : html`<div class="status-off"><ha-icon icon="mdi:alert-circle"></ha-icon> Programmation inactive</div>`
+}
+  
   render() {
     if (!this.hass || !this._config) return html``;
     const TABS = [
