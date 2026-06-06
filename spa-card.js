@@ -1049,7 +1049,7 @@ class SpaCard extends LitElement {
 
     /* ── Statut LayZSpa ── */
     .lz-status {
-      width:100%; display:flex; align-items:center; gap:8px;
+      width:100%; display:none !important; align-items:center; gap:8px;
       padding:7px 14px; border-radius:14px; box-sizing:border-box;
       margin-bottom:7px; border:1px solid; font-size:11px; font-weight:500;
       letter-spacing:.3px; transition:all .4s;
