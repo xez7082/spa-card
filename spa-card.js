@@ -522,13 +522,17 @@ class SpaCard extends LitElement {
         time: `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}:00`
       });
     };
-    const activate = () => {
-      this.hass.callService('persistent_notification','create',{
-        title:'🛁 Spa programmé',
-        message:`Prêt à ${readyStr} — chauffe démarrera à ${startStr||'…'}`,
-        notification_id:'spa_schedule'
-      });
-    };
+const activate = () => {
+  // Appelle directement votre automatisation
+  this.hass.callService('automation', 'trigger', {
+    entity_id: 'automation.spa_demarrage_programme' // Assurez-vous que l'entity_id correspond à votre automatisation
+  });
+  // Optionnel : affiche une notification de confirmation
+  this.hass.callService('persistent_notification', 'create', {
+    message: 'Programmation Spa lancée !',
+    title: 'Spa'
+  });
+};
     return html`
       <div class="sched-panel">
         <div class="sched-header"><ha-icon icon="mdi:clock-digital"></ha-icon><span>PLANIFICATION CHAUFFE</span></div>
