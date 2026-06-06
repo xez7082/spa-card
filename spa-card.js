@@ -523,17 +523,20 @@ class SpaCard extends LitElement {
       });
     };
     const activate = () => {
-      // Déclenche l'automatisation créée ci-dessus
+      // 1. Déclenche l'automatisation
       this.hass.callService('automation', 'trigger', {
         entity_id: 'automation.spa_demarrage_programme_intelligent'
       });
-      
-      // Notification pour confirmer à l'utilisateur
+    
+      // 2. Message de confirmation visuel sur l'écran
       this.hass.callService('persistent_notification', 'create', {
         title: '🛁 Spa Programmé',
-        message: 'La chauffe intelligente est activée et surveille l\'heure de démarrage.'
+        message: 'La programmation est activée. Le système surveille l\'heure de démarrage.'
       });
-    };
+      
+        // 3. (Optionnel) Ajout d'une petite animation ou changement d'état 
+        // si vous voulez que le bouton change de couleur ou d'icône.
+      };
     return html`
       <div class="sched-panel">
         <div class="sched-header"><ha-icon icon="mdi:clock-digital"></ha-icon><span>PLANIFICATION CHAUFFE</span></div>
